@@ -1,0 +1,264 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Church {
+  id         String     @id @default(cuid())
+  name       String     @unique
+  phone      String?
+  email      String?
+  ministries Ministry[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+model Ministry {
+  id             String            @id @default(cuid())
+  name           String
+  church         Church?           @relation(fields: [churchId], references: [id])
+  churchId       String?
+  churchName     String?
+  churchPhone    String?
+  churchEmail    String?
+  pastorName     String?
+  pastorPhone    String?
+  pastorEmail    String?
+  cep            String?
+  rua            String?
+  numero         String?
+  complemento    String?
+  bairro         String?
+  municipio      String?
+  estado         String?
+  master         User?             @relation("MinistryMaster", fields: [masterId], references: [id])
+  masterId       String?           @unique
+  leaders        User[]            @relation("MinistryLeaders")
+  members        Member[]
+  smallGroups    SmallGroup[]
+  finances       Finance[]
+  events         Event[]
+  features       MinistryFeature[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  assistantChats AssistantChat[]
+  status         String            @default("ATIVO")
+}
+
+model User {
+  id             String           @id @default(cuid())
+  name           String
+  email          String           @unique
+  password       String
+  role           Role?
+  ministry       Ministry?        @relation("MinistryLeaders", fields: [ministryId], references: [id])
+  ministryId     String?
+  masterOf       Ministry?        @relation("MinistryMaster")
+  permissions    UserPermission[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  assistantChats AssistantChat[]
+  isActive       Boolean          @default(true)
+  dataIngresso   DateTime?
+  celular        String?
+  cep            String?
+  rua            String?
+  numero         String?
+  complemento    String?
+  bairro         String?
+  municipio      String?
+  estado         String?
+  sexo           String?
+  estadoCivil    String?
+  dataNascimento DateTime?
+  churchId       String?
+  observacoesCriadas MemberObservacao[] @relation("UserObservacoes")
+}
+
+model UserPermission {
+  id        String          @id @default(cuid())
+  user      User            @relation(fields: [userId], references: [id])
+  userId    String
+  feature   Feature         @relation(fields: [featureId], references: [id])
+  featureId String
+  level     PermissionLevel
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@unique([userId, featureId])
+}
+
+model Feature {
+  id          String            @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean           @default(true)
+  permissions UserPermission[]
+  ministries  MinistryFeature[]
+}
+
+model MinistryFeature {
+  id         String   @id @default(cuid())
+  ministry   Ministry @relation(fields: [ministryId], references: [id])
+  ministryId String
+  feature    Feature  @relation(fields: [featureId], references: [id])
+  featureId  String
+  isEnabled  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([ministryId, featureId])
+}
+
+model AssistantChat {
+  id         String             @id @default(cuid())
+  user       User               @relation(fields: [userId], references: [id])
+  userId     String
+  ministry   Ministry?          @relation(fields: [ministryId], references: [id])
+  ministryId String?
+  messages   AssistantMessage[]
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+}
+
+model AssistantMessage {
+  id        String         @id @default(cuid())
+  chat      AssistantChat  @relation(fields: [chatId], references: [id])
+  chatId    String
+  content   String
+  role      MessageRole
+  context   MessageContext
+  createdAt DateTime       @default(now())
+}
+
+model Member {
+  id          String       @id @default(cuid())
+  name        String
+  email       String?
+  phone       String?
+  ministry    Ministry     @relation(fields: [ministryId], references: [id])
+  ministryId  String
+  smallGroups SmallGroup[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  dataNascimento DateTime?
+  sexo           String?
+  estadoCivil    String?
+  cep            String?
+  rua            String?
+  numero         String?
+  complemento    String?
+  bairro         String?
+  municipio      String?
+  estado         String?
+  batizado       Boolean?   @default(false)
+  dataIngresso   DateTime?
+  responsaveis   Responsavel[]
+  irmaos         MemberIrmao[] @relation("MemberToIrmaos")
+  irmaoDe        MemberIrmao[] @relation("IrmaoToMember")
+  primos         MemberPrimo[] @relation("MemberToPrimos")
+  primoDe        MemberPrimo[] @relation("PrimoToMember")
+  observacoes    MemberObservacao[]
+  status        String      @default("ATIVO")
+}
+
+model MemberIrmao {
+  id         String  @id @default(cuid())
+  member     Member  @relation("MemberToIrmaos", fields: [memberId], references: [id])
+  memberId   String
+  irmao      Member  @relation("IrmaoToMember", fields: [irmaoId], references: [id])
+  irmaoId    String
+}
+
+model MemberPrimo {
+  id         String  @id @default(cuid())
+  member     Member  @relation("MemberToPrimos", fields: [memberId], references: [id])
+  memberId   String
+  primo      Member  @relation("PrimoToMember", fields: [primoId], references: [id])
+  primoId    String
+}
+
+model SmallGroup {
+  id         String   @id @default(cuid())
+  name       String
+  ministry   Ministry @relation(fields: [ministryId], references: [id])
+  ministryId String
+  members    Member[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Finance {
+  id          String      @id @default(cuid())
+  amount      Float
+  type        FinanceType
+  description String
+  ministry    Ministry    @relation(fields: [ministryId], references: [id])
+  ministryId  String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  date        DateTime
+  ministry    Ministry @relation(fields: [ministryId], references: [id])
+  ministryId  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Responsavel {
+  id        String   @id @default(cuid())
+  nome      String
+  celular   String
+  tipo      String
+  member    Member   @relation(fields: [memberId], references: [id])
+  memberId  String
+}
+
+model MemberObservacao {
+  id         String   @id @default(uuid())
+  member     Member   @relation(fields: [memberId], references: [id])
+  memberId   String
+  autor      User     @relation("UserObservacoes", fields: [autorId], references: [id])
+  autorId    String
+  texto      String
+  categoria  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+enum Role {
+  ADMIN
+  MASTER
+  LEADER
+}
+
+enum PermissionLevel {
+  NONE
+  READ
+  WRITE
+  FULL
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+}
+
+enum MessageContext {
+  SYSTEM
+  MINISTRY
+}
+
+enum FinanceType {
+  INCOME
+  EXPENSE
+}

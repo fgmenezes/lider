@@ -1,0 +1,13 @@
+user_id,user_name,user_email,user_role,user_ministry_id,user_ministry_name,user_ministry_church
+cmb8aem2j0000w0e4oawt2uet,Administrador,admin@admin.com,ADMIN,,,
+cmccj87kt0003w03ww7og63ff,ana paula menezes,ana@teste.com,MASTER,cmb8kvc1s0002w0b0qf3kyzkx,Salvador ,meu salvador 
+cmd1sghw60004w0wgyk3d1zk9,fabio barbosa,fabio@teste.com,LEADER,cmcwdyiif0002w0g0gsu9s2yq,guerreiros  de cristo,igreja guerreiros de cristo
+cmcwbq1rc0000w04squ6iynah,fernando solva ,fernando@teste.com,MASTER,cmcwdyiif0002w0g0gsu9s2yq,guerreiros  de cristo,igreja guerreiros de cristo
+cmd0tfzmq0006w0m8i2gykrpi,rafael santos,rafa@teste.com,LEADER,cmcwdyiif0002w0g0gsu9s2yq,guerreiros  de cristo,igreja guerreiros de cristo
+cmcw9x83h0000w0k8mkd39odb,ricardo sousa,ricardo@teste.com,MASTER,cmcwdyiif0002w0g0gsu9s2yq,guerreiros  de cristo,igreja guerreiros de cristo
+
+ministry_id,ministry_name,ministry_church,master_id,master_name,master_email,leaders_ids,leaders_names,leaders_emails
+cmd1rvoyw0002w0wg0cnyo8ss,filhas  do rei ,igreja emanuel ,,,,,,
+cmcwdyiif0002w0g0gsu9s2yq,guerreiros  de cristo,igreja guerreiros de cristo,cmcw9x83h0000w0k8mkd39odb,ricardo sousa,ricardo@teste.com,cmcwbq1rc0000w04squ6iynah|cmcw9x83h0000w0k8mkd39odb|cmd0tfzmq0006w0m8i2gykrpi|cmd1sghw60004w0wgyk3d1zk9,fernando solva |ricardo sousa|rafael santos|fabio barbosa,fernando@teste.com|ricardo@teste.com|rafa@teste.com|fabio@teste.com
+cmcus0gdc0000w0pk9o9l849c,homens de deus ,,,,,,,
+cmb8kvc1s0002w0b0qf3kyzkx,Salvador ,meu salvador ,cmccj87kt0003w03ww7og63ff,ana paula menezes,ana@teste.com,cmccj87kt0003w03ww7og63ff,ana paula menezes,ana@teste.com
