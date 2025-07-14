@@ -1,9 +1,11 @@
 "use client";
+import React from "react";
 import { useEffect, useState, useRef } from "react";
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Tab } from '@headlessui/react';
 import LeaderCreateModal from "@/components/forms/LeaderCreateModal";
+import { HiOutlineDotsVertical } from 'react-icons/hi';
 
 interface Leader {
   id: string;
@@ -32,6 +34,8 @@ export default function LeadersPage() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [ministries, setMinistries] = useState<{ id: string; name: string }[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editLeader, setEditLeader] = useState<Leader | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Função para calcular idade
   function calculateAge(dateStr: string) {
@@ -96,7 +100,87 @@ export default function LeadersPage() {
     setSelectedIds(ids => ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]);
   };
 
-  if (loading) return <div className="p-8 text-center">Carregando...</div>;
+  // Função para excluir líder
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await fetch(`/api/users/${id}`, { method: "DELETE" });
+      const text = await res.text();
+      if (!res.ok) {
+        console.error('Erro ao excluir líder:', text);
+        alert("Erro ao excluir líder: " + text);
+        return;
+      }
+      fetchLeaders();
+    } catch (e: any) {
+      console.error('Erro inesperado ao excluir líder:', e);
+      alert("Erro inesperado ao excluir líder: " + (e?.message || ''));
+    }
+  };
+
+  // Função para ativar/inativar líder
+  const handleBulkStatus = async (newStatus: boolean, leaderIds: string[]) => {
+    if (leaderIds.length === 0) return;
+    for (const id of leaderIds) {
+      await fetch(`/api/users/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: newStatus })
+      });
+    }
+    fetchLeaders();
+  };
+
+  // Atalhos de teclado
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.altKey && (e.key === 'n' || e.key === 'N')) {
+        e.preventDefault();
+        setShowCreateModal(true);
+      }
+      if (e.altKey && (e.key === 'b' || e.key === 'B')) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+      if (e.key === 'Escape') {
+        if (selectedIds.length > 0) {
+          setSelectedIds([]);
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedIds]);
+
+  if (loading) return (
+    <div className="p-8 text-center">
+      <table className="min-w-full bg-white border border-gray-200 rounded-lg text-sm animate-pulse">
+        <thead className="bg-gray-100">
+          <tr>
+            <th className="px-2 py-2 text-center"><div className="w-4 h-4 bg-gray-200 rounded mx-auto" /></th>
+            <th className="px-4 py-2 text-left"><div className="w-24 h-4 bg-gray-200 rounded" /></th>
+            <th className="px-4 py-2 text-left"><div className="w-32 h-4 bg-gray-200 rounded" /></th>
+            <th className="px-4 py-2 text-left"><div className="w-20 h-4 bg-gray-200 rounded" /></th>
+            <th className="px-4 py-2 text-left"><div className="w-24 h-4 bg-gray-200 rounded" /></th>
+            <th className="px-4 py-2 text-left"><div className="w-24 h-4 bg-gray-200 rounded" /></th>
+            <th className="px-4 py-2 text-left"><div className="w-16 h-4 bg-gray-200 rounded" /></th>
+          </tr>
+        </thead>
+        <tbody>
+          {[...Array(5)].map((_, i) => (
+            <tr key={i} className="border-b last:border-b-0">
+              <td className="px-2 py-2 text-center"><div className="w-4 h-4 bg-gray-200 rounded mx-auto" /></td>
+              <td className="px-4 py-2"><div className="w-24 h-4 bg-gray-200 rounded" /></td>
+              <td className="px-4 py-2"><div className="w-32 h-4 bg-gray-200 rounded" /></td>
+              <td className="px-4 py-2"><div className="w-20 h-4 bg-gray-200 rounded" /></td>
+              <td className="px-4 py-2"><div className="w-24 h-4 bg-gray-200 rounded" /></td>
+              <td className="px-4 py-2"><div className="w-24 h-4 bg-gray-200 rounded" /></td>
+              <td className="px-4 py-2"><div className="w-16 h-4 bg-gray-200 rounded" /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
   if (error) return <div className="p-8 text-center text-red-600">{error}</div>;
 
   return (
@@ -107,52 +191,74 @@ export default function LeadersPage() {
           className="px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition"
           onClick={() => setShowCreateModal(true)}
         >
-          Adicionar Líder
+          Novo Líder
         </button>
       </div>
-      <form onSubmit={handleSearch} className="flex gap-2 mb-4">
+      <div className="flex flex-col md:flex-row md:items-center md:gap-4 mb-4">
         <input
           ref={searchInputRef}
           type="text"
           placeholder="Buscar por nome ou e-mail"
           value={searchInput}
           onChange={e => setSearchInput(e.target.value)}
-          className="border rounded p-2 w-64"
+          className="border border-gray-300 rounded p-2 mb-2 md:mb-0 w-full md:w-auto focus:outline-blue-500 focus:ring-2 focus:ring-blue-300"
+          aria-label="Buscar líderes"
         />
-        <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded">Buscar</button>
-        {/* Removido seletor de status */}
-      </form>
-      {/* Removido controle de colunas visíveis */}
-      <table className="min-w-full bg-white border border-gray-200 rounded-lg text-sm">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="px-2 py-2 text-center"><input type="checkbox" checked={selectedIds.length === leaders.length && leaders.length > 0} onChange={toggleSelectAll} /></th>
-            <th className="px-4 py-2 text-left">Nome</th>
-            <th className="px-4 py-2 text-left">E-mail</th>
-            <th className="px-4 py-2 text-left">Telefone</th>
-            <th className="px-4 py-2 text-left">Ministério</th>
-            <th className="px-4 py-2 text-left">Igreja</th>
-            <th className="px-4 py-2 text-left">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {leaders.length === 0 ? (
-            <tr><td colSpan={7} className="text-center py-8">Nenhum líder encontrado</td></tr>
-          ) : leaders.map(leader => (
-            <tr key={leader.id} className="border-b last:border-b-0 hover:bg-gray-50 cursor-pointer">
-              <td className="px-2 py-2 text-center">
-                <input type="checkbox" checked={selectedIds.includes(leader.id)} onChange={() => toggleSelectOne(leader.id)} />
-              </td>
-              <td className="px-4 py-2 text-blue-700 hover:underline" onClick={() => router.push(`/dashboard/leaders/${leader.id}`)}>{leader.name}</td>
-              <td className="px-4 py-2">{leader.email || '-'}</td>
-              <td className="px-4 py-2">{leader.celular || '-'}</td>
-              <td className="px-4 py-2">{leader.ministry?.name || '-'}</td>
-              <td className="px-4 py-2">{leader.ministry?.church?.name || '-'}</td>
-              <td className="px-4 py-2">{leader.isActive === undefined ? '-' : leader.isActive ? 'Ativo' : 'Inativo'}</td>
+      </div>
+      {/* Barra de ações em massa */}
+      {selectedIds.length > 0 && (
+        <div className="flex items-center gap-2 mb-2 p-2 bg-blue-50 border border-blue-200 rounded">
+          <span>{selectedIds.length} selecionado(s)</span>
+          <button className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs focus:outline-blue-500 focus:ring-2 focus:ring-blue-300" onClick={() => handleBulkStatus(true, selectedIds)}>Ativar</button>
+          <button className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs focus:outline-blue-500 focus:ring-2 focus:ring-blue-300" onClick={() => handleBulkStatus(false, selectedIds)}>Inativar</button>
+          <button className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs focus:outline-blue-500 focus:ring-2 focus:ring-blue-300" onClick={async () => { if (confirm('Tem certeza que deseja excluir os líderes selecionados?')) { for (const id of selectedIds) { await handleDelete(id); } setSelectedIds([]); } }}>Excluir</button>
+          <button className="ml-2 px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs focus:outline-blue-500 focus:ring-2 focus:ring-blue-300" onClick={() => setSelectedIds([])}>Limpar seleção</button>
+        </div>
+      )}
+      <div className="overflow-x-auto rounded shadow bg-white">
+        <table className="min-w-full bg-white border border-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-2 py-3 text-center">
+                <input type="checkbox" checked={selectedIds.length === leaders.length && leaders.length > 0} onChange={toggleSelectAll} aria-label="Selecionar todos os líderes" />
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">E-mail</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Celular</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ministério</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Igreja</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {leaders.length === 0 ? (
+              <tr><td colSpan={8} className="text-center py-8">Nenhum líder encontrado</td></tr>
+            ) : leaders.map(leader => (
+              <tr key={leader.id} className="hover:bg-gray-50 cursor-pointer">
+                <td className="px-2 py-4 text-center">
+                  <input type="checkbox" checked={selectedIds.includes(leader.id)} onChange={() => toggleSelectOne(leader.id)} aria-label={`Selecionar líder ${leader.name}`} />
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-blue-700 hover:underline cursor-pointer" onClick={() => router.push(`/dashboard/leaders/${leader.id}`)}>{leader.name}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{leader.email || '-'}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{leader.celular || '-'}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{leader.ministry?.name || '-'}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{leader.ministry?.church?.name || '-'}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{leader.isActive === undefined ? '-' : leader.isActive ? <span className="inline-block px-2 py-1 rounded bg-green-100 text-green-800 text-xs font-semibold">Ativo</span> : <span className="inline-block px-2 py-1 rounded bg-gray-200 text-gray-700 text-xs font-semibold">Inativo</span>}</td>
+                <td className="px-6 py-4 whitespace-nowrap flex gap-2 relative">
+                  <LeaderActionsMenu
+                    leader={leader}
+                    onEdit={() => { setEditLeader(leader); setShowEditModal(true); }}
+                    onDelete={async () => { if (confirm('Tem certeza que deseja excluir este líder?')) { try { const res = await fetch(`/api/users/${leader.id}`, { method: "DELETE" }); const text = await res.text(); if (!res.ok) { console.error('Erro ao excluir líder:', text); alert("Erro ao excluir líder: " + text); return; } fetchLeaders(); } catch (e: any) { console.error('Erro inesperado ao excluir líder:', e); alert("Erro inesperado ao excluir líder: " + (e?.message || '')); } } }}
+                    onToggleStatus={async () => { const novoStatus = leader.isActive ? false : true; if (confirm(`Tem certeza que deseja ${novoStatus ? 'ativar' : 'inativar'} este líder?`)) { try { const res = await fetch(`/api/users/${leader.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isActive: novoStatus }) }); const text = await res.text(); if (!res.ok) { console.error('Erro ao atualizar status do líder:', text); alert("Erro ao atualizar status do líder: " + text); return; } fetchLeaders(); } catch (e: any) { console.error('Erro inesperado ao atualizar status do líder:', e); alert("Erro inesperado ao atualizar status do líder: " + (e?.message || '')); } } }}
+                    onView={() => { window.location.href = `/dashboard/leaders/${leader.id}`; }}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       {/* Paginação */}
       <div className="flex justify-between items-center mt-4">
         <div className="flex items-center gap-2">
@@ -172,6 +278,305 @@ export default function LeadersPage() {
         </div>
       </div>
       <LeaderCreateModal open={showCreateModal} onClose={() => setShowCreateModal(false)} ministryId={session?.user?.ministryId} />
+      {showEditModal && editLeader && (
+        <LeaderEditTabs
+          leader={editLeader}
+          open={showEditModal}
+          onClose={() => { setShowEditModal(false); setEditLeader(null); }}
+          onSave={() => { setShowEditModal(false); setEditLeader(null); fetchLeaders(); }}
+          ministries={ministries}
+          session={session}
+        />
+      )}
+    </div>
+  );
+}
+
+function LeaderActionsMenu({ leader, onEdit, onDelete, onToggleStatus, onView }: {
+  leader: any;
+  onEdit: () => void;
+  onDelete: () => void;
+  onToggleStatus: () => void;
+  onView: () => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const menuRef = React.useRef<HTMLDivElement>(null);
+  const buttonRef = React.useRef<HTMLButtonElement>(null);
+  const optionRefs = [
+    React.useRef<HTMLButtonElement>(null),
+    React.useRef<HTMLButtonElement>(null),
+    React.useRef<HTMLButtonElement>(null),
+    React.useRef<HTMLButtonElement>(null),
+  ];
+  const optionCount = 4;
+
+  React.useEffect(() => {
+    if (open) {
+      setTimeout(() => optionRefs[0].current?.focus(), 0);
+    }
+  }, [open]);
+
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!open) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        setOpen(true);
+        setTimeout(() => optionRefs[0].current?.focus(), 0);
+      }
+      return;
+    }
+    if (e.key === 'Escape') {
+      setOpen(false);
+      buttonRef.current?.focus();
+    }
+    if (['ArrowDown', 'ArrowUp'].includes(e.key)) {
+      e.preventDefault();
+      const current = optionRefs.findIndex(ref => ref.current === document.activeElement);
+      let next = 0;
+      if (e.key === 'ArrowDown') {
+        next = current === -1 ? 0 : (current + 1) % optionCount;
+      } else {
+        next = current === -1 ? optionCount - 1 : (current - 1 + optionCount) % optionCount;
+      }
+      optionRefs[next].current?.focus();
+    }
+  };
+
+  return (
+    <div className="relative inline-block text-left" ref={menuRef}>
+      <button
+        ref={buttonRef}
+        onClick={() => { setOpen(o => !o); setTimeout(() => optionRefs[0].current?.focus(), 0); }}
+        onKeyDown={handleKeyDown}
+        aria-haspopup="true"
+        aria-expanded={open}
+        className="p-2 rounded-full hover:bg-gray-200 focus:outline-none"
+        tabIndex={0}
+        title="Ações"
+      >
+        <HiOutlineDotsVertical className="w-5 h-5" />
+      </button>
+      {open && (
+        <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded shadow-lg z-50 flex flex-col" role="menu">
+          <button
+            ref={optionRefs[0]}
+            className="px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+            onClick={() => { setOpen(false); onView(); }}
+            onKeyDown={handleKeyDown}
+            tabIndex={0}
+            role="menuitem"
+          >Ver detalhes</button>
+          <button
+            ref={optionRefs[1]}
+            className="px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+            onClick={() => { setOpen(false); onEdit(); }}
+            onKeyDown={handleKeyDown}
+            tabIndex={0}
+            role="menuitem"
+          >Editar</button>
+          <button
+            ref={optionRefs[2]}
+            className="px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none text-red-600"
+            onClick={() => { setOpen(false); onDelete(); }}
+            onKeyDown={handleKeyDown}
+            tabIndex={0}
+            role="menuitem"
+          >Excluir</button>
+          <button
+            ref={optionRefs[3]}
+            className="px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+            onClick={() => { setOpen(false); onToggleStatus(); }}
+            onKeyDown={handleKeyDown}
+            tabIndex={0}
+            role="menuitem"
+          >{leader.isActive ? 'Inativar' : 'Ativar'}</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Placeholder do componente LeaderEditTabs para edição em abas
+function LeaderEditTabs({ leader, open, onClose, onSave, ministries, session }: any) {
+  const [selectedIndex, setSelectedIndex] = React.useState(0);
+  const [form, setForm] = React.useState({ ...leader });
+  const [saving, setSaving] = React.useState(false);
+  const [formError, setFormError] = React.useState("");
+  const nomeRef = React.useRef<HTMLInputElement>(null);
+  React.useEffect(() => {
+    if (open && nomeRef.current) {
+      nomeRef.current.focus();
+    }
+  }, [open]);
+  const tabs = [
+    { name: 'Dados Pessoais', content: (
+      <div className="space-y-4">
+        <label className="block">
+          Nome completo
+          <input ref={nomeRef} className="border rounded p-2 w-full" value={form.name || ''} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+        </label>
+        <label className="block">
+          Data de Nascimento
+          <input className="border rounded p-2 w-full" value={form.dataNascimento || ''} onChange={e => setForm(f => ({ ...f, dataNascimento: e.target.value }))} />
+        </label>
+        <label className="block">
+          Sexo
+          <select className="border rounded p-2 w-full" value={form.sexo || ''} onChange={e => setForm(f => ({ ...f, sexo: e.target.value }))}>
+            <option value="">Selecione</option>
+            <option value="MASCULINO">Masculino</option>
+            <option value="FEMININO">Feminino</option>
+          </select>
+        </label>
+        <label className="block">
+          Estado Civil
+          <input className="border rounded p-2 w-full" value={form.estadoCivil || ''} onChange={e => setForm(f => ({ ...f, estadoCivil: e.target.value }))} />
+        </label>
+      </div>
+    ) },
+    { name: 'Contato', content: (
+      <div className="space-y-4">
+        <label className="block">
+          Celular
+          <input className="border rounded p-2 w-full" value={form.celular || ''} onChange={e => setForm(f => ({ ...f, celular: e.target.value }))} />
+        </label>
+        <label className="block">
+          E-mail
+          <input className="border rounded p-2 w-full" value={form.email || ''} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+        </label>
+      </div>
+    ) },
+    { name: 'Endereço', content: (
+      <div className="space-y-4">
+        <label className="block">
+          CEP
+          <input className="border rounded p-2 w-full" value={form.cep || ''} onChange={e => setForm(f => ({ ...f, cep: e.target.value }))} />
+        </label>
+        <label className="block">
+          Rua
+          <input className="border rounded p-2 w-full" value={form.rua || ''} onChange={e => setForm(f => ({ ...f, rua: e.target.value }))} />
+        </label>
+        <label className="block">
+          Número
+          <input className="border rounded p-2 w-full" value={form.numero || ''} onChange={e => setForm(f => ({ ...f, numero: e.target.value }))} />
+        </label>
+        <label className="block">
+          Complemento
+          <input className="border rounded p-2 w-full" value={form.complemento || ''} onChange={e => setForm(f => ({ ...f, complemento: e.target.value }))} />
+        </label>
+        <label className="block">
+          Bairro
+          <input className="border rounded p-2 w-full" value={form.bairro || ''} onChange={e => setForm(f => ({ ...f, bairro: e.target.value }))} />
+        </label>
+        <label className="block">
+          Município
+          <input className="border rounded p-2 w-full" value={form.municipio || ''} onChange={e => setForm(f => ({ ...f, municipio: e.target.value }))} />
+        </label>
+        <label className="block">
+          Estado
+          <input className="border rounded p-2 w-full" value={form.estado || ''} onChange={e => setForm(f => ({ ...f, estado: e.target.value }))} />
+        </label>
+      </div>
+    ) },
+    { name: 'Permissões', content: (
+      <div className="space-y-4">
+        <label className="block">
+          Tipo de Líder
+          <select className="border rounded p-2 w-full" value={form.role || ''} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}>
+            <option value="">Selecione</option>
+            <option value="LEADER">Líder</option>
+            <option value="MASTER">Líder Master</option>
+          </select>
+        </label>
+      </div>
+    ) },
+    { name: 'Login', content: (
+      <div className="space-y-4">
+        <label className="block">
+          E-mail de Login
+          <input className="border rounded p-2 w-full" value={form.emailLogin || form.email || ''} onChange={e => setForm(f => ({ ...f, emailLogin: e.target.value }))} />
+        </label>
+        <label className="block">
+          Senha (deixe em branco para não alterar)
+          <input className="border rounded p-2 w-full" type="password" value={form.senha || ''} onChange={e => setForm(f => ({ ...f, senha: e.target.value }))} />
+        </label>
+      </div>
+    ) },
+  ];
+
+  async function handleSave() {
+    setFormError("");
+    setSaving(true);
+    try {
+      const payload: any = {
+        name: form.name,
+        dataNascimento: form.dataNascimento,
+        sexo: form.sexo,
+        estadoCivil: form.estadoCivil,
+        celular: form.celular,
+        email: form.email,
+        cep: form.cep,
+        rua: form.rua,
+        numero: form.numero,
+        complemento: form.complemento,
+        bairro: form.bairro,
+        municipio: form.municipio,
+        estado: form.estado,
+        role: form.role,
+        emailLogin: form.emailLogin || form.email,
+      };
+      if (form.senha) payload.senha = form.senha;
+      const res = await fetch(`/api/users/${leader.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || 'Erro ao salvar');
+      }
+      onSave();
+    } catch (e: any) {
+      setFormError(e.message || 'Erro ao salvar');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-2xl">
+        <h2 className="text-xl font-bold mb-4">Editar Líder</h2>
+        <Tab.Group selectedIndex={selectedIndex} onChange={setSelectedIndex}>
+          <Tab.List className="flex space-x-2 border-b mb-4">
+            {tabs.map((tab, idx) => (
+              <Tab key={tab.name} className={({ selected }) =>
+                `px-4 py-2 text-sm font-medium rounded-t ${selected ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`
+              }>
+                {tab.name}
+              </Tab>
+            ))}
+          </Tab.List>
+          <Tab.Panels>
+            {tabs.map((tab, idx) => (
+              <Tab.Panel key={tab.name} className="p-2">{tab.content}</Tab.Panel>
+            ))}
+          </Tab.Panels>
+        </Tab.Group>
+        <div className="flex justify-end gap-2 mt-4">
+          <button onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-700 rounded" disabled={saving}>Cancelar</button>
+          <button onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded" disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</button>
+        </div>
+        {formError && <div className="text-red-600 text-sm mt-2">{formError}</div>}
+      </div>
     </div>
   );
 } 
