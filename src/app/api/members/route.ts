@@ -35,6 +35,7 @@ const updateMemberSchema = createMemberSchema.partial();
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
+    console.log('Sessão (session.user):', session?.user);
     if (!session) {
       return NextResponse.json({ message: 'Não autenticado' }, { status: 401 });
     }
@@ -47,8 +48,9 @@ export async function GET(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { role: true, ministryId: true, masterOf: { select: { id: true } } }
+      select: { role: true, ministryId: true, masterMinistryId: true }
     });
+    console.log('Usuário do banco:', user);
 
     if (!user) {
       return NextResponse.json({ message: 'Usuário não encontrado' }, { status: 404 });
@@ -64,7 +66,7 @@ export async function GET(request: NextRequest) {
       }
     } else if (user.role === 'MASTER') {
       // Líder Master pode ver membros do seu ministério
-      whereClause.ministryId = user.masterOf?.id;
+      whereClause.ministryId = user.masterMinistryId;
     } else {
       // Líder pode ver membros do seu ministério
       whereClause.ministryId = user.ministryId;
@@ -78,6 +80,7 @@ export async function GET(request: NextRequest) {
         { phone: { contains: search, mode: 'insensitive' } },
       ];
     }
+    console.log('Filtro whereClause:', whereClause);
 
     // Buscar membros com paginação
     const [members, total] = await Promise.all([
@@ -90,15 +93,10 @@ export async function GET(request: NextRequest) {
               name: true,
               church: { select: { name: true } }
             }
-          },
-          smallGroups: {
-            select: {
-              id: true,
-              name: true
-            }
           }
+          // smallGroups removido
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { name: 'asc' },
         skip: (page - 1) * perPage,
         take: perPage,
       }),
@@ -159,7 +157,7 @@ export async function POST(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { role: true, ministryId: true, masterOf: { select: { id: true } } }
+      select: { role: true, ministryId: true, masterMinistryId: true }
     });
 
     if (!user) {
@@ -176,7 +174,7 @@ export async function POST(request: NextRequest) {
       }
     } else if (user.role === 'MASTER') {
       // Líder Master só pode criar membros no seu ministério
-      ministryId = user.masterOf?.id;
+      ministryId = user.masterMinistryId;
       if (!ministryId) {
         return NextResponse.json({ message: 'Líder Master deve estar associado a um ministério' }, { status: 400 });
       }
@@ -190,7 +188,7 @@ export async function POST(request: NextRequest) {
 
     // Verificar se o ministério existe
     const ministry = await prisma.ministry.findUnique({
-      where: { id: ministryId }
+      where: { id: ministryId as string }
     });
 
     if (!ministry) {
@@ -203,7 +201,7 @@ export async function POST(request: NextRequest) {
         name: validatedData.name,
         email: validatedData.email || null,
         phone: validatedData.phone || null,
-        ministryId: ministryId,
+        ministryId: ministryId as string,
         ...(validatedData.dataNascimento ? { dataNascimento: new Date(validatedData.dataNascimento) } : {}),
         ...(validatedData.sexo ? { sexo: validatedData.sexo } : {}),
         ...(validatedData.estadoCivil ? { estadoCivil: validatedData.estadoCivil } : {}),
@@ -245,7 +243,7 @@ export async function POST(request: NextRequest) {
       where: { id: member.id },
       include: {
         ministry: { select: { id: true, name: true, church: { select: { name: true } } } },
-        smallGroups: { select: { id: true, name: true } },
+        // smallGroups removido
       }
     });
     const [responsaveis, irmaos, primos] = await Promise.all([

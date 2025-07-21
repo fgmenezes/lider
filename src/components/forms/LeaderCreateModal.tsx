@@ -371,7 +371,11 @@ export default function LeaderCreateModal({ open, onClose, ministryId }: LeaderC
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent>
+      <DialogContent aria-describedby="desc-lider-modal">
+        <h2 id="dialog-title-lider" className="text-xl font-bold">Cadastro de Líder</h2>
+        <p id="desc-lider-modal" className="text-gray-600 mb-4">
+          {configAtual?.descricao}
+        </p>
         <div className="p-6 w-full max-w-lg bg-white rounded-lg">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-xl font-bold">Cadastro de Líder</h2>

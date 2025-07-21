@@ -40,7 +40,7 @@ export async function GET(
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { role: true, ministryId: true, masterOf: { select: { id: true } } }
+      select: { role: true, ministryId: true, masterMinistryId: true }
     });
 
     if (!user) {
@@ -76,7 +76,7 @@ export async function GET(
       // Admin pode ver qualquer membro
     } else if (user.role === 'MASTER') {
       // Líder Master só pode ver membros do seu ministério
-      if (member.ministryId !== user.masterOf?.id) {
+      if (member.ministryId !== user.masterMinistryId) {
         return NextResponse.json({ message: 'Acesso negado' }, { status: 403 });
       }
     } else {
@@ -114,7 +114,7 @@ export async function PUT(
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { role: true, ministryId: true, masterOf: { select: { id: true } } }
+      select: { role: true, ministryId: true, masterMinistryId: true }
     });
 
     if (!user) {
@@ -136,11 +136,11 @@ export async function PUT(
       // Admin pode editar qualquer membro
     } else if (user.role === 'MASTER') {
       // Líder Master só pode editar membros do seu ministério
-      if (existingMember.ministryId !== user.masterOf?.id) {
+      if (existingMember.ministryId !== user.masterMinistryId) {
         return NextResponse.json({ message: 'Acesso negado' }, { status: 403 });
       }
       // Se estiver tentando mudar o ministério, não permitir
-      if (validatedData.ministryId && validatedData.ministryId !== user.masterOf?.id) {
+      if (validatedData.ministryId && validatedData.ministryId !== user.masterMinistryId) {
         return NextResponse.json({ message: 'Não é possível alterar o ministério do membro' }, { status: 403 });
       }
     } else {
@@ -273,7 +273,7 @@ export async function DELETE(
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { role: true, ministryId: true, masterOf: { select: { id: true } } }
+      select: { role: true, ministryId: true, masterMinistryId: true }
     });
 
     if (!user) {
@@ -295,7 +295,7 @@ export async function DELETE(
       // Admin pode excluir qualquer membro
     } else if (user.role === 'MASTER') {
       // Líder Master só pode excluir membros do seu ministério
-      if (existingMember.ministryId !== user.masterOf?.id) {
+      if (existingMember.ministryId !== user.masterMinistryId) {
         return NextResponse.json({ message: 'Acesso negado' }, { status: 403 });
       }
     } else {
@@ -304,6 +304,12 @@ export async function DELETE(
         return NextResponse.json({ message: 'Acesso negado' }, { status: 403 });
       }
     }
+
+    // Excluir registros relacionados antes de deletar o membro
+    await prisma.responsavel.deleteMany({ where: { memberId: params.id } });
+    await prisma.memberIrmao.deleteMany({ where: { memberId: params.id } });
+    await prisma.memberPrimo.deleteMany({ where: { memberId: params.id } });
+    // Adicione aqui outros relacionamentos se necessário
 
     // Excluir membro
     await prisma.member.delete({

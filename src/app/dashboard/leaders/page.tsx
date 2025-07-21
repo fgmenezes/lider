@@ -201,6 +201,12 @@ export default function LeadersPage() {
           placeholder="Buscar por nome ou e-mail"
           value={searchInput}
           onChange={e => setSearchInput(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              setSearch(searchInput);
+              setPage(1);
+            }
+          }}
           className="border border-gray-300 rounded p-2 mb-2 md:mb-0 w-full md:w-auto focus:outline-blue-500 focus:ring-2 focus:ring-blue-300"
           aria-label="Buscar líderes"
         />
@@ -227,6 +233,7 @@ export default function LeadersPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Celular</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ministério</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Igreja</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Perfil</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
             </tr>
@@ -244,6 +251,7 @@ export default function LeadersPage() {
                 <td className="px-6 py-4 whitespace-nowrap">{leader.celular || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{leader.ministry?.name || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{leader.ministry?.church?.name || '-'}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{leader.role === 'MASTER' ? 'Líder Master' : leader.role === 'LEADER' ? 'Líder' : '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{leader.isActive === undefined ? '-' : leader.isActive ? <span className="inline-block px-2 py-1 rounded bg-green-100 text-green-800 text-xs font-semibold">Ativo</span> : <span className="inline-block px-2 py-1 rounded bg-gray-200 text-gray-700 text-xs font-semibold">Inativo</span>}</td>
                 <td className="px-6 py-4 whitespace-nowrap flex gap-2 relative">
                   <LeaderActionsMenu

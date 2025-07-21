@@ -15,12 +15,12 @@ async function main() {
   const users = await prisma.user.findMany({
     include: {
       ministry: true,
-      masterOf: true,
+      masterMinistry: true,
     }
   });
 
   const userHeaders = [
-    'id', 'name', 'email', 'role', 'ministryId', 'ministryName', 'masterOfId', 'masterOfName', 'createdAt', 'updatedAt'
+    'id', 'name', 'email', 'role', 'ministryId', 'ministryName', 'masterMinistryId', 'masterMinistryName', 'createdAt', 'updatedAt'
   ];
 
   const userRows = users.map(u => ({
@@ -30,8 +30,8 @@ async function main() {
     role: u.role,
     ministryId: u.ministryId,
     ministryName: u.ministry?.name || '',
-    masterOfId: u.masterOf?.id || '',
-    masterOfName: u.masterOf?.name || '',
+    masterMinistryId: u.masterMinistry?.id || '',
+    masterMinistryName: u.masterMinistry?.name || '',
     createdAt: u.createdAt,
     updatedAt: u.updatedAt,
   }));

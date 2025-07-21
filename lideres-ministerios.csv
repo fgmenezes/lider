@@ -1,0 +1,6 @@
+"id","name","email","role","isActive","ministryId","masterMinistryId","ministryName","masterMinistryName","churchName"
+"cmccj87kt0003w03ww7og63ff","ana paula menezes","ana@teste.com","MASTER","Ativo","","cmb8kvc1s0002w0b0qf3kyzkx","","Salvador ","meu salvador "
+"cmdaoy3ce0004w0lcsjh24b4d","daniel  sousa ","daniel@teste.com","MASTER","Ativo","","cmcwdyiif0002w0g0gsu9s2yq","","guerreiros  de cristo","igreja guerreiros de cristo"
+"cmd7ixzjh0001w080rxb4a55h","felipe menezes","felipe@teste.com","LEADER","Ativo","cmcwdyiif0002w0g0gsu9s2yq","","guerreiros  de cristo","","igreja guerreiros de cristo"
+"cmd0tfzmq0006w0m8i2gykrpi","rafael santos menezes","rafa@teste.com","LEADER","Ativo","cmcwdyiif0002w0g0gsu9s2yq","","guerreiros  de cristo","","igreja guerreiros de cristo"
+"cmcw9x83h0000w0k8mkd39odb","ricardo sousa","ricardo@teste.com","MASTER","Ativo","","cmcwdyiif0002w0g0gsu9s2yq","","guerreiros  de cristo","igreja guerreiros de cristo"

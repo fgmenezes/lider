@@ -256,7 +256,7 @@ function MemberFormStep4({ form, setForm, onCancel }: { form: any, setForm: (dat
       </div>
       {responsaveis.length > 0 && (
         <div className="space-y-2">
-          {responsaveis.map((resp, idx) => (
+          {responsaveis.map((resp: any, idx: number) => (
             <div key={idx} className="flex flex-col md:flex-row gap-2 items-end border p-2 rounded bg-gray-50">
               <div className="flex-1">
                 <label className="block text-sm font-medium text-gray-700">Nome do responsável</label>
@@ -651,7 +651,8 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 // Função para exportar membros para CSV
-function exportToCSV() {
+// Agora recebe members e visibleColumns como parâmetros
+function exportToCSV(members: any[], visibleColumns: { name: boolean; phone: boolean; status: boolean }) {
   if (!members.length) return;
   const headers = [
     ...(visibleColumns.name ? ['Nome'] : []),
@@ -706,13 +707,14 @@ function MemberEditTabs({ form, setForm, onCancel, onSave, ministries, session }
 
 export default function MembersPage() {
   const { data: session } = useSession();
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<any[]>([]); // nunca undefined!
   const [loading, setLoading] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
-  const [pagination, setPagination] = useState<any>({});
+  // Garanta valor inicial para pagination, incluindo hasNext
+  const [pagination, setPagination] = useState({ total: 0, page: 1, totalPages: 1, hasNext: false });
   const [openModal, setOpenModal] = useState(false);
   const [editMember, setEditMember] = useState<Member | null>(null);
   const [formStep, setFormStep] = useState(1);
@@ -761,7 +763,7 @@ export default function MembersPage() {
       if (sortField) url += `&sortField=${sortField}&sortOrder=${sortOrder}`;
       const res = await fetch(url);
       const data = await res.json();
-      setMembers(data.members);
+      setMembers(data.members || []);
       setPagination(data.pagination);
     } catch (err) {
       toast.error("Erro ao buscar membros");
@@ -784,8 +786,8 @@ export default function MembersPage() {
 
   useEffect(() => {
     // Preencher ministryId automaticamente para o usuário logado
-    if (session?.user?.role === 'LIDER_MASTER' && session?.user?.masterOf?.id) {
-      setForm(f => ({ ...f, ministryId: session.user.masterOf.id }));
+    if (session?.user?.role === 'LIDER_MASTER' && session?.user?.masterMinistryId) {
+      setForm(f => ({ ...f, ministryId: session.user.masterMinistryId }));
     } else if (session?.user?.ministryId) {
       setForm(f => ({ ...f, ministryId: session.user.ministryId }));
     }
@@ -871,7 +873,7 @@ export default function MembersPage() {
         municipio: '',
         estado: '',
         ministryId: session?.user?.role === 'LIDER_MASTER'
-          ? session?.user?.masterOf?.id || ''
+          ? session?.user?.masterMinistryId || ''
           : session?.user?.ministryId || '',
         responsaveis: [],
         temIrmaos: false,
@@ -974,14 +976,20 @@ export default function MembersPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Tem certeza que deseja excluir este membro?")) return;
     try {
+      console.log('Tentando excluir membro com id:', id);
       const res = await fetch(`/api/members/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Erro ao excluir membro");
+      const text = await res.text();
+      if (!res.ok) {
+        console.error('Erro ao excluir membro:', text);
+        toast.error("Erro ao excluir membro: " + text);
+        return;
+      }
       toast.success("Membro excluído!");
       fetchMembers();
-    } catch {
-      toast.error("Erro ao excluir membro");
+    } catch (e: any) {
+      console.error('Erro inesperado ao excluir membro:', e);
+      toast.error("Erro inesperado ao excluir membro: " + (e?.message || ''));
     }
   };
 
@@ -996,7 +1004,7 @@ export default function MembersPage() {
   }
 
   // Funções para seleção múltipla
-  const allSelected = members.length > 0 && selectedIds.length === members.length;
+  const allSelected = Array.isArray(members) && members.length > 0 && selectedIds.length === members.length;
   const toggleSelectAll = () => {
     if (allSelected) setSelectedIds([]);
     else setSelectedIds(members.map((m: any) => m.id));
@@ -1009,7 +1017,6 @@ export default function MembersPage() {
   // Funções de ação em massa
   async function handleBulkStatus(newStatus: string, memberIds: string[]) {
     if (memberIds.length === 0) return;
-    if (!confirm(`Tem certeza que deseja marcar ${memberIds.length} membro(s) como ${newStatus === 'ATIVO' ? 'ATIVO' : 'INATIVO'}?`)) return;
     for (const id of memberIds) {
       await fetch(`/api/members/${id}`, {
         method: 'PUT',
@@ -1022,7 +1029,6 @@ export default function MembersPage() {
   }
   async function handleBulkDelete(memberIds: string[]) {
     if (memberIds.length === 0) return;
-    if (!confirm(`Tem certeza que deseja excluir ${memberIds.length} membro(s)?`)) return;
     for (const id of memberIds) {
       await fetch(`/api/members/${id}`, { method: 'DELETE' });
     }
@@ -1062,6 +1068,12 @@ export default function MembersPage() {
           placeholder="Buscar por nome, email ou telefone..."
           value={searchInput}
           onChange={e => setSearchInput(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              setSearch(searchInput);
+              setPage(1);
+            }
+          }}
           className="border border-gray-300 rounded p-2 mb-2 md:mb-0 w-full md:w-auto focus:outline-blue-500 focus:ring-2 focus:ring-blue-300"
           aria-label="Buscar membros"
         />
@@ -1127,7 +1139,22 @@ export default function MembersPage() {
                 <td className="px-6 py-4 whitespace-nowrap"><StatusBadge status={member.status || 'ATIVO'} /></td>
                 <td className="px-6 py-4 whitespace-nowrap flex gap-2 relative">
                   {/* Menu de 3 pontos */}
-                  <MemberActionsMenu member={member} onEdit={() => handleOpenModal(member)} onDelete={() => handleDelete(member.id)} onToggleStatus={() => handleBulkStatus(member.status === 'ATIVO' ? 'INATIVO' : 'ATIVO', [member.id])} />
+                  <MemberActionsMenu
+                    member={member}
+                    onEdit={() => handleOpenModal(member)}
+                    onDelete={async () => {
+                      if (confirm('Tem certeza que deseja excluir este membro?')) {
+                        await handleDelete(member.id);
+                      }
+                    }}
+                    onToggleStatus={async () => {
+                      const novoStatus = member.status === 'ATIVO' ? 'INATIVO' : 'ATIVO';
+                      if (confirm(`Tem certeza que deseja marcar este membro como ${novoStatus}?`)) {
+                        await handleBulkStatus(novoStatus, [member.id]);
+                      }
+                    }}
+                    onView={() => { window.location.href = `/dashboard/members/${member.id}`; }}
+                  />
                 </td>
               </tr>
             ))}
@@ -1145,11 +1172,11 @@ export default function MembersPage() {
             <option value={100}>100</option>
           </select>
         </div>
-        <span>Total: {pagination.total || 0} membros</span>
+        <span>Total: {(pagination?.total ?? 0)} membros</span>
         <div className="flex items-center gap-2">
           <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50">Anterior</button>
-          <span>Página {pagination.page || 1} de {pagination.totalPages || 1}</span>
-          <button disabled={!pagination.hasNext} onClick={() => setPage(page + 1)} className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50">Próxima</button>
+          <span>Página {(pagination?.page ?? 1)} de {(pagination?.totalPages ?? 1)}</span>
+          <button disabled={!pagination || !pagination.hasNext} onClick={() => setPage(page + 1)} className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50">Próxima</button>
         </div>
       </div>
       {/* Modal de cadastro/edição multi-etapas */}
@@ -1187,7 +1214,7 @@ export default function MembersPage() {
                     onNext={data => { setForm(prev => ({ ...prev, ...data })); setFormStep(6); }}
                     initialData={form}
                     ministryId={form.ministryId}
-                    editingMemberId={editMember?.id}
+                    editingMemberId={editMember?.id || undefined}
                     onCancel={handleCloseModal}
                   />
                 )}
@@ -1254,12 +1281,33 @@ export default function MembersPage() {
   );
 }
 
-// Adicione o componente do menu de ações no final do arquivo
-function MemberActionsMenu({ member, onEdit, onDelete, onToggleStatus }: { member: any, onEdit: () => void, onDelete: () => void, onToggleStatus: () => void }) {
-  const [open, setOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+// NOVO COMPONENTE DE MENU DE AÇÕES PARA MEMBROS
+function MemberActionsMenu({ member, onEdit, onDelete, onToggleStatus, onView }: {
+  member: any;
+  onEdit: () => void;
+  onDelete: () => void;
+  onToggleStatus: () => void;
+  onView: () => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const menuRef = React.useRef<HTMLDivElement>(null);
+  const buttonRef = React.useRef<HTMLButtonElement>(null);
+  const optionRefs = [
+    React.useRef<HTMLButtonElement>(null),
+    React.useRef<HTMLButtonElement>(null),
+    React.useRef<HTMLButtonElement>(null),
+    React.useRef<HTMLButtonElement>(null),
+  ];
+  const optionCount = 4;
 
-  // Fecha o menu ao clicar fora
+  // Foco automático na primeira opção ao abrir
+  React.useEffect(() => {
+    if (open) {
+      setTimeout(() => optionRefs[0].current?.focus(), 0);
+    }
+  }, [open]);
+
+  // Fecha ao clicar fora
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -1270,21 +1318,80 @@ function MemberActionsMenu({ member, onEdit, onDelete, onToggleStatus }: { membe
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open]);
 
+  // Navegação por teclado
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!open) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        setOpen(true);
+        setTimeout(() => optionRefs[0].current?.focus(), 0);
+      }
+      return;
+    }
+    if (e.key === 'Escape') {
+      setOpen(false);
+      buttonRef.current?.focus();
+    }
+    if (['ArrowDown', 'ArrowUp'].includes(e.key)) {
+      e.preventDefault();
+      const current = optionRefs.findIndex(ref => ref.current === document.activeElement);
+      let next = 0;
+      if (e.key === 'ArrowDown') {
+        next = current === -1 ? 0 : (current + 1) % optionCount;
+      } else {
+        next = current === -1 ? optionCount - 1 : (current - 1 + optionCount) % optionCount;
+      }
+      optionRefs[next].current?.focus();
+    }
+  };
+
   return (
-    <div className="relative" ref={menuRef}>
+    <div className="relative inline-block text-left" ref={menuRef}>
       <button
-        className="p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        onClick={() => setOpen(o => !o)}
-        aria-label="Ações"
+        ref={buttonRef}
+        onClick={() => { setOpen(o => !o); setTimeout(() => optionRefs[0].current?.focus(), 0); }}
+        onKeyDown={handleKeyDown}
+        aria-haspopup="true"
+        aria-expanded={open}
+        className="p-2 rounded-full hover:bg-gray-200 focus:outline-none"
+        tabIndex={0}
+        title="Ações"
       >
-        <HiOutlineDotsVertical size={20} />
+        <HiOutlineDotsVertical className="w-5 h-5" />
       </button>
       {open && (
-        <div className="absolute right-0 z-10 mt-2 w-40 bg-white border border-gray-200 rounded shadow-lg py-1">
-          <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100" onClick={() => { window.location.href = `/dashboard/members/${member.id}`; setOpen(false); }}>Ver detalhes</button>
-          <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100" onClick={() => { onEdit(); setOpen(false); }}>Editar</button>
-          <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 text-red-600" onClick={() => { onDelete(); setOpen(false); }}>Excluir</button>
-          <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100" onClick={() => { onToggleStatus(); setOpen(false); }}>{member.status === 'ATIVO' ? 'Desativar' : 'Ativar'}</button>
+        <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded shadow-lg z-50 flex flex-col" role="menu">
+          <button
+            ref={optionRefs[0]}
+            className="px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+            onClick={() => { setOpen(false); onView(); }}
+            onKeyDown={handleKeyDown}
+            tabIndex={0}
+            role="menuitem"
+          >Ver detalhes</button>
+          <button
+            ref={optionRefs[1]}
+            className="px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+            onClick={() => { setOpen(false); onEdit(); }}
+            onKeyDown={handleKeyDown}
+            tabIndex={0}
+            role="menuitem"
+          >Editar</button>
+          <button
+            ref={optionRefs[2]}
+            className="px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none text-red-600"
+            onClick={() => { setOpen(false); onDelete(); }}
+            onKeyDown={handleKeyDown}
+            tabIndex={0}
+            role="menuitem"
+          >Excluir</button>
+          <button
+            ref={optionRefs[3]}
+            className="px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+            onClick={() => { setOpen(false); onToggleStatus(); }}
+            onKeyDown={handleKeyDown}
+            tabIndex={0}
+            role="menuitem"
+          >{member.status === 'ATIVO' ? 'Inativar' : 'Ativar'}</button>
         </div>
       )}
     </div>

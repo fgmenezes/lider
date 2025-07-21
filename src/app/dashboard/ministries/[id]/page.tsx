@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Tab } from '@headlessui/react';
 import SelectMasterModal from '@/components/forms/SelectMasterModal';
+import Link from 'next/link';
 
 export default function MinistryDetailsPage() {
   const { id: rawId } = useParams();
@@ -13,6 +14,7 @@ export default function MinistryDetailsPage() {
   const [showSelectMaster, setShowSelectMaster] = useState(false);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [masters, setMasters] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchMinistry() {
@@ -29,6 +31,18 @@ export default function MinistryDetailsPage() {
       }
     }
     if (id) fetchMinistry();
+  }, [id]);
+
+  // Buscar masters do ministério
+  useEffect(() => {
+    if (!id) return;
+    fetch(`/api/users?role=MASTER&masterMinistryId=${id}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error('Erro ao buscar masters');
+        const data = await res.json();
+        setMasters(data.users || []);
+      })
+      .catch(() => setMasters([]));
   }, [id]);
 
   async function handleSelectMaster(user: any) {
@@ -62,6 +76,14 @@ export default function MinistryDetailsPage() {
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-2xl">
+      {/* Adiciona o botão Financeiro no topo da página, seguindo o padrão do projeto */}
+      <div className="flex justify-end mb-4">
+        <Link href={`/dashboard/ministries/${id}/finance`}>
+          <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow">
+            Financeiro
+          </button>
+        </Link>
+      </div>
       <h1 className="text-2xl font-bold mb-4">Detalhes do Ministério</h1>
       <Tab.Group>
         <Tab.List className="flex space-x-2 border-b mb-6">
@@ -189,6 +211,22 @@ export default function MinistryDetailsPage() {
           {/* Guia 3: Membros */}
           <Tab.Panel>
             <div className="bg-white rounded shadow p-6">
+              <h2 className="text-lg font-semibold mb-2">Líderes</h2>
+              {/* Listar líderes aqui (incluindo master, se desejar) */}
+              <div className="mb-6">
+                <h3 className="font-semibold mb-1">Líderes Master</h3>
+                {masters.length > 0 ? (
+                  <ul className="divide-y divide-gray-100">
+                    {masters.map((master: any) => (
+                      <li key={master.id} className="py-1">
+                        <span className="font-medium">{master.name}</span> <span className="text-gray-500">({master.email})</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="text-gray-500">Nenhum líder master associado.</div>
+                )}
+              </div>
               <h2 className="text-lg font-semibold mb-2">Membros</h2>
               {ministry.members?.length ? (
                 <ul className="divide-y divide-gray-100">

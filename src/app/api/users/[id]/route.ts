@@ -47,7 +47,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   try {
     const userToEdit = await prisma.user.findUnique({
       where: { id: params.id },
-      select: { id: true, role: true, ministryId: true, masterOf: { select: { id: true } } }
+      select: { id: true, role: true, ministryId: true, masterMinistry: { select: { id: true } } }
     });
     if (!userToEdit) {
       return NextResponse.json({ message: 'Usuário não encontrado' }, { status: 404 });
@@ -120,9 +120,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     }
     // MASTER pode editar qualquer LIDER ou MASTER do seu próprio ministério, exceto a si mesmo e ADMIN
     if (session.user?.role === Role.MASTER) {
-      const masterMinistryId = session.user.masterOf?.id || session.user.ministryId;
+      const masterMinistryId = session.user.masterMinistry?.id || session.user.masterMinistryId;
       if (
-        userToEdit.ministryId === masterMinistryId &&
+        (userToEdit.ministryId === masterMinistryId || userToEdit.masterMinistry?.id === masterMinistryId) &&
         userToEdit.role !== Role.ADMIN &&
         session.user.id !== params.id
       ) {
@@ -204,7 +204,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
   try {
     const userToDelete = await prisma.user.findUnique({
       where: { id: params.id },
-      select: { id: true, role: true, ministryId: true, masterOf: { select: { id: true } } }
+      select: { id: true, role: true, ministryId: true, masterMinistry: { select: { id: true } } }
     });
     if (!userToDelete) {
       return NextResponse.json({ message: 'Usuário não encontrado' }, { status: 404 });
@@ -220,9 +220,9 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     }
     // MASTER pode excluir qualquer LIDER ou MASTER do seu próprio ministério, exceto a si mesmo
     if (session.user?.role === Role.MASTER) {
-      const masterMinistryId = session.user.masterOf?.id || session.user.ministryId;
+      const masterMinistryId = session.user.masterMinistry?.id || session.user.masterMinistryId;
       if (
-        userToDelete.ministryId === masterMinistryId &&
+        (userToDelete.ministryId === masterMinistryId || userToDelete.masterMinistry?.id === masterMinistryId) &&
         userToDelete.role !== Role.ADMIN &&
         session.user.id !== params.id
       ) {

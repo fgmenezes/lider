@@ -8,10 +8,39 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   try {
     const ministry = await prisma.ministry.findUnique({
       where: { id: params.id },
-      include: { church: true, master: true, members: true },
+      include: {
+        church: true,
+        master: true,
+        members: true,
+      },
     });
     if (!ministry) return NextResponse.json({ message: 'Ministério não encontrado' }, { status: 404 });
-    return NextResponse.json({ ministry });
+    // Retornar todos os campos relevantes explicitamente
+    return NextResponse.json({
+      ministry: {
+        id: ministry.id,
+        name: ministry.name,
+        church: ministry.church,
+        churchName: ministry.churchName,
+        churchPhone: ministry.churchPhone,
+        churchEmail: ministry.churchEmail,
+        pastorName: ministry.pastorName,
+        pastorPhone: ministry.pastorPhone,
+        pastorEmail: ministry.pastorEmail,
+        cep: ministry.cep,
+        rua: ministry.rua,
+        numero: ministry.numero,
+        complemento: ministry.complemento,
+        bairro: ministry.bairro,
+        municipio: ministry.municipio,
+        estado: ministry.estado,
+        master: ministry.master,
+        members: ministry.members,
+        status: ministry.status,
+        createdAt: ministry.createdAt,
+        updatedAt: ministry.updatedAt,
+      }
+    });
   } catch (error) {
     return NextResponse.json({ message: 'Erro ao buscar ministério' }, { status: 500 });
   }

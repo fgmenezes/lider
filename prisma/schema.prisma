@@ -35,8 +35,7 @@ model Ministry {
   bairro         String?
   municipio      String?
   estado         String?
-  master         User?             @relation("MinistryMaster", fields: [masterId], references: [id])
-  masterId       String?           @unique
+  masters        User[]            @relation("MasterMinistry")
   leaders        User[]            @relation("MinistryLeaders")
   members        Member[]
   smallGroups    SmallGroup[]
@@ -50,14 +49,15 @@ model Ministry {
 }
 
 model User {
-  id             String           @id @default(cuid())
-  name           String
-  email          String           @unique
-  password       String
-  role           Role?
-  ministry       Ministry?        @relation("MinistryLeaders", fields: [ministryId], references: [id])
-  ministryId     String?
-  masterOf       Ministry?        @relation("MinistryMaster")
+  id                String    @id @default(cuid())
+  name              String
+  email             String    @unique
+  password          String
+  role              Role?
+  ministry          Ministry? @relation("MinistryLeaders", fields: [ministryId], references: [id])
+  ministryId        String?
+  masterMinistry    Ministry? @relation("MasterMinistry", fields: [masterMinistryId], references: [id])
+  masterMinistryId  String?
   permissions    UserPermission[]
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
@@ -77,6 +77,10 @@ model User {
   dataNascimento DateTime?
   churchId       String?
   observacoesCriadas MemberObservacao[] @relation("UserObservacoes")
+  finances       Finance[]
+  smallGroupLeaderships SmallGroupLeader[]
+  smallGroupNotes SmallGroupMeetingNote[]
+  @@unique([id, masterMinistryId])
 }
 
 model UserPermission {
@@ -142,7 +146,6 @@ model Member {
   phone       String?
   ministry    Ministry     @relation(fields: [ministryId], references: [id])
   ministryId  String
-  smallGroups SmallGroup[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   dataNascimento DateTime?
@@ -164,6 +167,8 @@ model Member {
   primoDe        MemberPrimo[] @relation("PrimoToMember")
   observacoes    MemberObservacao[]
   status        String      @default("ATIVO")
+  smallGroupMemberships SmallGroupMember[] @relation("MemberToSmallGroupMember")
+  smallGroupAttendances SmallGroupAttendance[] @relation("MemberToSmallGroupAttendance")
 }
 
 model MemberIrmao {
@@ -187,20 +192,121 @@ model SmallGroup {
   name       String
   ministry   Ministry @relation(fields: [ministryId], references: [id])
   ministryId String
-  members    Member[]
+  region     String?
+  address    String?
+  dayOfWeek  String?
+  time       String?
+  status     String  @default("ATIVO")
+  description String? @db.Text // Descrição longa
+  meetings   SmallGroupMeeting[]
+  leaders    SmallGroupLeader[]
+  members    SmallGroupMember[] // relação com SmallGroupMember
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  frequency  String? // Frequência do grupo: DIARIO, SEMANAL, QUINZENAL, MENSAL
+  startDate  DateTime? // Data de início do grupo
+  hostName   String?   // Nome do anfitrião
+  hostPhone  String?   // Celular do anfitrião
+  cep        String?
+  rua        String?
+  numero     String?
+  complemento String?
+  bairro     String?
+  municipio  String?
+  estado     String?
+}
+
+model SmallGroupLeader {
+  id           String      @id @default(cuid())
+  smallGroup   SmallGroup  @relation(fields: [smallGroupId], references: [id], onDelete: Cascade)
+  smallGroupId String
+  user         User        @relation(fields: [userId], references: [id])
+  userId       String
+  role         String      // Ex: 'LIDER', 'CO-LIDER', 'ANFITRIAO', 'AUXILIAR'
+  since        DateTime    @default(now())
+  until        DateTime?
+}
+
+model SmallGroupMember {
+  id            String   @id @default(cuid())
+  member        Member   @relation("MemberToSmallGroupMember", fields: [memberId], references: [id])
+  memberId      String
+  smallGroup    SmallGroup @relation(fields: [smallGroupId], references: [id], onDelete: Cascade)
+  smallGroupId  String
+  role          String    // Ex: 'MEMBRO', 'LIDER', 'ANFITRIAO'
+  joinedAt      DateTime  @default(now())
+  leftAt        DateTime?
+}
+
+model SmallGroupAttendance {
+  id            String   @id @default(cuid())
+  meeting       SmallGroupMeeting @relation(fields: [meetingId], references: [id])
+  meetingId     String
+  member        Member   @relation("MemberToSmallGroupAttendance", fields: [memberId], references: [id])
+  memberId      String
+  present       Boolean  // true = presente, false = ausente
+  notes         String?
+}
+
+model SmallGroupMeeting {
+  id            String   @id @default(cuid())
+  smallGroup    SmallGroup @relation(fields: [smallGroupId], references: [id], onDelete: Cascade)
+  smallGroupId  String
+  date          DateTime
+  location      String?
+  type          String   // Ex: 'PG', 'ENCONTRAO', 'RETIRO'
+  theme         String?
+  notes         SmallGroupMeetingNote[]
+  attendances   SmallGroupAttendance[]
+  visitors      SmallGroupVisitor[]
+  prayerRequests SmallGroupPrayerRequest[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model SmallGroupVisitor {
+  id            String   @id @default(cuid())
+  meeting       SmallGroupMeeting @relation(fields: [meetingId], references: [id])
+  meetingId     String
+  name          String
+  contact       String?
+  notes         String?
+}
+
+model SmallGroupPrayerRequest {
+  id            String   @id @default(cuid())
+  meeting       SmallGroupMeeting @relation(fields: [meetingId], references: [id])
+  meetingId     String
+  requesterName String?
+  request       String
+  answered      Boolean @default(false)
+  notes         String?
+}
+
+model SmallGroupMeetingNote {
+  id         String   @id @default(cuid())
+  meeting    SmallGroupMeeting @relation(fields: [meetingId], references: [id])
+  meetingId  String
+  author     User?    @relation(fields: [authorId], references: [id])
+  authorId   String?
+  content    String
+  createdAt  DateTime @default(now())
 }
 
 model Finance {
-  id          String      @id @default(cuid())
-  amount      Float
-  type        FinanceType
-  description String
-  ministry    Ministry    @relation(fields: [ministryId], references: [id])
-  ministryId  String
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id            String      @id @default(cuid())
+  title         String
+  description   String
+  amount        Float
+  type          FinanceType
+  date          DateTime
+  category      String?
+  ministry      Ministry    @relation(fields: [ministryId], references: [id])
+  ministryId    String
+  responsavel   User        @relation(fields: [responsavelId], references: [id])
+  responsavelId String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
 
 model Event {
@@ -259,6 +365,6 @@ enum MessageContext {
 }
 
 enum FinanceType {
-  INCOME
-  EXPENSE
+  ENTRADA
+  SAIDA
 }

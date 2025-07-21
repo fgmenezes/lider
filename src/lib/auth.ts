@@ -31,7 +31,8 @@ export const authOptions: AuthOptions = {
               email: credentials.email,
             },
             include: {
-              masterOf: true, // Busca o ministério liderado, se houver
+              masterMinistry: true, // Busca o ministério liderado, se houver
+              ministry: true, // Busca o ministério do usuário (para LEADER)
             },
           });
 
@@ -51,13 +52,22 @@ export const authOptions: AuthOptions = {
           // If the passwords match, return the user object
           if (passwordMatch) {
             console.log('Password match. Returning user.');
+            // Descobrir o nome do ministério
+            let ministryName = null;
+            if ((user as any).masterMinistry) {
+              ministryName = (user as any).masterMinistry.name;
+            } else if ((user as any).ministry) {
+              ministryName = (user as any).ministry.name;
+            }
             return {
               id: user.id,
               name: user.name,
               email: user.email,
               role: user.role,
               ministryId: (user as any).ministryId,
-              masterOf: (user as any).masterOf ? { id: (user as any).masterOf.id, name: (user as any).masterOf.name } : null
+              masterMinistryId: (user as any).masterMinistryId,
+              masterMinistry: (user as any).masterMinistry ? { id: (user as any).masterMinistry.id, name: (user as any).masterMinistry.name } : null,
+              ministryName,
             };
           } else {
             console.log('Password does NOT match.');
@@ -86,7 +96,9 @@ export const authOptions: AuthOptions = {
         token.role = user.role;
         token.id = user.id;
         token.ministryId = user.ministryId;
-        token.masterOf = (user as any).masterOf || null;
+        token.masterMinistryId = (user as any).masterMinistryId;
+        token.masterMinistry = (user as any).masterMinistry || null;
+        token.ministryName = (user as any).ministryName || null;
       }
       return token;
     },
@@ -95,7 +107,9 @@ export const authOptions: AuthOptions = {
         session.user.role = token.role;
         session.user.id = token.id;
         session.user.ministryId = token.ministryId;
-        session.user.masterOf = token.masterOf || null;
+        session.user.masterMinistryId = token.masterMinistryId;
+        session.user.masterMinistry = token.masterMinistry || null;
+        session.user.ministryName = token.ministryName || null;
       }
       return session;
     }

@@ -35,7 +35,7 @@ export async function GET() {
           level: true,
         },
       },
-      masterOf: { // Para Líderes Master, pegar as features do ministério
+      masterMinistry: { // Para Líderes Master, pegar as features do ministério
         select: {
           features: {
             select: {
@@ -81,7 +81,7 @@ export async function GET() {
 
   // Para Líder Master e Líder, filtrar baseado nas features do ministério,
   // se a feature global estiver ativa, e permissões do usuário
-  const ministryFeatures = (user.masterOf?.features || []) as MinistryFeatureWithFeature[];
+  const ministryFeatures = (user.masterMinistry?.features || []) as MinistryFeatureWithFeature[];
 
   const userFeatures = ministryFeatures
     .filter(mf => mf.feature.isActive) // Adicionado filtro: verificar se a feature global está ativa

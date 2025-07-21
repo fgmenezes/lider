@@ -20,12 +20,26 @@ export default function SelectMasterModal({ open, onClose, onSelect, ministryId 
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [submitLoading, setSubmitLoading] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState("");
+  const [masters, setMasters] = useState<User[]>([]);
 
+  // Buscar masters já associados
+  useEffect(() => {
+    if (!open) return;
+    fetch(`/api/users?role=MASTER&masterMinistryId=${ministryId}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Erro ao buscar masters");
+        const data = await res.json();
+        setMasters(data.users || []);
+      })
+      .catch(() => setMasters([]));
+  }, [open, ministryId]);
+
+  // Buscar usuários disponíveis
   useEffect(() => {
     if (!open) return;
     setLoading(true);
@@ -41,25 +55,30 @@ export default function SelectMasterModal({ open, onClose, onSelect, ministryId 
   }, [search, open]);
 
   async function handleAssociate() {
-    if (!selectedId) return;
     setSubmitLoading(true);
     setSubmitError("");
     setSubmitSuccess("");
     try {
-      // Chama API para associar usuário ao ministério como MASTER
-      const res = await fetch(`/api/ministries/${ministryId}/associate-master`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: selectedId }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || 'Erro ao associar líder master');
+      for (const userId of selectedIds) {
+        const res = await fetch(`/api/ministries/${ministryId}/associate-master`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId }),
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.message || 'Erro ao associar líder master');
+        }
       }
-      setSubmitSuccess('Líder master associado com sucesso!');
-      const user = users.find(u => u.id === selectedId);
-      if (user) onSelect(user);
-      setSelectedId(null);
+      setSubmitSuccess('Líder(es) master associado(s) com sucesso!');
+      setSelectedIds([]);
+      // Atualiza lista de masters
+      fetch(`/api/users?role=MASTER&masterMinistryId=${ministryId}`)
+        .then(async (res) => {
+          if (!res.ok) throw new Error("Erro ao buscar masters");
+          const data = await res.json();
+          setMasters(data.users || []);
+        });
     } catch (err: any) {
       setSubmitError(err.message || 'Erro ao associar líder master');
     } finally {
@@ -67,8 +86,29 @@ export default function SelectMasterModal({ open, onClose, onSelect, ministryId 
     }
   }
 
+  async function handleRemoveMaster(userId: string) {
+    setSubmitLoading(true);
+    setSubmitError("");
+    try {
+      const res = await fetch(`/api/ministries/${ministryId}/dissociate-master`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || 'Erro ao remover líder master');
+      }
+      setMasters(masters.filter(m => m.id !== userId));
+    } catch (err: any) {
+      setSubmitError(err.message || 'Erro ao remover líder master');
+    } finally {
+      setSubmitLoading(false);
+    }
+  }
+
   function handleClose() {
-    setSelectedId(null);
+    setSelectedIds([]);
     setSearch("");
     setUsers([]);
     setError("");
@@ -80,8 +120,20 @@ export default function SelectMasterModal({ open, onClose, onSelect, ministryId 
   return (
     <Dialog open={open} onOpenChange={v => !v && handleClose()}>
       <DialogContent>
-        <DialogTitle>Selecionar Líder Master</DialogTitle>
-        <p className="text-gray-600 text-sm mb-4">Busque e selecione um usuário do sistema para associá-lo como novo Líder Master deste ministério. Apenas um usuário pode ser líder master por vez.</p>
+        <DialogTitle>Gerenciar Líderes Master</DialogTitle>
+        <p className="text-gray-600 text-sm mb-4">Adicione ou remova líderes master deste ministério. Cada usuário só pode ser master de um ministério.</p>
+        <div className="mb-4">
+          <h4 className="font-semibold mb-2">Líderes Master Atuais</h4>
+          {masters.length === 0 && <div className="text-gray-500 text-sm">Nenhum líder master associado.</div>}
+          <ul className="divide-y divide-gray-200">
+            {masters.map(master => (
+              <li key={master.id} className="flex items-center justify-between py-2">
+                <span>{master.name} <span className="text-xs text-gray-500">({master.email})</span></span>
+                <button className="text-red-600 text-xs ml-2" onClick={() => handleRemoveMaster(master.id)} disabled={submitLoading}>Remover</button>
+              </li>
+            ))}
+          </ul>
+        </div>
         <input
           type="text"
           placeholder="Buscar por nome ou email"
@@ -103,12 +155,12 @@ export default function SelectMasterModal({ open, onClose, onSelect, ministryId 
             </thead>
             <tbody className="divide-y divide-gray-100">
               {users.map(user => (
-                <tr key={user.id} className={selectedId === user.id ? "bg-blue-50" : ""}>
+                <tr key={user.id} className={selectedIds.includes(user.id) ? "bg-blue-50" : ""}>
                   <td className="px-4 py-2 text-center">
                     <input
                       type="checkbox"
-                      checked={selectedId === user.id}
-                      onChange={() => setSelectedId(user.id)}
+                      checked={selectedIds.includes(user.id)}
+                      onChange={() => setSelectedIds(ids => ids.includes(user.id) ? ids.filter(i => i !== user.id) : [...ids, user.id])}
                       aria-label={`Selecionar ${user.name}`}
                     />
                   </td>
@@ -127,13 +179,13 @@ export default function SelectMasterModal({ open, onClose, onSelect, ministryId 
         {submitError && <div className="text-red-600 text-sm mt-2" role="alert">{submitError}</div>}
         {submitSuccess && <div className="text-green-600 text-sm mt-2" role="status">{submitSuccess}</div>}
         <div className="flex justify-end gap-2 mt-4">
-          <button className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300" onClick={handleClose}>Cancelar</button>
+          <button className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300" onClick={handleClose}>Fechar</button>
           <button
             className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
             onClick={handleAssociate}
-            disabled={!selectedId || submitLoading}
+            disabled={selectedIds.length === 0 || submitLoading}
           >
-            {submitLoading ? 'Associando...' : 'Associar'}
+            {submitLoading ? 'Associando...' : 'Associar Selecionados'}
           </button>
         </div>
       </DialogContent>

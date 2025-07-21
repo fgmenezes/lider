@@ -25,12 +25,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!ministry) {
       return NextResponse.json({ message: 'Ministério não encontrado' }, { status: 404 });
     }
-    // Atualiza o usuário: role MASTER, ministryId, churchId
+    // Atualiza o usuário: role MASTER, masterMinistryId, churchId
     await prisma.user.update({
       where: { id: userId },
       data: {
         role: 'MASTER',
-        ministryId: ministry.id,
+        masterMinistryId: ministry.id,
         churchId: ministry.churchId,
       }
     });

@@ -5,6 +5,7 @@ import { MoreVertical } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@radix-ui/react-dropdown-menu';
 import { useRef } from 'react';
+import { useSession } from 'next-auth/react';
 
 function formatCurrency(value: number) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -218,6 +219,8 @@ function NewFinanceModal({ open, onClose, onSuccess, ministryId, initialData, is
 }
 
 export default function MinistryFinancePage({ params }: { params: { id: string } }) {
+  const { data: session } = useSession();
+  const userRole = session?.user?.role;
   const [finances, setFinances] = useState<any[]>([]);
   const [saldo, setSaldo] = useState<number>(0);
   const [loading, setLoading] = useState(true);
@@ -363,12 +366,14 @@ export default function MinistryFinancePage({ params }: { params: { id: string }
       <div>
         {/* Botão Novo Lançamento */}
         <div className="flex justify-end mb-4">
-          <button
-            className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded shadow"
-            onClick={() => setModalOpen(true)}
-          >
-            Novo Lançamento
-          </button>
+          {userRole !== 'LEADER' && (
+            <button
+              className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded shadow"
+              onClick={() => setModalOpen(true)}
+            >
+              Novo Lançamento
+            </button>
+          )}
         </div>
         <div className="bg-white rounded shadow p-4 mb-6">
           <div className="flex items-center gap-4">
@@ -388,7 +393,11 @@ export default function MinistryFinancePage({ params }: { params: { id: string }
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="border rounded px-3 py-2 w-full max-w-xs"
-            onKeyDown={e => { if (e.key === 'Enter') e.preventDefault(); }}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                setSearch(e.currentTarget.value);
+              }
+            }}
           />
           <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow" onClick={() => setFilterModalOpen(true)}>
             Filtrar
@@ -432,12 +441,16 @@ export default function MinistryFinancePage({ params }: { params: { id: string }
                           <DropdownMenuItem autoFocus onSelect={() => handleView(lanc)}>
                             Ver lançamento
                           </DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleEdit(lanc)}>
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleDelete(lanc)}>
-                            Excluir
-                          </DropdownMenuItem>
+                          {userRole !== 'LEADER' && (
+                            <>
+                              <DropdownMenuItem onSelect={() => handleEdit(lanc)}>
+                                Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => handleDelete(lanc)}>
+                                Excluir
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>

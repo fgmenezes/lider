@@ -9,21 +9,26 @@ export default function Sidebar() {
   const { data: session } = useSession();
   const role = session?.user?.role;
   const name = session?.user?.name;
-  // Nome do ministério: para LIDER_MASTER vem de masterOf.name, para outros pode vir de ministryName
-  const ministryName = session?.user?.masterOf?.name || session?.user?.ministryName || '---';
+  // Nome do ministério: para ADMIN e MASTER vem de masterMinistry.name ou ministryName, para LEADER só ministryName
+  let ministryName = '---';
+  if (session?.user?.role === 'ADMIN' || session?.user?.role === 'LIDER_MASTER') {
+    ministryName = session?.user?.masterMinistry?.name || session?.user?.ministryName || '---';
+  } else {
+    ministryName = session?.user?.ministryName || '---';
+  }
 
   // Definição dos links dos módulos
+  const ministryId = session?.user?.masterMinistryId || session?.user?.ministryId;
   const moduleLinks = [
-    { href: '/dashboard', label: 'Dashboard' }, // Link para a página principal da Dashboard
+    { href: '/dashboard', label: 'Dashboard' },
     { href: '/dashboard/members', label: 'Membros' },
-    { href: '/dashboard/groups', label: 'Pequenos Grupos' },
-    { href: '/dashboard/finance', label: 'Financeiro' },
+    { href: '/dashboard/pequenos-grupos', label: 'Pequenos Grupos' },
+    ...(ministryId ? [{ href: `/dashboard/ministries/${ministryId}/finance`, label: 'Financeiro', showFor: ['ADMIN', 'MASTER', 'LEADER'] }] : []),
     { href: '/dashboard/events', label: 'Eventos' },
-    { href: '/dashboard/assistant', label: 'Assistente' }, // Novo link: Assistente
-    { href: '/dashboard/users', label: 'Gerenciamento de Usuários', adminOnly: true }, // Novo link: Gerenciamento de Usuários (Global/Admin?)
-    { href: '/dashboard/ministries', label: 'Gerenciamento de Ministérios', adminOnly: true }, // Novo link: Gerenciamento de Ministérios (Global/Admin?)
-    { href: '/dashboard/leaders', label: 'Líderes' }, // Novo link: Líderes (Gerenciamento de Líderes do Ministério)
-    // Adicione outros módulos conforme necessário
+    { href: '/dashboard/assistant', label: 'Assistente' },
+    { href: '/dashboard/users', label: 'Gerenciamento de Usuários', adminOnly: true },
+    { href: '/dashboard/ministries', label: 'Gerenciamento de Ministérios', adminOnly: true },
+    { href: '/dashboard/leaders', label: 'Líderes', onlyAdminOrMaster: true },
   ];
 
   // Filtrar links conforme o papel do usuário
@@ -31,15 +36,14 @@ export default function Sidebar() {
     if (role === 'ADMIN') return true;
     if (role === 'MASTER') return !link.adminOnly;
     if (role === 'LEADER') {
-      // LEADER não vê adminOnly e pode ver apenas alguns módulos
-      return !link.adminOnly && [
+      // LEADER não vê adminOnly nem onlyAdminOrMaster, mas pode ver Financeiro (visualização)
+      if (link.href.startsWith('/dashboard/ministries/') && link.href.endsWith('/finance')) return true;
+      return !link.adminOnly && !link.onlyAdminOrMaster && [
         '/dashboard',
         '/dashboard/members',
-        '/dashboard/groups',
-        '/dashboard/finance',
+        '/dashboard/pequenos-grupos',
         '/dashboard/events',
         '/dashboard/assistant',
-        '/dashboard/leaders',
       ].includes(link.href);
     }
     return false;
@@ -53,11 +57,11 @@ export default function Sidebar() {
       <nav className="flex-1 overflow-y-auto"> {/* Área de Navegação Rolável */}
         <ul className="space-y-2 py-4"> {/* Lista de Links */}
           {filteredLinks.map((link) => (
-            <li key={link.href}> {/* Item da Lista */}
-              <Link href={link.href} className="flex items-center px-4 py-2 text-gray-200 hover:bg-gray-700"> {/* Link de Navegação */}
-                {link.label}
-              </Link>
-            </li>
+              <li key={link.href}> {/* Item da Lista */}
+              <Link href={link.href} className="flex items-center px-4 py-2 text-gray-200 hover:bg-gray-700">
+                  {link.label}
+                </Link>
+              </li>
           ))}
         </ul>
       </nav>

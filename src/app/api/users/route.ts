@@ -24,7 +24,11 @@ export async function GET(request: NextRequest) {
 
     // Se o usuário for MASTER, sempre filtrar pelo ministryId do usuário logado
     if (session.user.role === 'MASTER') {
-      whereClause.ministryId = session.user.ministryId;
+      // Buscar tanto LEADER (ministryId) quanto MASTER (masterMinistryId) do mesmo ministério
+      whereClause.OR = [
+        { ministryId: session.user.masterMinistryId },
+        { masterMinistryId: session.user.masterMinistryId }
+      ];
     } else if (ministryId) {
       whereClause.ministryId = ministryId;
     }
@@ -146,8 +150,10 @@ export async function POST(req: Request) {
     }
 
     // Garantir que o ministryId seja sempre o do usuário autenticado
-    // Ignorar qualquer ministryId enviado pelo frontend
-    const authenticatedUserMinistryId = session.user.ministryId;
+    let authenticatedUserMinistryId = session.user.ministryId;
+    if (userRole === Role.MASTER) {
+      authenticatedUserMinistryId = session.user.masterMinistryId;
+    }
 
     // Gerar hash da senha
     const hashedPassword = await hash(senha, 10);

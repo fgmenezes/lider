@@ -10,12 +10,15 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     return NextResponse.json({ message: 'Não autorizado' }, { status: 403 });
   }
   try {
-    const ministry = await prisma.ministry.update({
-      where: { id: params.id },
-      data: { master: { disconnect: true } },
-      include: { church: true, master: true, members: true },
+    const { userId } = await req.json();
+    if (!userId) {
+      return NextResponse.json({ message: 'userId obrigatório' }, { status: 400 });
+    }
+    await prisma.user.update({
+      where: { id: userId },
+      data: { masterMinistryId: null, role: 'LEADER' },
     });
-    return NextResponse.json({ ministry });
+    return NextResponse.json({ message: 'Líder master desassociado com sucesso!' });
   } catch (error) {
     return NextResponse.json({ message: 'Erro ao desassociar líder master' }, { status: 500 });
   }

@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -41,4 +42,4 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   }
   await prisma.memberObservacao.delete({ where: { id: params.obsId } });
   return NextResponse.json({ success: true });
-} 
+}  

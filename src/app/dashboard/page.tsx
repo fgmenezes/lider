@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, DollarSign, Calendar, Users2, MessageSquare } from 'lucide-react';
+import { Users, DollarSign, Calendar, Users2, MessageSquare, Gift, TrendingUp, TrendingDown, PiggyBank, UserPlus, UserCheck } from 'lucide-react';
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -16,6 +16,16 @@ export default function DashboardPage() {
     totalMembers: 0,
     totalSmallGroups: 0,
     totalEventsThisMonth: 0,
+    totalLeaders: 0,
+    totalMasters: 0,
+    nextMeetings7Days: 0,
+    birthdayMembersThisMonth: 0,
+    avgAttendance: null,
+    totalVisitorsThisMonth: 0,
+    totalReceitasMes: 0,
+    totalDespesasMes: 0,
+    saldoMes: 0,
+    saldoAcumulado: 0,
   });
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(true);
 
@@ -131,15 +141,34 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total de Membros</CardTitle>
+              <CardTitle className="text-sm font-medium">Membros</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{metrics.totalMembers}</div>
-              <p className="text-xs text-muted-foreground">+0% em relação ao mês anterior</p>
+              <p className="text-xs text-muted-foreground">Total de membros</p>
             </CardContent>
           </Card>
-
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Líderes</CardTitle>
+              <UserCheck className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{metrics.totalLeaders}</div>
+              <p className="text-xs text-muted-foreground">Total de líderes</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Líderes Master</CardTitle>
+              <UserCheck className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{metrics.totalMasters}</div>
+              <p className="text-xs text-muted-foreground">Total de líderes master</p>
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Pequenos Grupos</CardTitle>
@@ -150,15 +179,74 @@ export default function DashboardPage() {
               <p className="text-xs text-muted-foreground">Grupos ativos</p>
             </CardContent>
           </Card>
-
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Eventos do Mês</CardTitle>
+              <CardTitle className="text-sm font-medium">Próx. Encontros (7 dias)</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{metrics.totalEventsThisMonth}</div>
-              <p className="text-xs text-muted-foreground">Eventos agendados</p>
+              <div className="text-2xl font-bold">{metrics.nextMeetings7Days}</div>
+              <p className="text-xs text-muted-foreground">Encontros agendados</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Aniversariantes do mês</CardTitle>
+              <Gift className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{metrics.birthdayMembersThisMonth}</div>
+              <p className="text-xs text-muted-foreground">Membros aniversariantes</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Frequência Média</CardTitle>
+              <UserPlus className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{metrics.avgAttendance !== null ? `${metrics.avgAttendance}%` : '-'}</div>
+              <p className="text-xs text-muted-foreground">Presença nos PGs</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Visitantes do mês</CardTitle>
+              <UserPlus className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{metrics.totalVisitorsThisMonth}</div>
+              <p className="text-xs text-muted-foreground">Visitantes registrados</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Receitas do mês</CardTitle>
+              <TrendingUp className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-700">R$ {metrics.totalReceitasMes?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+              <p className="text-xs text-muted-foreground">Entradas financeiras</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Despesas do mês</CardTitle>
+              <TrendingDown className="h-4 w-4 text-red-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-700">R$ {metrics.totalDespesasMes?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+              <p className="text-xs text-muted-foreground">Saídas financeiras</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Saldo do mês</CardTitle>
+              <PiggyBank className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${metrics.saldoMes >= 0 ? 'text-blue-700' : 'text-red-700'}`}>R$ {metrics.saldoMes?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+              <p className="text-xs text-muted-foreground">Receitas - Despesas</p>
             </CardContent>
           </Card>
         </div>
