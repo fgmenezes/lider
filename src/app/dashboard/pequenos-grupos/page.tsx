@@ -1020,7 +1020,16 @@ export default function SmallGroupsPage() {
                     const canEdit = session?.user?.role === 'ADMIN' || session?.user?.masterMinistryId === group.ministryId;
                     return (
                       <tr key={group.id} className="border-b hover:bg-gray-50">
-                        <td className="px-4 py-2 font-medium">{group.name}</td>
+                        <td className="px-4 py-2 font-medium">
+                          <button
+                            className="text-blue-700 hover:underline focus:outline-none"
+                            onClick={() => router.push(`/dashboard/pequenos-grupos/${group.id}`)}
+                            title={`Ver detalhes de ${group.name}`}
+                            type="button"
+                          >
+                            {group.name}
+                          </button>
+                        </td>
                         <td className="px-4 py-2">{group.dayOfWeek || '-'}</td>
                         <td className="px-4 py-2">{group.frequency ? FREQUENCIAS_LABEL[group.frequency] || group.frequency : '-'}</td>
                         <td className="px-4 py-2">{getNextMeetingDate(group)}</td>
