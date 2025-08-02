@@ -15,51 +15,33 @@ interface RadioGroupProps {
   className?: string;
 }
 
-const RadioGroup = React.forwardRef<HTMLInputElement, RadioGroupProps>(
-  (
-    {
-      label,
-      value,
-      onChange,
-      options,
-      required = false,
-      error,
-      className,
-    },
-    ref
-  ) => {
+const RadioGroup = React.forwardRef<HTMLFieldSetElement, RadioGroupProps>(
+  ({ label, value, onChange, options, required = false, error, className }, ref) => {
     return (
-      <fieldset className={`space-y-2 ${className || ''}`}>
+      <fieldset ref={ref} className={`space-y-2 ${className || ''}`}>
         <legend className="block text-sm font-medium text-gray-700">
           {label} {required && <span className="text-red-500">*</span>}
         </legend>
-        <div className="mt-1 space-y-2">
-          {options.map((option, idx) => (
-            <div key={option.value} className="flex items-center">
-              <input
-                id={`${label}-${option.value}`}
-                type="radio"
-                value={option.value}
-                checked={value === option.value}
-                onChange={() => onChange(option.value)}
-                className={\`h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500 \${error ? 'border-red-500' : ''}\`}
-                required={required}
-                ref={idx === 0 ? ref : undefined}
-              />
-              <label htmlFor={`${label}-${option.value}`} className="ml-2 block text-sm text-gray-900">
-                {option.label}
-              </label>
-            </div>
-          ))}
-        </div>
-        {error && (
-          <p className="mt-1 text-sm text-red-600">{error}</p>
-        )}
+
+        {options.map((option) => (
+          <label key={option.value} className="inline-flex items-center space-x-2">
+            <input
+              type="radio"
+              value={option.value}
+              checked={value === option.value}
+              onChange={() => onChange(option.value)}
+              className="form-radio"
+            />
+            <span>{option.label}</span>
+          </label>
+        ))}
+
+        {error && <p className="text-red-500 text-sm">{error}</p>}
       </fieldset>
     );
   }
 );
 
-RadioGroup.displayName = "RadioGroup";
+RadioGroup.displayName = 'RadioGroup';
 
 export default RadioGroup;
