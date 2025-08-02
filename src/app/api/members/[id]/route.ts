@@ -108,7 +108,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    
+
     // Validar dados de entrada
     const validatedData = updateMemberSchema.parse(body);
 
@@ -316,7 +316,7 @@ export async function DELETE(
       where: { id: params.id }
     });
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       message: 'Membro excluído com sucesso'
     });
 
@@ -327,4 +327,4 @@ export async function DELETE(
       { status: 500 }
     );
   }
-} 
+}
