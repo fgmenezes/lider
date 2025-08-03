@@ -47,7 +47,6 @@ export async function GET(
       return NextResponse.json({ message: 'Usuário não encontrado' }, { status: 404 });
     }
 
-    // Buscar membro
     const member = await prisma.member.findUnique({
       where: { id: params.id },
       include: {
@@ -58,10 +57,17 @@ export async function GET(
             church: { select: { name: true } }
           }
         },
-        smallGroups: {
+        smallGroupMemberships: {
           select: {
             id: true,
-            name: true
+            role: true,
+            joinedAt: true,
+            smallGroup: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
           }
         }
       }
@@ -71,16 +77,12 @@ export async function GET(
       return NextResponse.json({ message: 'Membro não encontrado' }, { status: 404 });
     }
 
-    // Verificar permissões
     if (user.role === 'ADMIN') {
-      // Admin pode ver qualquer membro
     } else if (user.role === 'MASTER') {
-      // Líder Master só pode ver membros do seu ministério
       if (member.ministryId !== user.masterMinistryId) {
         return NextResponse.json({ message: 'Acesso negado' }, { status: 403 });
       }
     } else {
-      // Líder só pode ver membros do seu ministério
       if (member.ministryId !== user.ministryId) {
         return NextResponse.json({ message: 'Acesso negado' }, { status: 403 });
       }
@@ -108,8 +110,6 @@ export async function PUT(
     }
 
     const body = await request.json();
-
-    // Validar dados de entrada
     const validatedData = updateMemberSchema.parse(body);
 
     const user = await prisma.user.findUnique({
@@ -121,7 +121,6 @@ export async function PUT(
       return NextResponse.json({ message: 'Usuário não encontrado' }, { status: 404 });
     }
 
-    // Verificar se o membro existe
     const existingMember = await prisma.member.findUnique({
       where: { id: params.id },
       select: { ministryId: true }
@@ -131,30 +130,23 @@ export async function PUT(
       return NextResponse.json({ message: 'Membro não encontrado' }, { status: 404 });
     }
 
-    // Verificar permissões
     if (user.role === 'ADMIN') {
-      // Admin pode editar qualquer membro
     } else if (user.role === 'MASTER') {
-      // Líder Master só pode editar membros do seu ministério
       if (existingMember.ministryId !== user.masterMinistryId) {
         return NextResponse.json({ message: 'Acesso negado' }, { status: 403 });
       }
-      // Se estiver tentando mudar o ministério, não permitir
       if (validatedData.ministryId && validatedData.ministryId !== user.masterMinistryId) {
         return NextResponse.json({ message: 'Não é possível alterar o ministério do membro' }, { status: 403 });
       }
     } else {
-      // Líder só pode editar membros do seu ministério
       if (existingMember.ministryId !== user.ministryId) {
         return NextResponse.json({ message: 'Acesso negado' }, { status: 403 });
       }
-      // Se estiver tentando mudar o ministério, não permitir
       if (validatedData.ministryId && validatedData.ministryId !== user.ministryId) {
         return NextResponse.json({ message: 'Não é possível alterar o ministério do membro' }, { status: 403 });
       }
     }
 
-    // Preparar dados para atualização
     const updateData: any = {};
     if (validatedData.name !== undefined) updateData.name = validatedData.name;
     if (validatedData.email !== undefined) updateData.email = validatedData.email || null;
@@ -174,7 +166,6 @@ export async function PUT(
     if (validatedData.dataIngresso !== undefined) updateData.dataIngresso = validatedData.dataIngresso ? new Date(validatedData.dataIngresso) : null;
     if (validatedData.status !== undefined) updateData.status = validatedData.status;
 
-    // Atualizar membro
     const member = await prisma.member.update({
       where: { id: params.id },
       data: updateData,
@@ -186,59 +177,57 @@ export async function PUT(
             church: { select: { name: true } }
           }
         },
-        smallGroups: {
+        smallGroupMemberships: {
           select: {
             id: true,
-            name: true
+            role: true,
+            joinedAt: true,
+            smallGroup: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
           }
         }
       }
     });
 
-    // Atualizar responsáveis
     if (validatedData.responsaveis) {
       await prisma.responsavel.deleteMany({ where: { memberId: params.id } });
       if (validatedData.responsaveis.length > 0) {
         await prisma.responsavel.createMany({
-          data: (validatedData.responsaveis as { nome: string; celular: string; tipo: string }[]).map((r) => ({ ...r, memberId: params.id }))
+          data: validatedData.responsaveis.map((r) => ({ ...r, memberId: params.id }))
         });
       }
     }
-    // Atualizar vínculos de irmãos
     if (validatedData.irmaosIds) {
       await prisma.memberIrmao.deleteMany({ where: { memberId: params.id } });
       if (validatedData.irmaosIds.length > 0) {
         await prisma.memberIrmao.createMany({
-          data: (validatedData.irmaosIds as string[]).map((irmaoId) => ({ memberId: params.id, irmaoId }))
+          data: validatedData.irmaosIds.map((irmaoId) => ({ memberId: params.id, irmaoId }))
         });
       }
     }
-    // Atualizar vínculos de primos
     if (validatedData.primosIds) {
       await prisma.memberPrimo.deleteMany({ where: { memberId: params.id } });
       if (validatedData.primosIds.length > 0) {
         await prisma.memberPrimo.createMany({
-          data: (validatedData.primosIds as string[]).map((primoId) => ({ memberId: params.id, primoId }))
+          data: validatedData.primosIds.map((primoId) => ({ memberId: params.id, primoId }))
         });
       }
     }
-    // Buscar membro completo para retorno
-    const memberWithRelations = await prisma.member.findUnique({
-      where: { id: params.id },
-      include: {
-        ministry: { select: { id: true, name: true, church: { select: { name: true } } } },
-        smallGroups: { select: { id: true, name: true } },
-      }
-    });
+
     const [responsaveis, irmaos, primos] = await Promise.all([
       prisma.responsavel.findMany({ where: { memberId: params.id } }),
       prisma.memberIrmao.findMany({ where: { memberId: params.id }, include: { irmao: true } }),
       prisma.memberPrimo.findMany({ where: { memberId: params.id }, include: { primo: true } })
     ]);
+
     return NextResponse.json({
       message: 'Membro atualizado com sucesso',
       member: {
-        ...memberWithRelations,
+        ...member,
         responsaveis,
         irmaos: irmaos.map(i => i.irmao),
         primos: primos.map(p => p.primo),
@@ -252,7 +241,6 @@ export async function PUT(
         { status: 400 }
       );
     }
-
     console.error('Erro ao atualizar membro:', error);
     return NextResponse.json(
       { message: 'Erro interno do servidor' },
@@ -280,7 +268,6 @@ export async function DELETE(
       return NextResponse.json({ message: 'Usuário não encontrado' }, { status: 404 });
     }
 
-    // Verificar se o membro existe
     const existingMember = await prisma.member.findUnique({
       where: { id: params.id },
       select: { ministryId: true }
@@ -290,35 +277,26 @@ export async function DELETE(
       return NextResponse.json({ message: 'Membro não encontrado' }, { status: 404 });
     }
 
-    // Verificar permissões
     if (user.role === 'ADMIN') {
-      // Admin pode excluir qualquer membro
     } else if (user.role === 'MASTER') {
-      // Líder Master só pode excluir membros do seu ministério
       if (existingMember.ministryId !== user.masterMinistryId) {
         return NextResponse.json({ message: 'Acesso negado' }, { status: 403 });
       }
     } else {
-      // Líder só pode excluir membros do seu ministério
       if (existingMember.ministryId !== user.ministryId) {
         return NextResponse.json({ message: 'Acesso negado' }, { status: 403 });
       }
     }
 
-    // Excluir registros relacionados antes de deletar o membro
     await prisma.responsavel.deleteMany({ where: { memberId: params.id } });
     await prisma.memberIrmao.deleteMany({ where: { memberId: params.id } });
     await prisma.memberPrimo.deleteMany({ where: { memberId: params.id } });
-    // Adicione aqui outros relacionamentos se necessário
 
-    // Excluir membro
     await prisma.member.delete({
       where: { id: params.id }
     });
 
-    return NextResponse.json({
-      message: 'Membro excluído com sucesso'
-    });
+    return NextResponse.json({ message: 'Membro excluído com sucesso' });
 
   } catch (error) {
     console.error('Erro ao excluir membro:', error);
