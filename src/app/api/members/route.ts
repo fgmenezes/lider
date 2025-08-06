@@ -1,4 +1,3 @@
-
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
@@ -22,7 +21,8 @@ export async function POST(request: Request) {
 
   const { name, email, password } = validation.data;
 
-  const existingUser = await prisma.member.findUnique({
+  // Usa findFirst para evitar conflito com email não único
+  const existingUser = await prisma.member.findFirst({
     where: { email },
   });
 
