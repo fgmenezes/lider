@@ -1,44 +1,42 @@
-import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { NextResponse } from 'next/server';
 
-// Esquema de validação para criação de membro
+// Esquema de validação para criação de membro (sem senha)
 const createMemberSchema = z.object({
   name: z.string().min(1, 'O nome é obrigatório'),
   email: z.string().email('E-mail inválido'),
-  password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
 });
 
 export async function POST(request: Request) {
-  const body = await request.json();
+  try {
+    const body = await request.json();
 
-  const validation = createMemberSchema.safeParse(body);
-  if (!validation.success) {
-    return NextResponse.json({ errors: validation.error.errors }, { status: 400 });
+    const validation = createMemberSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({ errors: validation.error.errors }, { status: 400 });
+    }
+
+    const { name, email } = validation.data;
+
+    const existingUser = await prisma.member.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      return NextResponse.json({ error: 'Usuário já existe' }, { status: 409 });
+    }
+
+    const newMember = await prisma.member.create({
+      data: {
+        name,
+        email,
+      },
+    });
+
+    return NextResponse.json(newMember, { status: 201 });
+  } catch (error) {
+    console.error('Erro ao criar membro:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
-
-  const { name, email, password } = validation.data;
-
-  // Usa findFirst para evitar conflito com email não único
-  const existingUser = await prisma.member.findFirst({
-    where: { email },
-  });
-
-  if (existingUser) {
-    return NextResponse.json({ error: 'Usuário já existe' }, { status: 409 });
-  }
-
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  const newMember = await prisma.member.create({
-    data: {
-      name,
-      email,
-      password: hashedPassword,
-    },
-  });
-
-  return NextResponse.json(newMember, { status: 201 });
 }
