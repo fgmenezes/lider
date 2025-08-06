@@ -19,7 +19,8 @@ export async function POST(request: Request) {
 
     const { name, email } = validation.data;
 
-    const existingUser = await prisma.member.findUnique({
+    // Usa findFirst porque o campo email não é único no banco
+    const existingUser = await prisma.member.findFirst({
       where: { email },
     });
 
