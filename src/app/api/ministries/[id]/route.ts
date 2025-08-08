@@ -10,12 +10,12 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       where: { id: params.id },
       include: {
         church: true,
-        master: true,
+        masters: true, // corrigido
         members: true,
       },
     });
     if (!ministry) return NextResponse.json({ message: 'Ministério não encontrado' }, { status: 404 });
-    // Retornar todos os campos relevantes explicitamente
+    
     return NextResponse.json({
       ministry: {
         id: ministry.id,
@@ -34,7 +34,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
         bairro: ministry.bairro,
         municipio: ministry.municipio,
         estado: ministry.estado,
-        master: ministry.master,
+        masters: ministry.masters, // corrigido
         members: ministry.members,
         status: ministry.status,
         createdAt: ministry.createdAt,
@@ -51,22 +51,26 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   if (!session || session.user?.role !== Role.ADMIN) {
     return NextResponse.json({ message: 'Não autorizado' }, { status: 403 });
   }
-  try {
+  try:
     const body = await req.json();
     const { name, churchId, masterId, status } = body;
+
     const data: any = {
       name,
       church: churchId ? { connect: { id: churchId } } : undefined,
-      master: masterId ? { connect: { id: masterId } } : undefined,
+      masters: masterId ? { connect: { id: masterId } } : undefined, // corrigido
     };
+
     if (typeof status !== 'undefined') {
       data.status = status;
     }
+
     const ministry = await prisma.ministry.update({
       where: { id: params.id },
       data,
-      include: { church: true, master: true, members: true },
+      include: { church: true, masters: true, members: true }, // corrigido
     });
+
     return NextResponse.json({ ministry });
   } catch (error) {
     return NextResponse.json({ message: 'Erro ao atualizar ministério' }, { status: 500 });
@@ -87,10 +91,10 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
 }
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
-  // Handler para /api/ministries/[id]/dissociate-master
   if (!req.url.endsWith('/dissociate-master')) {
     return NextResponse.json({ message: 'Rota não encontrada' }, { status: 404 });
   }
+
   const session = await getServerSession(authOptions);
   if (!session || session.user?.role !== Role.ADMIN) {
     return NextResponse.json({ message: 'Não autorizado' }, { status: 403 });
@@ -98,11 +102,11 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   try {
     const ministry = await prisma.ministry.update({
       where: { id: params.id },
-      data: { master: { disconnect: true } },
-      include: { church: true, master: true, members: true },
+      data: { masters: { disconnect: true } }, // corrigido
+      include: { church: true, masters: true, members: true }, // corrigido
     });
     return NextResponse.json({ ministry });
   } catch (error) {
     return NextResponse.json({ message: 'Erro ao desassociar líder master' }, { status: 500 });
   }
-} 
+}
