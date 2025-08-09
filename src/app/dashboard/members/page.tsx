@@ -1214,7 +1214,7 @@ export default function MembersPage() {
                     onNext={data => { setForm(prev => ({ ...prev, ...data })); setFormStep(6); }}
                     initialData={form}
                     ministryId={form.ministryId}
-                    editingMemberId={editMember?.id || undefined}
+                    editingMemberId={(editMember as any)?.id as string | undefined}
                     onCancel={handleCloseModal}
                   />
                 )}
