@@ -286,7 +286,11 @@ export default function LeadersPage() {
           <button disabled={!pagination.hasNext} onClick={() => setPage(page + 1)} className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50">Próxima</button>
         </div>
       </div>
-      <LeaderCreateModal open={showCreateModal} onClose={() => setShowCreateModal(false)} ministryId={session?.user?.ministryId} />
+      <LeaderCreateModal
+        open={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        ministryId={session?.user?.ministryId ?? undefined}
+      />
       {showEditModal && editLeader && (
         <LeaderEditTabs
           leader={editLeader}
