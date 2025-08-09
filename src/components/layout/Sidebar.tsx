@@ -11,7 +11,7 @@ export default function Sidebar() {
   const name = session?.user?.name;
   // Nome do ministério: para ADMIN e MASTER vem de masterMinistry.name ou ministryName, para LEADER só ministryName
   let ministryName = '---';
-  if (session?.user?.role === 'ADMIN' || session?.user?.role === 'LIDER_MASTER') {
+  if (session?.user?.role === 'ADMIN' || session?.user?.role === 'MASTER') {
     ministryName = session?.user?.masterMinistry?.name || session?.user?.ministryName || '---';
   } else {
     ministryName = session?.user?.ministryName || '---';

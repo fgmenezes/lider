@@ -143,7 +143,7 @@ function SmallGroupWizard({ open, onClose, onCreated }: { open: boolean; onClose
   const anfitriaoNomeRef = useRef<HTMLInputElement>(null);
   const cepRef = useRef<HTMLInputElement>(null);
   const numeroRef = useRef<HTMLInputElement>(null); // já existe
-  const tipoEncontroRef = useRef<HTMLInputElement>(null);
+  const tipoEncontroRef = useRef<HTMLFieldSetElement>(null);
   const frequenciaRef = useRef<HTMLSelectElement>(null);
   const dataUnicaRef = useRef<HTMLInputElement>(null);
   // Adicione estado de loading e erro para submissão
