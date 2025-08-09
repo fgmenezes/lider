@@ -51,7 +51,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   if (!session || session.user?.role !== Role.ADMIN) {
     return NextResponse.json({ message: 'Não autorizado' }, { status: 403 });
   }
-  try:
+  try {
     const body = await req.json();
     const { name, churchId, masterId, status } = body;
 
@@ -102,7 +102,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   try {
     const ministry = await prisma.ministry.update({
       where: { id: params.id },
-      data: { masters: { disconnect: true } }, // corrigido
+      data: { masters: { set: [] } }, // desconecta todos os masters
       include: { church: true, masters: true, members: true }, // corrigido
     });
     return NextResponse.json({ ministry });

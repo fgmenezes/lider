@@ -58,10 +58,17 @@ export async function POST(request: NextRequest) {
       estado: data.estado,
       status: data.status || 'ATIVO',
     };
-    if (data.masterId) {
-      ministryData.masterId = data.masterId;
-    }
-    const ministry = await prisma.ministry.create({ data: ministryData });
+    const ministry = await prisma.ministry.create({
+      data: {
+        ...ministryData,
+        ...(data.masterId
+          ? { masters: { connect: { id: data.masterId } } }
+          : {}),
+      },
+      include: {
+        masters: { select: { id: true, name: true, email: true } },
+      },
+    });
     return NextResponse.json({ message: 'Ministério criado com sucesso', ministry });
   } catch (error: any) {
     console.error('Erro ao criar ministério:', error);
@@ -86,7 +93,7 @@ export async function GET(request: NextRequest) {
       prisma.ministry.count(),
       prisma.ministry.findMany({
         include: {
-          master: { select: { id: true, name: true, email: true } },
+          masters: { select: { id: true, name: true, email: true } },
         },
         orderBy: { createdAt: 'desc' },
         skip,

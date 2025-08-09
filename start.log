@@ -1,0 +1,18 @@
+
+> lider@0.1.0 start
+> next start
+
+   ▲ Next.js 14.1.0
+   - Local:        http://localhost:3000
+
+Error: ENOENT: no such file or directory, open 'C:\projetos\lider\.next\BUILD_ID'
+    at async open (node:internal/fs/promises:638:25)
+    at async Object.readFile (node:internal/fs/promises:1242:14)
+    at async setupFsCheck (C:\projetos\lider\node_modules\next\dist\server\lib\router-utils\filesystem.js:145:19)
+    at async initialize (C:\projetos\lider\node_modules\next\dist\server\lib\router-server.js:58:23)
+    at async Server.<anonymous> (C:\projetos\lider\node_modules\next\dist\server\lib\start-server.js:246:36) {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\projetos\\lider\\.next\\BUILD_ID'
+}

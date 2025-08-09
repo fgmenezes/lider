@@ -14,6 +14,7 @@ interface Leader {
   celular?: string;
   isActive?: boolean;
   ministry?: { id: string; name: string; church?: { name: string } };
+  role?: 'ADMIN' | 'MASTER' | 'LEADER' | null;
   // ... outros campos se necessário
 }
 

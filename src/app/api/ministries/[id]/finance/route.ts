@@ -43,6 +43,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!await checkPermission(user, ministryId, 'POST')) {
     return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
   }
+  if (!user) {
+    return NextResponse.json({ error: 'Usuário não autenticado' }, { status: 401 });
+  }
   const data = await req.json();
   const finance = await prisma.finance.create({
     data: {
