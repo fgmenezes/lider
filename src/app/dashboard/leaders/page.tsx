@@ -435,15 +435,28 @@ function LeaderEditTabs({ leader, open, onClose, onSave, ministries, session }: 
       <div className="space-y-4">
         <label className="block">
           Nome completo
-          <input ref={nomeRef} className="border rounded p-2 w-full" value={form.name || ''} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+          <input
+            ref={nomeRef}
+            className="border rounded p-2 w-full"
+            value={form.name || ''}
+            onChange={e => setForm((f: any) => ({ ...f, name: e.target.value }))}
+          />
         </label>
         <label className="block">
           Data de Nascimento
-          <input className="border rounded p-2 w-full" value={form.dataNascimento || ''} onChange={e => setForm(f => ({ ...f, dataNascimento: e.target.value }))} />
+          <input
+            className="border rounded p-2 w-full"
+            value={form.dataNascimento || ''}
+            onChange={e => setForm((f: any) => ({ ...f, dataNascimento: e.target.value }))}
+          />
         </label>
         <label className="block">
           Sexo
-          <select className="border rounded p-2 w-full" value={form.sexo || ''} onChange={e => setForm(f => ({ ...f, sexo: e.target.value }))}>
+          <select
+            className="border rounded p-2 w-full"
+            value={form.sexo || ''}
+            onChange={e => setForm((f: any) => ({ ...f, sexo: e.target.value }))}
+          >
             <option value="">Selecione</option>
             <option value="MASCULINO">Masculino</option>
             <option value="FEMININO">Feminino</option>
@@ -451,7 +464,11 @@ function LeaderEditTabs({ leader, open, onClose, onSave, ministries, session }: 
         </label>
         <label className="block">
           Estado Civil
-          <input className="border rounded p-2 w-full" value={form.estadoCivil || ''} onChange={e => setForm(f => ({ ...f, estadoCivil: e.target.value }))} />
+          <input
+            className="border rounded p-2 w-full"
+            value={form.estadoCivil || ''}
+            onChange={e => setForm((f: any) => ({ ...f, estadoCivil: e.target.value }))}
+          />
         </label>
       </div>
     ) },
@@ -459,11 +476,19 @@ function LeaderEditTabs({ leader, open, onClose, onSave, ministries, session }: 
       <div className="space-y-4">
         <label className="block">
           Celular
-          <input className="border rounded p-2 w-full" value={form.celular || ''} onChange={e => setForm(f => ({ ...f, celular: e.target.value }))} />
+          <input
+            className="border rounded p-2 w-full"
+            value={form.celular || ''}
+            onChange={e => setForm((f: any) => ({ ...f, celular: e.target.value }))}
+          />
         </label>
         <label className="block">
           E-mail
-          <input className="border rounded p-2 w-full" value={form.email || ''} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+          <input
+            className="border rounded p-2 w-full"
+            value={form.email || ''}
+            onChange={e => setForm((f: any) => ({ ...f, email: e.target.value }))}
+          />
         </label>
       </div>
     ) },
@@ -471,31 +496,59 @@ function LeaderEditTabs({ leader, open, onClose, onSave, ministries, session }: 
       <div className="space-y-4">
         <label className="block">
           CEP
-          <input className="border rounded p-2 w-full" value={form.cep || ''} onChange={e => setForm(f => ({ ...f, cep: e.target.value }))} />
+          <input
+            className="border rounded p-2 w-full"
+            value={form.cep || ''}
+            onChange={e => setForm((f: any) => ({ ...f, cep: e.target.value }))}
+          />
         </label>
         <label className="block">
           Rua
-          <input className="border rounded p-2 w-full" value={form.rua || ''} onChange={e => setForm(f => ({ ...f, rua: e.target.value }))} />
+          <input
+            className="border rounded p-2 w-full"
+            value={form.rua || ''}
+            onChange={e => setForm((f: any) => ({ ...f, rua: e.target.value }))}
+          />
         </label>
         <label className="block">
           Número
-          <input className="border rounded p-2 w-full" value={form.numero || ''} onChange={e => setForm(f => ({ ...f, numero: e.target.value }))} />
+          <input
+            className="border rounded p-2 w-full"
+            value={form.numero || ''}
+            onChange={e => setForm((f: any) => ({ ...f, numero: e.target.value }))}
+          />
         </label>
         <label className="block">
           Complemento
-          <input className="border rounded p-2 w-full" value={form.complemento || ''} onChange={e => setForm(f => ({ ...f, complemento: e.target.value }))} />
+          <input
+            className="border rounded p-2 w-full"
+            value={form.complemento || ''}
+            onChange={e => setForm((f: any) => ({ ...f, complemento: e.target.value }))}
+          />
         </label>
         <label className="block">
           Bairro
-          <input className="border rounded p-2 w-full" value={form.bairro || ''} onChange={e => setForm(f => ({ ...f, bairro: e.target.value }))} />
+          <input
+            className="border rounded p-2 w-full"
+            value={form.bairro || ''}
+            onChange={e => setForm((f: any) => ({ ...f, bairro: e.target.value }))}
+          />
         </label>
         <label className="block">
           Município
-          <input className="border rounded p-2 w-full" value={form.municipio || ''} onChange={e => setForm(f => ({ ...f, municipio: e.target.value }))} />
+          <input
+            className="border rounded p-2 w-full"
+            value={form.municipio || ''}
+            onChange={e => setForm((f: any) => ({ ...f, municipio: e.target.value }))}
+          />
         </label>
         <label className="block">
           Estado
-          <input className="border rounded p-2 w-full" value={form.estado || ''} onChange={e => setForm(f => ({ ...f, estado: e.target.value }))} />
+          <input
+            className="border rounded p-2 w-full"
+            value={form.estado || ''}
+            onChange={e => setForm((f: any) => ({ ...f, estado: e.target.value }))}
+          />
         </label>
       </div>
     ) },
@@ -503,7 +556,11 @@ function LeaderEditTabs({ leader, open, onClose, onSave, ministries, session }: 
       <div className="space-y-4">
         <label className="block">
           Tipo de Líder
-          <select className="border rounded p-2 w-full" value={form.role || ''} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}>
+          <select
+            className="border rounded p-2 w-full"
+            value={form.role || ''}
+            onChange={e => setForm((f: any) => ({ ...f, role: e.target.value }))}
+          >
             <option value="">Selecione</option>
             <option value="LEADER">Líder</option>
             <option value="MASTER">Líder Master</option>
@@ -515,11 +572,20 @@ function LeaderEditTabs({ leader, open, onClose, onSave, ministries, session }: 
       <div className="space-y-4">
         <label className="block">
           E-mail de Login
-          <input className="border rounded p-2 w-full" value={form.emailLogin || form.email || ''} onChange={e => setForm(f => ({ ...f, emailLogin: e.target.value }))} />
+          <input
+            className="border rounded p-2 w-full"
+            value={form.emailLogin || form.email || ''}
+            onChange={e => setForm((f: any) => ({ ...f, emailLogin: e.target.value }))}
+          />
         </label>
         <label className="block">
           Senha (deixe em branco para não alterar)
-          <input className="border rounded p-2 w-full" type="password" value={form.senha || ''} onChange={e => setForm(f => ({ ...f, senha: e.target.value }))} />
+          <input
+            className="border rounded p-2 w-full"
+            type="password"
+            value={form.senha || ''}
+            onChange={e => setForm((f: any) => ({ ...f, senha: e.target.value }))}
+          />
         </label>
       </div>
     ) },
