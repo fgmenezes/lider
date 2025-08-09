@@ -786,10 +786,10 @@ export default function MembersPage() {
 
   useEffect(() => {
     // Preencher ministryId automaticamente para o usuário logado
-    if (session?.user?.role === 'LIDER_MASTER' && session?.user?.masterMinistryId) {
-      setForm(f => ({ ...f, ministryId: session.user.masterMinistryId }));
+    if (session?.user?.role === 'MASTER' && session?.user?.masterMinistryId) {
+      setForm((f: any) => ({ ...f, ministryId: session.user.masterMinistryId }));
     } else if (session?.user?.ministryId) {
-      setForm(f => ({ ...f, ministryId: session.user.ministryId }));
+      setForm((f: any) => ({ ...f, ministryId: session.user.ministryId }));
     }
   }, [session?.user]);
 
@@ -872,7 +872,7 @@ export default function MembersPage() {
         bairro: '',
         municipio: '',
         estado: '',
-        ministryId: session?.user?.role === 'LIDER_MASTER'
+        ministryId: session?.user?.role === 'MASTER'
           ? session?.user?.masterMinistryId || ''
           : session?.user?.ministryId || '',
         responsaveis: [],
