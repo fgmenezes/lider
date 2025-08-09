@@ -382,7 +382,10 @@ export default function MinistryFinancePage({ params }: { params: { id: string }
           </div>
           {((search || filters.period || filters.type || filters.category || filters.minValue || filters.maxValue) && filteredFinances.length !== finances.length) && (
             <div className="mt-2 text-sm text-gray-600">
-              Saldo dos lançamentos filtrados (de acordo com os filtros aplicados): <span className={`font-bold ${filteredSaldo >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(filteredSaldo ?? 0)}</span>
+              Saldo dos lançamentos filtrados (de acordo com os filtros aplicados):
+              <span className={`font-bold ${(filteredSaldo ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {formatCurrency(filteredSaldo ?? 0)}
+              </span>
             </div>
           )}
         </div>
