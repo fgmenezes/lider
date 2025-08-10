@@ -1,0 +1,13 @@
+[phases.setup]
+nixPkgs = ["nodejs_18", "npm-9_x", "openssl", "curl", "wget"]
+
+[phases.install]
+cmds = ["npm ci"]
+cacheDirectories = ["/root/.npm"]
+
+[phases.build]
+cmds = ["npm run build"]
+cacheDirectories = [".next/cache", "node_modules/.cache"]
+
+[start]
+cmd = "npm run start"
