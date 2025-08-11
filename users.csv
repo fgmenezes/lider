@@ -1,6 +1,0 @@
-id,name,email,role,ministryId,ministryName,masterOfId,masterOfName
-cmccj87kt0003w03ww7og63ff,ana paula menezes,ana@teste.com,MASTER,cmb8kvc1s0002w0b0qf3kyzkx,Salvador ,cmb8kvc1s0002w0b0qf3kyzkx,Salvador 
-cmb8aem2j0000w0e4oawt2uet,Administrador,admin@admin.com,ADMIN,,,,
-cmcw9x83h0000w0k8mkd39odb,ricardo sousa,ricardo@teste.com,MASTER,cmcwdyiif0002w0g0gsu9s2yq,guerreiros  de cristo,cmcwdyiif0002w0g0gsu9s2yq,guerreiros  de cristo
-cmd0tfzmq0006w0m8i2gykrpi,rafael santos menezes,rafa@teste.com,LEADER,cmcwdyiif0002w0g0gsu9s2yq,guerreiros  de cristo,,
-cmd7ixzjh0001w080rxb4a55h,felipe menezes,felipe@teste.com,LEADER,cmcwdyiif0002w0g0gsu9s2yq,guerreiros  de cristo,,
