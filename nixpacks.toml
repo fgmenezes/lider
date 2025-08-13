@@ -1,39 +1,28 @@
-[phases.setup]
-# Node 22.x compatível com sua máquina e npm ≥10
-nixPkgs = ["nodejs_22_x", "npm_10_x", "openssl", "curl", "wget"]
+# nixpacks.toml - Versão corrigida e otimizada
 
-[phases.install]
-# Instala dependências com npm ci e mantém cache de dev e prod
-cmds = [
-  "npm ci",
-  "echo 'Dependências instaladas e cache preparado.'"
-]
-cacheDirectories = [
-  "/root/.npm",
-  "node_modules"
+[phases.setup]
+# Pacotes a serem instalados durante a configuração
+nixPkgs = [
+  "curl"
+  "nodejs-22_x"
+  "npm-10_x"
+  "openssl"
+  "wget"
 ]
 
 [phases.build]
-# Build do Next.js + Prisma Client + cache inteligente
-cmds = [
-  # Garante que Prisma Client seja gerado
-  "npx prisma generate || echo 'Prisma Client já gerado ou não aplicável.'",
-  # Build do Next.js
-  "npm run build"
-]
-# Cache otimizado: Next.js, Prisma e dependências dev
-cacheDirectories = [
-  ".next/cache",
-  "node_modules/.cache",
-  "node_modules/.prisma",
-  "node_modules"
-]
+# Comandos para construir seu app
+command = "npm install && npm run build"
 
-[start]
-# Comando para iniciar o servidor Next.js
-cmd = "npm run start"
+[phases.start]
+# Comando para iniciar o app
+command = "npm run start"
 
 [env]
-# Variáveis de ambiente comuns para Next.js + Prisma + NextAuth
-DATABASE_URL = "${DATABASE_URL}"
-NEXTAUTH_URL = "${NEXTAUTH_URL}"
+# Variáveis de ambiente
+NODE_ENV = "production"
+PORT = "3000"
+
+[ports]
+# Porta que o Nixpacks deve expor
+http = 3000
