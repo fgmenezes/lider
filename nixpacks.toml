@@ -1,4 +1,7 @@
-[providers]
+# Nixpacks config for Node.js (Next.js) app
+
+providers = []
+
 buildImage = "ghcr.io/railwayapp/nixpacks:ubuntu-1741046653"
 
 [env]
@@ -12,15 +15,14 @@ NEXTAUTH_URL = "https://lider.fegsoft.com.br"
 NEXTAUTH_SECRET = "zJb9orA-ycf5TkxBqFuKlZRMs_6a6vposC3FRd9qjIs="
 
 [phases.setup]
-# Setup phase for installing OS packages and overlays
-nixPkgs = ["nodejs_22", "npm-9_x", "openssl"]
-nixOverlays = ["https://github.com/railwayapp/nix-npm-overlay/archive/main.tar.gz"]
-nixpkgsArchive = "ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7"
-aptPkgs = ["curl", "wget"]
 cmds = []
 dependsOn = []
 cacheDirectories = []
 paths = []
+nixPkgs = ["nodejs_22", "npm-9_x", "openssl"]
+nixOverlays = ["https://github.com/railwayapp/nix-npm-overlay/archive/main.tar.gz"]
+nixpkgsArchive = "ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7"
+aptPkgs = ["curl", "wget"]
 
 [phases.install]
 cmds = ["npm ci"]
