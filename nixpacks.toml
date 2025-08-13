@@ -3,10 +3,10 @@
 [phases.setup]
 # Pacotes a serem instalados durante a configuração
 nixPkgs = [
-  "curl"
-  "nodejs-22_x"
-  "npm-10_x"
-  "openssl"
+  "curl",
+  "nodejs-22_x",
+  "npm-10_x",
+  "openssl",
   "wget"
 ]
 
