@@ -1,4 +1,4 @@
-# nixpacks.toml - Versão corrigida e otimizada
+# nixpacks.toml - Versão completa, corrigida e otimizada
 
 [phases.setup]
 # Pacotes a serem instalados durante a configuração
@@ -10,18 +10,30 @@ nixPkgs = [
   "wget"
 ]
 
+[phases.install]
+# Comandos para instalar dependências
+dependsOn = ["setup"]
+cmds = ["npm ci"]
+cacheDirectories = ["/root/.npm"]
+paths = ["/app/node_modules/.bin"]
+
 [phases.build]
-# Comandos para construir seu app
-command = "npm install && npm run build"
+# Comandos para construir o app
+dependsOn = ["install"]
+cmds = ["npm install", "npm run build"]
+cacheDirectories = [".next/cache", "node_modules"]
 
 [phases.start]
 # Comando para iniciar o app
-command = "npm run start"
+cmds = ["npm run start"]
 
 [env]
 # Variáveis de ambiente
 NODE_ENV = "production"
 PORT = "3000"
+NEXTAUTH_URL = "https://lider.fegsoft.com.br"
+NEXTAUTH_SECRET = "zJb9orA-ycf5TkxBqFuKlZRMs_6a6vposC3FRd9qjIs="
+URL_DO_BANCO_DE_DADOS = "postgres://postgres:%40Ap210484@144.22.137.177:15432/postgres"
 
 [ports]
 # Porta que o Nixpacks deve expor
