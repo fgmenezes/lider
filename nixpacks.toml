@@ -1,41 +1,31 @@
 # nixpacks.toml
 # Nixpacks configuration for Next.js 14 project "lider"
-# Compatible with Node.js 22 and Coolify deployment
+# Node.js 22 and Coolify deployment ready
 
-# List of additional providers (leave empty if none)
-[providers]
+# If you have no additional providers, omit or leave empty
 providers = []
 
-# Base image used for building the project
+# Base image for building
 buildImage = "ghcr.io/railwayapp/nixpacks:ubuntu-1741046653"
 
-# Environment variables for production
+# Environment variables
 [env]
 NODE_ENV = "production"
 NPM_CONFIG_PRODUCTION = "false"
 
-# Setup phase: install required system packages and Node environment
+# Setup phase: system packages and Node environment
 [phases.setup]
-nixPkgs = [
-  "nodejs_22",      # Node.js 22
-  "npm-9_x",        # NPM 9
-  "openssl"         # OpenSSL required by some Node packages
-]
-nixOverlays = [
-  "https://github.com/railwayapp/nix-npm-overlay/archive/main.tar.gz"
-]
+nixPkgs = ["nodejs_22", "npm-9_x", "openssl"]
+nixOverlays = ["https://github.com/railwayapp/nix-npm-overlay/archive/main.tar.gz"]
 aptPkgs = ["curl", "wget"]
 cmds = []
 cacheDirectories = []
 paths = []
 
-# Install phase: install dependencies and generate Prisma client
+# Install phase: install Node dependencies
 [phases.install]
 dependsOn = ["setup"]
-cmds = [
-  "npm ci",           # Clean install of dependencies
-  "npm run postinstall" # Run Prisma generate
-]
+cmds = ["npm ci", "npm run postinstall"]
 cacheDirectories = ["/root/.npm"]
 paths = ["/app/node_modules/.bin"]
 
@@ -43,12 +33,9 @@ paths = ["/app/node_modules/.bin"]
 [phases.build]
 dependsOn = ["install"]
 cmds = ["npm run build"]
-cacheDirectories = [
-  ".next/cache",
-  "node_modules/.cache"
-]
+cacheDirectories = [".next/cache", "node_modules/.cache"]
 
-# Start phase: start the application
+# Start phase: start the Next.js server
 [phases.start]
 dependsOn = ["build"]
 cmds = ["npm run start"]
