@@ -1,40 +1,54 @@
-# Nixpacks config for Node.js (Next.js) app
+# nixpacks.toml
+# Nixpacks configuration for Next.js 14 project "lider"
+# Compatible with Node.js 22 and Coolify deployment
 
+# List of additional providers (leave empty if none)
+[providers]
 providers = []
 
+# Base image used for building the project
 buildImage = "ghcr.io/railwayapp/nixpacks:ubuntu-1741046653"
 
+# Environment variables for production
 [env]
-CI = true
-NIXPACKS_METADATA = "node"
 NODE_ENV = "production"
-NPM_CONFIG_PRODUCTION = false
-SOURCE_COMMIT = "HEAD"
-DATABASE_URL = "postgres://postgres:%40Ap210484@144.22.137.177:15432/postgres"
-NEXTAUTH_URL = "https://lider.fegsoft.com.br"
-NEXTAUTH_SECRET = "zJb9orA-ycf5TkxBqFuKlZRMs_6a6vposC3FRd9qjIs="
+NPM_CONFIG_PRODUCTION = "false"
 
+# Setup phase: install required system packages and Node environment
 [phases.setup]
+nixPkgs = [
+  "nodejs_22",      # Node.js 22
+  "npm-9_x",        # NPM 9
+  "openssl"         # OpenSSL required by some Node packages
+]
+nixOverlays = [
+  "https://github.com/railwayapp/nix-npm-overlay/archive/main.tar.gz"
+]
+aptPkgs = ["curl", "wget"]
 cmds = []
-dependsOn = []
 cacheDirectories = []
 paths = []
-nixPkgs = ["nodejs_22", "npm-9_x", "openssl"]
-nixOverlays = ["https://github.com/railwayapp/nix-npm-overlay/archive/main.tar.gz"]
-nixpkgsArchive = "ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7"
-aptPkgs = ["curl", "wget"]
 
+# Install phase: install dependencies and generate Prisma client
 [phases.install]
-cmds = ["npm ci"]
 dependsOn = ["setup"]
+cmds = [
+  "npm ci",           # Clean install of dependencies
+  "npm run postinstall" # Run Prisma generate
+]
 cacheDirectories = ["/root/.npm"]
 paths = ["/app/node_modules/.bin"]
 
+# Build phase: build Next.js project
 [phases.build]
-cmds = ["npm run build"]
 dependsOn = ["install"]
-cacheDirectories = [".next/cache", "node_modules/.cache"]
+cmds = ["npm run build"]
+cacheDirectories = [
+  ".next/cache",
+  "node_modules/.cache"
+]
 
+# Start phase: start the application
 [phases.start]
-cmd = "npm run start"
 dependsOn = ["build"]
+cmds = ["npm run start"]
