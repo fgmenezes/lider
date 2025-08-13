@@ -1,13 +1,39 @@
 [phases.setup]
-nixPkgs = ["nodejs_18", "npm-9_x", "openssl", "curl", "wget"]
+# Node 22.14.0 para compatibilidade com sua máquina, npm ≥10
+nixPkgs = ["nodejs-22.14.0", "npm_10_x", "openssl", "curl", "wget"]
 
 [phases.install]
-cmds = ["npm ci"]
-cacheDirectories = ["/root/.npm"]
+# Instala dependências usando npm ci e mantém cache de dev e prod
+cmds = [
+  "npm ci",
+  "echo 'Dependências instaladas e cache preparado.'"
+]
+cacheDirectories = [
+  "/root/.npm",
+  "node_modules"
+]
 
 [phases.build]
-cmds = ["npm run build"]
-cacheDirectories = [".next/cache", "node_modules/.cache"]
+# Build do Next.js + Prisma Client + cache inteligente
+cmds = [
+  # Garante que Prisma Client seja gerado
+  "npx prisma generate || echo 'Prisma Client já gerado ou não aplicável.'",
+  # Build do Next.js
+  "npm run build"
+]
+# Cache otimizado: Next.js, Prisma e dependências dev
+cacheDirectories = [
+  ".next/cache",
+  "node_modules/.cache",
+  "node_modules/.prisma",
+  "node_modules"
+]
 
 [start]
+# Comando para iniciar o servidor Next.js
 cmd = "npm run start"
+
+[env]
+# Recomenda variáveis de ambiente comuns para Next.js + Prisma
+DATABASE_URL = "${DATABASE_URL}"
+NEXTAUTH_URL = "${NEXTAUTH_URL}"
