@@ -1,41 +1,23 @@
-# nixpacks.toml
-# Nixpacks configuration for Next.js 14 project "lider"
-# Node.js 22 and Coolify deployment ready
+# nixpacks.toml - versão simplificada para Next.js 14 + Node 22
 
-# If you have no additional providers, omit or leave empty
-providers = []
+[[providers]]
+name = "nodejs"
+version = "22"
 
-# Base image for building
-buildImage = "ghcr.io/railwayapp/nixpacks:ubuntu-1741046653"
-
-# Environment variables
-[env]
-NODE_ENV = "production"
-NPM_CONFIG_PRODUCTION = "false"
-
-# Setup phase: system packages and Node environment
 [phases.setup]
-nixPkgs = ["nodejs_22", "npm-9_x", "openssl"]
-nixOverlays = ["https://github.com/railwayapp/nix-npm-overlay/archive/main.tar.gz"]
-aptPkgs = ["curl", "wget"]
+nixPkgs = ["nodejs_22", "npm-9_x"]
 cmds = []
-cacheDirectories = []
-paths = []
 
-# Install phase: install Node dependencies
 [phases.install]
 dependsOn = ["setup"]
 cmds = ["npm ci", "npm run postinstall"]
 cacheDirectories = ["/root/.npm"]
-paths = ["/app/node_modules/.bin"]
 
-# Build phase: build Next.js project
 [phases.build]
 dependsOn = ["install"]
 cmds = ["npm run build"]
-cacheDirectories = [".next/cache", "node_modules/.cache"]
+cacheDirectories = [".next/cache"]
 
-# Start phase: start the Next.js server
 [phases.start]
 dependsOn = ["build"]
 cmds = ["npm run start"]
