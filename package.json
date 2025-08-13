@@ -55,5 +55,9 @@
     "tailwindcss-animate": "^1.0.7",
     "tsx": "^4.7.0",
     "typescript": "5.4.5"
+  },
+  "engines": {
+    "node": "22.14.0",
+    "npm": ">=10.0.0"
   }
 }
