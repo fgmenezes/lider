@@ -1,33 +1,38 @@
-# Arquivo nixpacks.toml otimizado para Node.js 22
-# Sintaxe compatível com Nixpacks v1.0+
+[providers]
+buildImage = "ghcr.io/railwayapp/nixpacks:ubuntu-1741046653"
+
+[env]
+CI = true
+NIXPACKS_METADATA = "node"
+NODE_ENV = "production"
+NPM_CONFIG_PRODUCTION = false
+SOURCE_COMMIT = "HEAD"
+DATABASE_URL = "postgres://postgres:%40Ap210484@144.22.137.177:15432/postgres"
+NEXTAUTH_URL = "https://lider.fegsoft.com.br"
+NEXTAUTH_SECRET = "zJb9orA-ycf5TkxBqFuKlZRMs_6a6vposC3FRd9qjIs="
 
 [phases.setup]
-# Pacotes Nix necessários
-nix_pkgs = ["nodejs_22", "npm-9_x", "openssl", "curl", "wget"]
-# Sobreposição Nix (overlay) oficial para Node
-nix_overlays = ["https://github.com/railwayapp/nix-npm-overlay/archive/main.tar.gz"]
-# Pacotes APT adicionais, se necessários
-apt_pkgs = ["curl", "wget"]
+# Setup phase for installing OS packages and overlays
+nixPkgs = ["nodejs_22", "npm-9_x", "openssl"]
+nixOverlays = ["https://github.com/railwayapp/nix-npm-overlay/archive/main.tar.gz"]
+nixpkgsArchive = "ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7"
+aptPkgs = ["curl", "wget"]
+cmds = []
+dependsOn = []
+cacheDirectories = []
+paths = []
 
 [phases.install]
-depends_on = ["setup"]
 cmds = ["npm ci"]
-cache_dirs = ["/root/.npm"]
+dependsOn = ["setup"]
+cacheDirectories = ["/root/.npm"]
 paths = ["/app/node_modules/.bin"]
 
 [phases.build]
-depends_on = ["install"]
 cmds = ["npm run build"]
-cache_dirs = [".next/cache", "node_modules/.cache"]
+dependsOn = ["install"]
+cacheDirectories = [".next/cache", "node_modules/.cache"]
 
 [phases.start]
 cmd = "npm run start"
-
-[env]
-CI = "true"
-NODE_ENV = "production"
-NPM_CONFIG_PRODUCTION = "false"
-NEXTAUTH_URL = "https://lider.fegsoft.com.br"
-NEXTAUTH_SECRET = "zJb9orA-ycf5TkxBqFuKlZRMs_6a6vposC3FRd9qjIs="
-SOURCE_COMMIT = "dec3ef9d29c9b215a3de3463c7e300a3de853285"
-URL_DO_BANCO_DE_DADOS = "postgres://postgres:%40Ap210484@144.22.137.177:15432/postgres"
+dependsOn = ["build"]
