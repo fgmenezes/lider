@@ -1,50 +1,28 @@
-# nixpacks.toml - Configuração completa para seu projeto Node.js 22
-
-[env]
-NODE_ENV = "production"
-NPM_CONFIG_PRODUCTION = "false"
-NEXTAUTH_URL = "https://lider.fegsoft.com.br"
-NEXTAUTH_SECRET = "zJb9orA-ycf5TkxBqFuKlZRMs_6a6vposC3FRd9qjIs="
-URL_DO_BANCO_DE_DADOS = "postgres://postgres:%40Ap210484@144.22.137.177:15432/postgres"
-SOURCE_COMMIT = "HEAD"
-
 [phases.setup]
-nixPkgs = [
-    "curl",
-    "nodejs_22",
-    "npm",
-    "openssl",
-    "wget"
-]
-nixOverlays = [
-    "https://github.com/railwayapp/nix-npm-overlay/archive/main.tar.gz"
-]
-aptPkgs = [
-    "curl",
-    "wget"
-]
+# Pacotes do Nix
+nix_pkgs = ["curl", "nodejs_22", "npm", "openssl", "wget"]
+nix_overlays = ["https://github.com/railwayapp/nix-npm-overlay/archive/main.tar.gz"]
+apt_pkgs = ["curl", "wget"]
 
 [phases.install]
-dependsOn = ["setup"]
-cmds = [
-    "npm ci"
-]
-cacheDirectories = ["/root/.npm"]
+depends_on = ["setup"]
+cmds = ["npm ci"]
+cache_dirs = ["/root/.npm"]
 paths = ["/app/node_modules/.bin"]
 
 [phases.build]
-dependsOn = ["install"]
-cmds = [
-    "npm run build"
-]
-cacheDirectories = [
-    ".next/cache",
-    "node_modules/.cache"
-]
+depends_on = ["install"]
+cmds = ["npm run build"]
+cache_dirs = [".next/cache", "node_modules/.cache"]
 
 [phases.start]
 cmd = "npm run start"
 
-[build]
-buildCommand = "npm run build"
-startCommand = "npm run start"
+[env]
+CI = "true"
+NODE_ENV = "production"
+NPM_CONFIG_PRODUCTION = "false"
+NEXTAUTH_URL = "https://lider.fegsoft.com.br"
+NEXTAUTH_SECRET = "zJb9orA-ycf5TkxBqFuKlZRMs_6a6vposC3FRd9qjIs="
+SOURCE_COMMIT = "dde6090cc4143eb6513c9815e46f61210e5c7429"
+URL_DO_BANCO_DE_DADOS = "postgres://postgres:%40Ap210484@144.22.137.177:15432/postgres"
