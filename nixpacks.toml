@@ -1,9 +1,9 @@
 [phases.setup]
-# Node 22.14.0 para compatibilidade com sua máquina, npm ≥10
-nixPkgs = ["nodejs-22.14.0", "npm_10_x", "openssl", "curl", "wget"]
+# Node 22.x compatível com sua máquina e npm ≥10
+nixPkgs = ["nodejs_22_x", "npm_10_x", "openssl", "curl", "wget"]
 
 [phases.install]
-# Instala dependências usando npm ci e mantém cache de dev e prod
+# Instala dependências com npm ci e mantém cache de dev e prod
 cmds = [
   "npm ci",
   "echo 'Dependências instaladas e cache preparado.'"
@@ -34,6 +34,6 @@ cacheDirectories = [
 cmd = "npm run start"
 
 [env]
-# Recomenda variáveis de ambiente comuns para Next.js + Prisma
+# Variáveis de ambiente comuns para Next.js + Prisma + NextAuth
 DATABASE_URL = "${DATABASE_URL}"
 NEXTAUTH_URL = "${NEXTAUTH_URL}"
