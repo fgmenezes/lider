@@ -1,7 +1,12 @@
+# Arquivo nixpacks.toml otimizado para Node.js 22
+# Sintaxe compatível com Nixpacks v1.0+
+
 [phases.setup]
-# Pacotes do Nix
-nix_pkgs = ["curl", "nodejs_22", "npm", "openssl", "wget"]
+# Pacotes Nix necessários
+nix_pkgs = ["nodejs_22", "npm-9_x", "openssl", "curl", "wget"]
+# Sobreposição Nix (overlay) oficial para Node
 nix_overlays = ["https://github.com/railwayapp/nix-npm-overlay/archive/main.tar.gz"]
+# Pacotes APT adicionais, se necessários
 apt_pkgs = ["curl", "wget"]
 
 [phases.install]
@@ -24,5 +29,5 @@ NODE_ENV = "production"
 NPM_CONFIG_PRODUCTION = "false"
 NEXTAUTH_URL = "https://lider.fegsoft.com.br"
 NEXTAUTH_SECRET = "zJb9orA-ycf5TkxBqFuKlZRMs_6a6vposC3FRd9qjIs="
-SOURCE_COMMIT = "dde6090cc4143eb6513c9815e46f61210e5c7429"
+SOURCE_COMMIT = "dec3ef9d29c9b215a3de3463c7e300a3de853285"
 URL_DO_BANCO_DE_DADOS = "postgres://postgres:%40Ap210484@144.22.137.177:15432/postgres"
