@@ -116,7 +116,14 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     if (validatedData.responsaveis) {
       await prisma.responsavel.deleteMany({ where: { memberId: params.id } });
       if (validatedData.responsaveis.length > 0) {
-        await prisma.responsavel.createMany({ data: validatedData.responsaveis.map(r => ({ ...r, memberId: params.id })) });
+        await prisma.responsavel.createMany({
+          data: validatedData.responsaveis.map(r => ({
+            memberId: params.id,
+            nome: r.nome,
+            celular: r.celular,
+            tipo: r.tipo
+          }))
+        });
       }
     }
 
@@ -176,7 +183,6 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     await prisma.member.delete({ where: { id: params.id } });
 
     return NextResponse.json({ message: 'Membro excluído com sucesso' });
-
   } catch (error) {
     console.error('Erro ao excluir membro:', error);
     return NextResponse.json({ message: 'Erro interno do servidor' }, { status: 500 });
