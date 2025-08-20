@@ -274,7 +274,7 @@ function UserFormStep4({ form, setForm, onCancel }: { form: any, setForm: (data:
   const ministryRef = useRef<HTMLSelectElement>(null);
   useEffect(() => { if (ministryRef.current) ministryRef.current.focus(); }, []);
   useEffect(() => {
-    if (form.cargo === 'LIDER_MASTER' || form.cargo === 'LIDER') {
+    if (form.cargo === 'MASTER' || form.cargo === 'LEADER') {
       setLoadingMinistries(true);
       fetch('/api/ministries?perPage=100')
         .then(res => res.json())
@@ -285,7 +285,7 @@ function UserFormStep4({ form, setForm, onCancel }: { form: any, setForm: (data:
     }
   }, [form.cargo]);
   useEffect(() => {
-    if (form.cargo === 'LIDER_MASTER' || form.cargo === 'LIDER') {
+    if (form.cargo === 'MASTER' || form.cargo === 'LEADER') {
       const ministry = ministries.find(m => m.value === form.ministryId);
       if (ministry) {
         setForm((prev: any) => ({ ...prev, church: ministry.church.name }));
@@ -311,12 +311,12 @@ function UserFormStep4({ form, setForm, onCancel }: { form: any, setForm: (data:
         required
         ref={ministryRef}
         options={[
-          { value: 'ADMINISTRADOR', label: 'Administrador' },
-          { value: 'LIDER_MASTER', label: 'Líder Master' },
-          { value: 'LIDER', label: 'Líder' }
+          { value: 'ADMIN', label: 'Administrador' },
+          { value: 'MASTER', label: 'Líder Master' },
+          { value: 'LEADER', label: 'Líder' }
         ]}
       />
-      {(form.cargo === 'LIDER_MASTER' || form.cargo === 'LIDER') && (
+      {(form.cargo === 'MASTER' || form.cargo === 'LEADER') && (
         <>
           <Select
             label="Ministério"
@@ -634,9 +634,9 @@ export default function UsersPage() {
         return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
       };
       const roleMap = {
-        'ADMINISTRADOR': 'ADMIN',
-        'LIDER_MASTER': 'MASTER',
-        'LIDER': 'LEADER',
+        'ADMIN': 'ADMIN',
+        'MASTER': 'MASTER',
+        'LEADER': 'LEADER',
       };
       const payload = {
         name: formData.name || '',
@@ -732,9 +732,9 @@ export default function UsersPage() {
                         return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
                       };
                       const roleMap = {
-                        'ADMINISTRADOR': 'ADMIN',
-                        'LIDER_MASTER': 'MASTER',
-                        'LIDER': 'LEADER',
+                        'ADMIN': 'ADMIN',
+                        'MASTER': 'MASTER',
+                        'LEADER': 'LEADER',
                       };
                       const payload = {
                         name: formData.name || '',

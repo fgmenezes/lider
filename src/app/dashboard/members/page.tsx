@@ -4,8 +4,6 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import toast from "react-hot-toast";
 import { maskDate, maskPhone, maskCep } from '@/lib/utils';
 import { fetchAddressByCep } from '@/lib/utils/viaCep';
-// @ts-ignore
-import { saveAs } from 'file-saver';
 import { useSession } from 'next-auth/react';
 import { Tab } from '@headlessui/react';
 import React from 'react';
@@ -13,6 +11,17 @@ import Input from '@/components/forms/Input';
 import Select from '@/components/forms/Select';
 import Checkbox from '@/components/forms/Checkbox';
 import { HiOutlineDotsVertical } from 'react-icons/hi';
+
+// Importação segura do file-saver
+let saveAs: any = null;
+if (typeof window !== 'undefined') {
+  try {
+    const fileSaver = require('file-saver');
+    saveAs = fileSaver.saveAs;
+  } catch (error) {
+    // Silenciar erro em produção
+  }
+}
 
 interface Member {
   id: string;
@@ -482,8 +491,8 @@ function MemberFormStep5({ onBack, onNext, initialData = {}, ministryId, editing
       </div>
       <div className="flex justify-between gap-2 mt-6">
         <button type="button" className="px-4 py-2 bg-gray-200 text-gray-700 rounded" onClick={onCancel}>Cancelar</button>
-        <button type="button" className="px-4 py-2 bg-gray-200 text-gray-700 rounded" onClick={() => { console.log('Step 5 back', { temIrmaos, irmaos, temPrimos, primos }); onBack({ temIrmaos, irmaosMinisterio: irmaos, temPrimos, primosMinisterio: primos }); }}>Voltar</button>
-        <button type="button" className="px-4 py-2 bg-blue-600 text-white rounded" onClick={() => { console.log('Step 5 next', { temIrmaos, irmaos, temPrimos, primos }); onNext({ temIrmaos, irmaosMinisterio: irmaos, temPrimos, primosMinisterio: primos }); }}>Avançar</button>
+        <button type="button" className="px-4 py-2 bg-gray-200 text-gray-700 rounded" onClick={() => { onBack({ temIrmaos, irmaosMinisterio: irmaos, temPrimos, primosMinisterio: primos }); }}>Voltar</button>
+        <button type="button" className="px-4 py-2 bg-blue-600 text-white rounded" onClick={() => { onNext({ temIrmaos, irmaosMinisterio: irmaos, temPrimos, primosMinisterio: primos }); }}>Avançar</button>
       </div>
       <Dialog open={!!openDialog} onOpenChange={v => !v && setOpenDialog(null)}>
         <DialogContent>
@@ -653,7 +662,7 @@ function StatusBadge({ status }: { status: string }) {
 // Função para exportar membros para CSV
 // Agora recebe members e visibleColumns como parâmetros
 function exportToCSV(members: any[], visibleColumns: { name: boolean; phone: boolean; status: boolean }) {
-  if (!members.length) return;
+  if (!members.length || !saveAs) return;
   const headers = [
     ...(visibleColumns.name ? ['Nome'] : []),
     ...(visibleColumns.phone ? ['Celular'] : []),
@@ -709,6 +718,17 @@ export default function MembersPage() {
   const { data: session } = useSession();
   const [members, setMembers] = useState<any[]>([]); // nunca undefined!
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Verificar se o componente está montado no cliente
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Não renderizar nada até estar montado
+  if (!mounted) {
+    return <div className="max-w-4xl mx-auto p-4">Carregando...</div>;
+  }
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -786,7 +806,7 @@ export default function MembersPage() {
 
   useEffect(() => {
     // Preencher ministryId automaticamente para o usuário logado
-    if (session?.user?.role === 'LIDER_MASTER' && session?.user?.masterMinistryId) {
+    if (session?.user?.role === 'MASTER' && session?.user?.masterMinistryId) {
       setForm(f => ({ ...f, ministryId: session.user.masterMinistryId }));
     } else if (session?.user?.ministryId) {
       setForm(f => ({ ...f, ministryId: session.user.ministryId }));
@@ -872,7 +892,7 @@ export default function MembersPage() {
         bairro: '',
         municipio: '',
         estado: '',
-        ministryId: session?.user?.role === 'LIDER_MASTER'
+                  ministryId: session?.user?.role === 'MASTER'
           ? session?.user?.masterMinistryId || ''
           : session?.user?.ministryId || '',
         responsaveis: [],
@@ -953,7 +973,7 @@ export default function MembersPage() {
       delete (payload as any).temIrmaos;
       delete (payload as any).temPrimos;
       delete (payload as any).idade;
-      console.log('Submitting member form', payload);
+
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -977,7 +997,7 @@ export default function MembersPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      console.log('Tentando excluir membro com id:', id);
+
       const res = await fetch(`/api/members/${id}`, { method: "DELETE" });
       const text = await res.text();
       if (!res.ok) {
@@ -1059,7 +1079,7 @@ export default function MembersPage() {
     <div className="max-w-4xl mx-auto p-4">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">Membros</h1>
-        <button onClick={() => { console.log('Clicou em Novo Membro'); handleOpenModal(); }} className="px-4 py-2 bg-blue-600 text-white rounded">Novo Membro</button>
+        <button onClick={() => { handleOpenModal(); }} className="px-4 py-2 bg-blue-600 text-white rounded">Novo Membro</button>
       </div>
       <div className="flex flex-col md:flex-row md:items-center md:gap-4 mb-4">
         <input
@@ -1180,7 +1200,6 @@ export default function MembersPage() {
         </div>
       </div>
       {/* Modal de cadastro/edição multi-etapas */}
-      {console.log('openModal:', openModal, 'editMember:', editMember)}
       {openModal && (
         <Dialog open={openModal} onOpenChange={handleCloseModal}>
           <DialogContent>
