@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import toast from "react-hot-toast";
 import { maskDate, maskPhone, maskCep } from '@/lib/utils';
@@ -51,7 +51,7 @@ function MemberFormStep1({ form, setForm, onCancel }: { form: any, setForm: (dat
   useEffect(() => { if (nameRef.current) nameRef.current.focus(); }, []);
   useEffect(() => {
     setForm((prev: any) => ({ ...prev, idade: calculateAge(prev.dataNascimento) }));
-  }, [form.dataNascimento, setForm]);
+  }, [setForm]);
 
   return (
     <div className="space-y-4">
@@ -364,19 +364,20 @@ function MemberFormStep5({ onBack, onNext, initialData = {}, ministryId, editing
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => {
-    if (openDialog) {
-      setLoading(true);
-      fetch(`/api/members?perPage=100&search=${search}${ministryId ? `&ministryId=${ministryId}` : ''}`)
-        .then(res => res.json())
-        .then(data => {
-          let filtered = (data.members || []);
-          if (editingMemberId) {
-            filtered = filtered.filter((m: any) => m.id !== editingMemberId);
-          }
-          setMembersList(filtered);
-          setLoading(false);
-        });
-    }
+    setLoading(true);
+    fetch(`/api/members?perPage=100&search=${search}${ministryId ? `&ministryId=${ministryId}` : ''}`)
+      .then(res => res.json())
+      .then(data => {
+        let filtered = (data.members || []);
+        if (editingMemberId) {
+          filtered = filtered.filter((m: any) => m.id !== editingMemberId);
+        }
+        setMembersList(filtered);
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+      });
   }, [openDialog, search, ministryId, editingMemberId]);
 
   const handleOpenDialog = (type: 'irmaos' | 'primos') => {
@@ -719,16 +720,6 @@ export default function MembersPage() {
   const [members, setMembers] = useState<any[]>([]); // nunca undefined!
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
-
-  // Verificar se o componente está montado no cliente
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Não renderizar nada até estar montado
-  if (!mounted) {
-    return <div className="max-w-4xl mx-auto p-4">Carregando...</div>;
-  }
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -774,7 +765,12 @@ export default function MembersPage() {
   const [viewMember, setViewMember] = useState<any>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchMembers = async () => {
+  // Verificar se o componente está montado no cliente
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const fetchMembers = useCallback(async () => {
     setLoading(true);
     try {
       let url = `/api/members?search=${search}&page=${page}&perPage=${perPage}`;
@@ -790,12 +786,11 @@ export default function MembersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [search, page, perPage, statusFilter, sortField, sortOrder]);
 
   useEffect(() => {
     fetchMembers();
-    // eslint-disable-next-line
-  }, [search, page, statusFilter, sortField, sortOrder]);
+  }, [fetchMembers]);
 
   // Buscar ministérios para seleção
   useEffect(() => {
@@ -806,14 +801,16 @@ export default function MembersPage() {
 
   useEffect(() => {
     // Preencher ministryId automaticamente para o usuário logado
-    if (session?.user?.role === 'MASTER' && session?.user?.masterMinistryId) {
-      setForm(f => ({ ...f, ministryId: session.user.masterMinistryId }));
-    } else if (session?.user?.ministryId) {
-      setForm(f => ({ ...f, ministryId: session.user.ministryId }));
+    if (session?.user) {
+      if (session.user.role === 'MASTER' && session.user.masterMinistryId) {
+        setForm(f => ({ ...f, ministryId: session.user.masterMinistryId }));
+      } else if (session.user.ministryId) {
+        setForm(f => ({ ...f, ministryId: session.user.ministryId }));
+      }
     }
   }, [session?.user]);
 
-  const handleOpenModal = async (member?: Member) => {
+  const handleOpenModal = useCallback(async (member?: Member) => {
     setEditMember(member || null);
     setFormStep(1);
     if (member) {
@@ -892,7 +889,7 @@ export default function MembersPage() {
         bairro: '',
         municipio: '',
         estado: '',
-                  ministryId: session?.user?.role === 'MASTER'
+        ministryId: session?.user?.role === 'MASTER'
           ? session?.user?.masterMinistryId || ''
           : session?.user?.ministryId || '',
         responsaveis: [],
@@ -906,7 +903,7 @@ export default function MembersPage() {
       });
     }
     setOpenModal(true);
-  };
+  }, [session?.user]);
 
   const handleCloseModal = () => {
     setOpenModal(false);
@@ -1025,14 +1022,16 @@ export default function MembersPage() {
 
   // Funções para seleção múltipla
   const allSelected = Array.isArray(members) && members.length > 0 && selectedIds.length === members.length;
-  const toggleSelectAll = () => {
+  const toggleSelectAll = useCallback(() => {
     if (allSelected) setSelectedIds([]);
     else setSelectedIds(members.map((m: any) => m.id));
-  };
-  const toggleSelectOne = (id: string) => {
+  }, [allSelected, members]);
+  
+  const toggleSelectOne = useCallback((id: string) => {
     setSelectedIds(ids => ids.includes(id) ? ids.filter(i => i !== id) : [...ids, id]);
-  };
-  const clearSelection = () => setSelectedIds([]);
+  }, []);
+  
+  const clearSelection = useCallback(() => setSelectedIds([]), []);
 
   // Funções de ação em massa
   async function handleBulkStatus(newStatus: string, memberIds: string[]) {
@@ -1065,7 +1064,9 @@ export default function MembersPage() {
       }
       if (e.altKey && e.key.toLowerCase() === 'b') {
         e.preventDefault();
-        searchInputRef.current?.focus();
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
+        }
       }
       if (e.key === 'Escape' && selectedIds.length > 0) {
         clearSelection();
@@ -1073,7 +1074,12 @@ export default function MembersPage() {
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedIds, handleOpenModal]);
+  }, [selectedIds, handleOpenModal, clearSelection, searchInputRef]);
+
+  // Renderizar loading se não estiver montado
+  if (!mounted) {
+    return <div className="max-w-4xl mx-auto p-4">Carregando...</div>;
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-4">
@@ -1311,12 +1317,11 @@ function MemberActionsMenu({ member, onEdit, onDelete, onToggleStatus, onView }:
   const [open, setOpen] = React.useState(false);
   const menuRef = React.useRef<HTMLDivElement>(null);
   const buttonRef = React.useRef<HTMLButtonElement>(null);
-  const optionRefs = [
-    React.useRef<HTMLButtonElement>(null),
-    React.useRef<HTMLButtonElement>(null),
-    React.useRef<HTMLButtonElement>(null),
-    React.useRef<HTMLButtonElement>(null),
-  ];
+  const optionRef0 = React.useRef<HTMLButtonElement>(null);
+  const optionRef1 = React.useRef<HTMLButtonElement>(null);
+  const optionRef2 = React.useRef<HTMLButtonElement>(null);
+  const optionRef3 = React.useRef<HTMLButtonElement>(null);
+  const optionRefs = React.useMemo(() => [optionRef0, optionRef1, optionRef2, optionRef3], []);
   const optionCount = 4;
 
   // Foco automático na primeira opção ao abrir
@@ -1324,7 +1329,7 @@ function MemberActionsMenu({ member, onEdit, onDelete, onToggleStatus, onView }:
     if (open) {
       setTimeout(() => optionRefs[0].current?.focus(), 0);
     }
-  }, [open]);
+  }, [open, optionRefs]);
 
   // Fecha ao clicar fora
   React.useEffect(() => {
@@ -1415,4 +1420,4 @@ function MemberActionsMenu({ member, onEdit, onDelete, onToggleStatus, onView }:
       )}
     </div>
   );
-} 
+}

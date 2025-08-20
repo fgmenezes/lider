@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { MoreVertical } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@radix-ui/react-dropdown-menu';
@@ -289,7 +289,7 @@ export default function MinistryFinancePage({ params }: { params: { id: string }
     }
   }
 
-  async function fetchFinances() {
+  const fetchFinances = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -303,11 +303,11 @@ export default function MinistryFinancePage({ params }: { params: { id: string }
     } finally {
       setLoading(false);
     }
-  }
+  }, [ministryId]);
 
   useEffect(() => {
     fetchFinances();
-  }, [ministryId]);
+  }, [ministryId, fetchFinances]);
 
   // Filtro local (pode ser adaptado para backend depois)
   useEffect(() => {

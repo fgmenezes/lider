@@ -315,19 +315,18 @@ function LeaderActionsMenu({ leader, onEdit, onDelete, onToggleStatus, onView }:
   const [open, setOpen] = React.useState(false);
   const menuRef = React.useRef<HTMLDivElement>(null);
   const buttonRef = React.useRef<HTMLButtonElement>(null);
-  const optionRefs = [
-    React.useRef<HTMLButtonElement>(null),
-    React.useRef<HTMLButtonElement>(null),
-    React.useRef<HTMLButtonElement>(null),
-    React.useRef<HTMLButtonElement>(null),
-  ];
+  const optionRef0 = React.useRef<HTMLButtonElement>(null);
+  const optionRef1 = React.useRef<HTMLButtonElement>(null);
+  const optionRef2 = React.useRef<HTMLButtonElement>(null);
+  const optionRef3 = React.useRef<HTMLButtonElement>(null);
+  const optionRefs = React.useMemo(() => [optionRef0, optionRef1, optionRef2, optionRef3], []);
   const optionCount = 4;
 
   React.useEffect(() => {
     if (open) {
       setTimeout(() => optionRefs[0].current?.focus(), 0);
     }
-  }, [open]);
+  }, [open, optionRefs]);
 
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
