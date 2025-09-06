@@ -1,11 +1,17 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link'; // Importar o componente Link
+import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { signOut } from 'next-auth/react';
+import { X } from 'lucide-react';
 
-export default function Sidebar() {
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { data: session } = useSession();
   const role = session?.user?.role;
   const name = session?.user?.name;
@@ -50,15 +56,48 @@ export default function Sidebar() {
   });
 
   return (
-    <div className="flex flex-col w-64 bg-gray-800 text-white"> {/* Sidebar fixa com largura e cor de fundo */}
-      <div className="flex items-center justify-center h-16 bg-gray-900"> {/* Área do Logo/Título */}
+    <>
+      {/* Overlay para mobile/tablet */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden transition-opacity duration-300"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
+      
+      {/* Sidebar */}
+      <div className={`
+        fixed lg:static inset-y-0 left-0 z-50 lg:z-auto
+        flex flex-col w-64 bg-gray-800 text-white
+        transform transition-transform duration-300 ease-in-out lg:transform-none
+        ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+      <div className="flex items-center justify-between h-16 bg-gray-900 px-4"> {/* Área do Logo/Título */}
         <span className="text-xl font-semibold">Sistema Lider</span>
+        {/* Botão de fechar apenas em mobile/tablet */}
+        <button
+          onClick={onClose}
+          className="p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 lg:hidden transition-colors"
+          aria-label="Fechar menu"
+        >
+          <X className="h-5 w-5" />
+        </button>
       </div>
       <nav className="flex-1 overflow-y-auto"> {/* Área de Navegação Rolável */}
         <ul className="space-y-2 py-4"> {/* Lista de Links */}
           {filteredLinks.map((link) => (
               <li key={link.href}> {/* Item da Lista */}
-              <Link href={link.href} className="flex items-center px-4 py-2 text-gray-200 hover:bg-gray-700">
+              <Link 
+                href={link.href} 
+                className="flex items-center px-4 py-2 text-gray-200 hover:bg-gray-700 transition-colors"
+                onClick={() => {
+                  // Fechar sidebar em mobile/tablet ao clicar em um link
+                  if (window.innerWidth < 1024) {
+                    onClose();
+                  }
+                }}
+              >
                   {link.label}
                 </Link>
               </li>
@@ -76,6 +115,7 @@ export default function Sidebar() {
           Sair
         </button>
       </div>
-    </div>
+      </div>
+    </>
   );
-} 
+}

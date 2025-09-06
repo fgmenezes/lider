@@ -1,6 +1,7 @@
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { cn } from "@/lib/utils";
+import { X } from "lucide-react";
 
 const Dialog = DialogPrimitive.Root;
 const DialogTrigger = DialogPrimitive.Trigger;
@@ -29,9 +30,19 @@ const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.C
           "fixed left-1/2 top-1/2 z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-white p-6 shadow-lg duration-200 sm:rounded-lg",
           className
         )}
+        onKeyDown={(e) => {
+          // Adiciona suporte para fechar com Escape
+          if (e.key === "Escape" && props.onOpenChange) {
+            props.onOpenChange(false);
+          }
+        }}
         {...props}
       >
         {children}
+        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+          <X className="h-4 w-4" />
+          <span className="sr-only">Fechar</span>
+        </DialogPrimitive.Close>
       </DialogPrimitive.Content>
     </DialogPortal>
   )
@@ -49,4 +60,6 @@ const DialogTitle = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Tit
 );
 DialogTitle.displayName = DialogPrimitive.Title.displayName;
 
-export { Dialog, DialogTrigger, DialogContent, DialogTitle }; 
+const DialogClose = DialogPrimitive.Close;
+
+export { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogClose };

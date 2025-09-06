@@ -18,21 +18,30 @@ function maskDate(value: string) {
   return value
     .replace(/\D/g, "")
     .replace(/(\d{2})(\d)/, "$1/$2")
-    .replace(/(\d{2})\/(\d{2})(\d)/, "$1/$2$3")
-    .replace(/(\d{2})\/(\d{2})\/(\d{4}).*/, "$1/$2/$3")
-    .slice(0, 10);
+    .replace(/(\d{2})\/(\d{2})(\d)/, "$1/$2/$3")
+    .replace(/(\d{10})\d+?$/, "$1");
 }
 
 function calculateAge(dateStr: string) {
-  if (!dateStr || dateStr.length !== 10) return '';
+  if (!dateStr || typeof dateStr !== 'string' || dateStr.length !== 10) return '';
   const [d, m, y] = dateStr.split('/');
-  const birth = new Date(`${y}-${m}-${d}`);
+  if (!d || !m || !y || d.length !== 2 || m.length !== 2 || y.length !== 4) return '';
+  
+  const day = parseInt(d, 10);
+  const month = parseInt(m, 10);
+  const year = parseInt(y, 10);
+  
+  if (isNaN(day) || isNaN(month) || isNaN(year)) return '';
+  
+  const birth = new Date(year, month - 1, day);
   if (isNaN(birth.getTime())) return '';
+  
   const today = new Date();
   let age = today.getFullYear() - birth.getFullYear();
   const mDiff = today.getMonth() - birth.getMonth();
   if (mDiff < 0 || (mDiff === 0 && today.getDate() < birth.getDate())) age--;
-  return age.toString();
+  
+  return age >= 0 ? age.toString() : '';
 }
 
 function maskPhone(value: string) {
@@ -71,8 +80,13 @@ function UserFormStep1({ form, setForm, onCancel }: { form: any, setForm: (data:
     if (nameRef.current) nameRef.current.focus();
   }, []);
   useEffect(() => {
-    setForm((prev: any) => ({ ...prev, idade: calculateAge(prev.dataNascimento) }));
-  }, [form.dataNascimento, setForm]);
+    if (form.dataNascimento) {
+      const idade = calculateAge(form.dataNascimento);
+      if (idade !== form.idade) {
+        setForm((prev: any) => ({ ...prev, idade }));
+      }
+    }
+  }, [form.dataNascimento]);
 
   return (
     <div className="space-y-4">
@@ -365,7 +379,7 @@ function UserFormStep4({ form, setForm, onCancel }: { form: any, setForm: (data:
 function UserFormStep5({ form, setForm, onCancel }: { form: any, setForm: (data: any) => void, onCancel: () => void }) {
   const email = form.email || "";
   const [password, setPassword] = useState(form.password || "");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState(form.password || "");
   const [error, setError] = useState("");
   const emailRef = useRef<HTMLInputElement>(null);
 
@@ -384,7 +398,7 @@ function UserFormStep5({ form, setForm, onCancel }: { form: any, setForm: (data:
     } else {
       setError("");
     }
-    setForm((prev: any) => ({ ...prev, password }));
+    setForm((prev: any) => ({ ...prev, password, confirmPassword }));
   }, [password, confirmPassword, setForm]);
 
   return (
@@ -562,7 +576,23 @@ export default function UsersPage() {
     name: "",
     dataNascimento: "",
     dataIngresso: "",
-    // ... outros campos ...
+    idade: "",
+    sexo: "",
+    estadoCivil: "",
+    phone: "",
+    email: "",
+    cep: "",
+    rua: "",
+    numero: "",
+    complemento: "",
+    bairro: "",
+    municipio: "",
+    estado: "",
+    cargo: "",
+    ministryId: "",
+    church: "",
+    password: "",
+    isActive: true
   });
   const [submitLoading, setSubmitLoading] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -606,11 +636,18 @@ export default function UsersPage() {
   }
 
   const validateDate = (dateStr: string) => {
-    if (!dateStr || typeof dateStr !== 'string') return false;
+    if (!dateStr || typeof dateStr !== 'string' || dateStr.length !== 10) return false;
     const [d, m, y] = dateStr.split('/');
-    if (!d || !m || !y) return false;
-    const date = new Date(`${y}-${m}-${d}`);
-    return !isNaN(date.getTime()) && dateStr.length === 10;
+    if (!d || !m || !y || d.length !== 2 || m.length !== 2 || y.length !== 4) return false;
+    
+    const day = parseInt(d, 10);
+    const month = parseInt(m, 10);
+    const year = parseInt(y, 10);
+    
+    if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1900 || year > new Date().getFullYear()) return false;
+    
+    const date = new Date(year, month - 1, day);
+    return date.getDate() === day && date.getMonth() === month - 1 && date.getFullYear() === year;
   };
 
   const handleSaveUser = async () => {
@@ -630,7 +667,10 @@ export default function UsersPage() {
         const parts = dateStr.split("/");
         if (parts.length !== 3) return undefined;
         const [d, m, y] = parts;
-        if (!d || !m || !y) return undefined;
+        if (!d || !m || !y || d.length !== 2 || m.length !== 2 || y.length !== 4) return undefined;
+        // Validar se é uma data válida
+        const date = new Date(`${y}-${m}-${d}`);
+        if (isNaN(date.getTime())) return undefined;
         return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
       };
       const roleMap = {
@@ -668,7 +708,28 @@ export default function UsersPage() {
       }
       setEditUser(null);
       setFormStep(1);
-      setFormData({});
+      setFormData({
+        name: "",
+        dataNascimento: "",
+        dataIngresso: "",
+        idade: "",
+        sexo: "",
+        estadoCivil: "",
+        phone: "",
+        email: "",
+        cep: "",
+        rua: "",
+        numero: "",
+        complemento: "",
+        bairro: "",
+        municipio: "",
+        estado: "",
+        cargo: "",
+        ministryId: "",
+        church: "",
+        password: "",
+        isActive: true
+      });
       fetchUsers(search, page);
       toast.success('Usuário atualizado com sucesso!');
     } catch (err: any) {
@@ -684,7 +745,36 @@ export default function UsersPage() {
       <Toaster position="top-right" />
       <h1 className="text-2xl font-bold mb-6">Gerenciamento de Usuários</h1>
       <div className="flex items-center justify-end mb-4">
-        <Dialog.Root open={open || !!editUser} onOpenChange={(v) => { setOpen(v); if (!v) setEditUser(null); }}>
+        <Dialog.Root open={open || !!editUser} onOpenChange={(v) => { 
+            setOpen(v); 
+            if (!v) {
+              setEditUser(null);
+              // Limpar completamente o formulário ao fechar o modal
+              setFormStep(1);
+              setFormData({
+                name: "",
+                dataNascimento: "",
+                dataIngresso: "",
+                idade: "",
+                sexo: "",
+                estadoCivil: "",
+                phone: "",
+                email: "",
+                cep: "",
+                rua: "",
+                numero: "",
+                complemento: "",
+                bairro: "",
+                municipio: "",
+                estado: "",
+                cargo: "",
+                ministryId: "",
+                church: "",
+                password: "",
+                isActive: true
+              });
+            }
+          }}>
           <Dialog.Trigger asChild>
             <button className="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700">
               Adicionar Usuário
@@ -710,7 +800,32 @@ export default function UsersPage() {
                 <UserCreateWizard
                   form={formData}
                   setForm={setFormData}
-                  onCancel={() => { setOpen(false); setFormStep(1); setFormData({ name: "", dataNascimento: "", dataIngresso: "" }); }}
+                  onCancel={() => { 
+                    setOpen(false); 
+                    setFormStep(1); 
+                    setFormData({
+                      name: "",
+                      dataNascimento: "",
+                      dataIngresso: "",
+                      idade: "",
+                      sexo: "",
+                      estadoCivil: "",
+                      phone: "",
+                      email: "",
+                      cep: "",
+                      rua: "",
+                      numero: "",
+                      complemento: "",
+                      bairro: "",
+                      municipio: "",
+                      estado: "",
+                      cargo: "",
+                      ministryId: "",
+                      church: "",
+                      password: "",
+                      isActive: true
+                    }); 
+                  }}
                   onSave={async () => {
                     setSubmitLoading(true);
                     setSubmitError("");
@@ -737,9 +852,9 @@ export default function UsersPage() {
                         'LEADER': 'LEADER',
                       };
                       const payload = {
-                        name: formData.name || '',
-                        email: formData.email || '',
-                        password: formData.password || '',
+                        nomeCompleto: formData.name || '',
+                        emailLogin: formData.email || '',
+                        senha: formData.password || '',
                         isActive: formData.isActive,
                         ministryId: formData.ministryId || undefined,
                         dataIngresso: (typeof formData.dataIngresso === 'string' && formData.dataIngresso && formData.dataIngresso.includes('/')) ? mapDate(formData.dataIngresso) : undefined,
@@ -754,6 +869,7 @@ export default function UsersPage() {
                         sexo: formData.sexo || '',
                         estadoCivil: formData.estadoCivil || '',
                         dataNascimento: toISODate(formData.dataNascimento),
+                        tipoLider: formData.cargo || 'LEADER',
                       };
                       const res = await fetch(`/api/users`, {
                         method: 'POST',
@@ -766,7 +882,28 @@ export default function UsersPage() {
                       }
                       setOpen(false);
                       setFormStep(1);
-                      setFormData({});
+                      setFormData({
+                        name: "",
+                        dataNascimento: "",
+                        dataIngresso: "",
+                        idade: "",
+                        sexo: "",
+                        estadoCivil: "",
+                        phone: "",
+                        email: "",
+                        cep: "",
+                        rua: "",
+                        numero: "",
+                        complemento: "",
+                        bairro: "",
+                        municipio: "",
+                        estado: "",
+                        cargo: "",
+                        ministryId: "",
+                        church: "",
+                        password: "",
+                        isActive: true
+                      });
                       fetchUsers(search, page);
                       toast.success('Usuário criado com sucesso!');
                     } catch (err: any) {
@@ -896,4 +1033,4 @@ export default function UsersPage() {
       </div>
     </div>
   );
-} 
+}

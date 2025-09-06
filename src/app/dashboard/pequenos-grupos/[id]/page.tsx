@@ -5,6 +5,9 @@ import { FREQUENCIAS_LABEL } from "@/constants/frequencias";
 import { Tab } from '@headlessui/react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useSession } from "next-auth/react";
+import { PlusCircle, Edit, Trash2, CheckCircle, XCircle } from "lucide-react";
+import PeopleTab from "@/components/forms/PeopleTab";
+import GroupObservationsSection from "./GroupObservationsSection";
 
 export default function SmallGroupDetailsPage() {
   const router = useRouter();
@@ -16,23 +19,27 @@ export default function SmallGroupDetailsPage() {
   const [meetings, setMeetings] = useState<any[]>([]);
   const [meetingsLoading, setMeetingsLoading] = useState(false);
   const [meetingsError, setMeetingsError] = useState("");
-  const [showAddLeaderModal, setShowAddLeaderModal] = useState(false);
-  const [searchLeader, setSearchLeader] = useState("");
-  const [selectedLeaders, setSelectedLeaders] = useState<string[]>([]);
-  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
-  const [searchMember, setSearchMember] = useState("");
-  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
-  const [eligibleLeaders, setEligibleLeaders] = useState<any[]>([]);
-  const [eligibleLeadersLoading, setEligibleLeadersLoading] = useState(false);
-  const [eligibleLeadersError, setEligibleLeadersError] = useState("");
-  const [eligibleMembers, setEligibleMembers] = useState<any[]>([]);
-  const [eligibleMembersLoading, setEligibleMembersLoading] = useState(false);
-  const [eligibleMembersError, setEligibleMembersError] = useState("");
+
   const [feedback, setFeedback] = useState<string | null>(null);
   const [removingLeaderId, setRemovingLeaderId] = useState<string | null>(null);
   const [confirmRemoveLeader, setConfirmRemoveLeader] = useState<null | { id: string; name: string }>(null);
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
   const [confirmRemoveMember, setConfirmRemoveMember] = useState<null | { id: string; name: string }>(null);
+  
+  // Estados para gerenciamento de reuniões
+  const [showAddMeetingModal, setShowAddMeetingModal] = useState(false);
+  const [meetingDate, setMeetingDate] = useState("");
+  const [meetingTime, setMeetingTime] = useState("");
+  const [meetingType, setMeetingType] = useState("PG");
+  const [meetingSubmitting, setMeetingSubmitting] = useState(false);
+  const [meetingError, setMeetingError] = useState("");
+  const [meetingSuccess, setMeetingSuccess] = useState(false);
+  const [confirmDeleteMeeting, setConfirmDeleteMeeting] = useState<null | { id: string; date: string }>(null);
+  const [deletingMeetingId, setDeletingMeetingId] = useState<string | null>(null);
+  const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [selectedMeeting, setSelectedMeeting] = useState<any>(null);
+  const [attendanceList, setAttendanceList] = useState<any[]>([]);
+  const [savingAttendance, setSavingAttendance] = useState(false);
 
   const { data: session } = useSession();
 
@@ -55,81 +62,9 @@ export default function SmallGroupDetailsPage() {
     if (groupId) fetchGroup();
   }, [groupId]);
 
-  // Buscar líderes elegíveis ao abrir modal
-  useEffect(() => {
-    if (showAddLeaderModal && group?.ministryId) {
-      setEligibleLeadersLoading(true);
-      setEligibleLeadersError("");
-      const excludeIds = group.leaders?.map((l: any) => l.userId).join(",") || "";
-      fetch(`/api/ministries/${group.ministryId}/leaders?search=${encodeURIComponent(searchLeader)}&excludeIds=${excludeIds}`)
-        .then(res => res.json())
-        .then(data => setEligibleLeaders(data.leaders || []))
-        .catch(() => setEligibleLeadersError("Erro ao buscar líderes."))
-        .finally(() => setEligibleLeadersLoading(false));
-    }
-  }, [showAddLeaderModal, searchLeader, group?.ministryId, group?.leaders]);
 
-  // Buscar membros elegíveis ao abrir modal
-  useEffect(() => {
-    if (showAddMemberModal && group?.ministryId) {
-      setEligibleMembersLoading(true);
-      setEligibleMembersError("");
-      const excludeIds = group.members?.map((m: any) => m.memberId).join(",") || "";
-      fetch(`/api/members?ministryId=${group.ministryId}&search=${encodeURIComponent(searchMember)}`)
-        .then(res => res.json())
-        .then(data => {
-          // Excluir já associados
-          const filtered = (data.members || []).filter((m: any) => !group.members.some((gm: any) => gm.memberId === m.id));
-          setEligibleMembers(filtered);
-        })
-        .catch(() => setEligibleMembersError("Erro ao buscar membros."))
-        .finally(() => setEligibleMembersLoading(false));
-    }
-  }, [showAddMemberModal, searchMember, group?.ministryId, group?.members]);
 
-  // Função para associar líderes
-  async function handleAddLeaders() {
-    if (!selectedLeaders.length) return;
-    setFeedback(null);
-    try {
-      const res = await fetch(`/api/small-groups/${groupId}/add-leaders`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userIds: selectedLeaders }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || data.message || "Erro ao associar líderes.");
-      setShowAddLeaderModal(false);
-      setSelectedLeaders([]);
-      setFeedback("Líderes adicionados com sucesso!");
-      // Atualizar grupo
-      await fetchGroup();
-    } catch (e: any) {
-      setFeedback(e.message || "Erro ao associar líderes.");
-    }
-  }
 
-  // Função para associar membros
-  async function handleAddMembers() {
-    if (!selectedMembers.length) return;
-    setFeedback(null);
-    try {
-      const res = await fetch(`/api/small-groups/${groupId}/add-members`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ memberIds: selectedMembers }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || data.message || "Erro ao associar membros.");
-      setShowAddMemberModal(false);
-      setSelectedMembers([]);
-      setFeedback("Membros adicionados com sucesso!");
-      // Atualizar grupo
-      await fetchGroup();
-    } catch (e: any) {
-      setFeedback(e.message || "Erro ao associar membros.");
-    }
-  }
 
   // Função para remover líder
   async function handleRemoveLeader(leaderId: string) {
@@ -191,6 +126,79 @@ export default function SmallGroupDetailsPage() {
       setLoading(false);
     }
   }
+  
+  // Função para criar nova reunião
+  async function handleAddMeeting() {
+    if (!meetingDate || !meetingTime) {
+      setMeetingError("Data e horário são obrigatórios");
+      return;
+    }
+    
+    setMeetingSubmitting(true);
+    setMeetingError("");
+    setMeetingSuccess(false);
+    
+    try {
+      const res = await fetch(`/api/small-groups/${groupId}/meetings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: `${meetingDate}T${meetingTime}:00`,
+          type: meetingType
+        }),
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Erro ao criar reunião");
+      }
+      
+      setMeetingSuccess(true);
+      setMeetingDate("");
+      setMeetingTime("");
+      // Atualizar lista de reuniões
+      await fetchGroup();
+      
+      // Fechar modal após 1.5 segundos
+      setTimeout(() => {
+        setShowAddMeetingModal(false);
+        setMeetingSuccess(false);
+      }, 1500);
+      
+    } catch (e: any) {
+      setMeetingError(e.message || "Erro ao criar reunião");
+    } finally {
+      setMeetingSubmitting(false);
+    }
+  }
+  
+  // Função para excluir reunião
+  async function handleDeleteMeeting(meetingId: string) {
+    if (!meetingId) return;
+    
+    setDeletingMeetingId(meetingId);
+    
+    try {
+      const res = await fetch(`/api/small-groups/${groupId}/meetings/${meetingId}`, {
+        method: "DELETE",
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Erro ao excluir reunião");
+      }
+      
+      setFeedback("Reunião excluída com sucesso!");
+      // Atualizar lista de reuniões
+      await fetchGroup();
+      
+    } catch (e: any) {
+      setFeedback(e.message || "Erro ao excluir reunião");
+    } finally {
+      setDeletingMeetingId(null);
+      setConfirmDeleteMeeting(null);
+    }
+  }
 
   if (loading) return <div className="p-8 text-center">Carregando...</div>;
   if (error) return <div className="p-8 text-center text-red-600">{error}</div>;
@@ -207,6 +215,7 @@ export default function SmallGroupDetailsPage() {
           <Tab className={({ selected }) => `px-6 py-2 text-base font-semibold rounded-t-lg transition-colors duration-200 outline-none focus:ring-2 focus:ring-blue-400 ${selected ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Resumo</Tab>
           <Tab className={({ selected }) => `px-6 py-2 text-base font-semibold rounded-t-lg transition-colors duration-200 outline-none focus:ring-2 focus:ring-blue-400 ${selected ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Pessoas</Tab>
           <Tab className={({ selected }) => `px-6 py-2 text-base font-semibold rounded-t-lg transition-colors duration-200 outline-none focus:ring-2 focus:ring-blue-400 ${selected ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Reuniões</Tab>
+          <Tab className={({ selected }) => `px-6 py-2 text-base font-semibold rounded-t-lg transition-colors duration-200 outline-none focus:ring-2 focus:ring-blue-400 ${selected ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Observações</Tab>
         </Tab.List>
         <Tab.Panels>
           {/* Aba Resumo */}
@@ -241,86 +250,9 @@ export default function SmallGroupDetailsPage() {
               </div>
             </div>
           </Tab.Panel>
-          {/* Aba Pessoas com sub-abas */}
+          {/* Aba Pessoas */}
           <Tab.Panel>
-            <Tab.Group>
-              <Tab.List className="flex space-x-2 border-b border-gray-200 mb-4 bg-gray-50 rounded-t p-1 shadow-sm">
-                <Tab className={({ selected }) => `px-4 py-1.5 text-sm font-medium rounded-t transition-colors duration-200 outline-none focus:ring-2 focus:ring-blue-400 ${selected ? 'bg-blue-500 text-white shadow' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Líderes</Tab>
-                <Tab className={({ selected }) => `px-4 py-1.5 text-sm font-medium rounded-t transition-colors duration-200 outline-none focus:ring-2 focus:ring-blue-400 ${selected ? 'bg-blue-500 text-white shadow' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Membros</Tab>
-              </Tab.List>
-              <Tab.Panels>
-                <Tab.Panel>
-                  <div className="bg-white rounded shadow p-4 mb-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h2 className="text-lg font-semibold">Líderes</h2>
-                      <button
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium shadow"
-                        onClick={() => setShowAddLeaderModal(true)}
-                        type="button"
-                      >
-                        + Adicionar Líder
-                      </button>
-                    </div>
-                    {group.leaders?.length ? (
-                      <ul className="divide-y divide-gray-100">
-                        {group.leaders.map((leader: any) => (
-                          <li key={leader.id} className="py-2 flex items-center justify-between">
-                            <div>
-                              <span className="font-medium">{leader.user?.name}</span>
-                              {leader.user?.email && <span className="ml-2 text-gray-500 text-sm">({leader.user.email})</span>}
-                            </div>
-                            <button
-                              className="ml-4 px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 disabled:opacity-50"
-                              disabled={removingLeaderId === leader.userId}
-                              onClick={() => setConfirmRemoveLeader({ id: leader.userId, name: leader.user?.name })}
-                            >
-                              Remover
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <div className="text-gray-500">Nenhum líder cadastrado.</div>
-                    )}
-                  </div>
-                </Tab.Panel>
-                <Tab.Panel>
-                  <div className="bg-white rounded shadow p-4 mb-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h2 className="text-lg font-semibold">Membros</h2>
-                      <button
-                        className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm font-medium shadow"
-                        onClick={() => setShowAddMemberModal(true)}
-                        type="button"
-                      >
-                        + Adicionar Membro
-                      </button>
-                    </div>
-                    {group.members?.length ? (
-                      <ul className="divide-y divide-gray-100">
-                        {group.members.map((m: any) => (
-                          <li key={m.id} className="py-2 flex items-center justify-between">
-                            <div>
-                              <span className="font-medium">{m.member?.name}</span>
-                              {m.member?.email && <span className="ml-2 text-gray-500 text-sm">({m.member.email})</span>}
-                            </div>
-                            <button
-                              className="ml-4 px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 disabled:opacity-50"
-                              disabled={removingMemberId === m.memberId}
-                              onClick={() => setConfirmRemoveMember({ id: m.memberId, name: m.member?.name })}
-                            >
-                              Remover
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <div className="text-gray-500">Nenhum membro cadastrado.</div>
-                    )}
-                  </div>
-                </Tab.Panel>
-              </Tab.Panels>
-            </Tab.Group>
+            <PeopleTab group={group} onRefresh={fetchGroup} />
           </Tab.Panel>
           {/* Aba Reuniões com sub-abas */}
           <Tab.Panel>
@@ -345,7 +277,7 @@ export default function SmallGroupDetailsPage() {
                           </thead>
                           <tbody className="divide-y divide-gray-100">
                             {meetings.filter((m: any) => new Date(m.date) >= new Date()).map((meeting: any) => (
-                              <tr key={meeting.id}>
+                              <tr key={meeting.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => router.push(`/dashboard/pequenos-grupos/${group.id}/reunioes/${meeting.id}`)}>
                                 <td className="px-4 py-2">{meeting.date ? new Date(meeting.date).toLocaleDateString() : '-'}</td>
                                 <td className="px-4 py-2">{meeting.date ? new Date(meeting.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
                                 <td className="px-4 py-2">{meeting.status || '-'}</td>
@@ -374,7 +306,7 @@ export default function SmallGroupDetailsPage() {
                           </thead>
                           <tbody className="divide-y divide-gray-100">
                             {meetings.filter((m: any) => new Date(m.date) < new Date()).map((meeting: any) => (
-                              <tr key={meeting.id}>
+                              <tr key={meeting.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => router.push(`/dashboard/pequenos-grupos/${group.id}/reunioes/${meeting.id}`)}>
                                 <td className="px-4 py-2">{meeting.date ? new Date(meeting.date).toLocaleDateString() : '-'}</td>
                                 <td className="px-4 py-2">{meeting.date ? new Date(meeting.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
                                 <td className="px-4 py-2">{meeting.status || '-'}</td>
@@ -391,102 +323,16 @@ export default function SmallGroupDetailsPage() {
               </Tab.Panels>
             </Tab.Group>
           </Tab.Panel>
+          {/* Aba Observações do Grupo */}
+          <Tab.Panel>
+            <GroupObservationsSection groupId={group.id} members={group.members || []} onRefresh={fetchGroup} />
+          </Tab.Panel>
         </Tab.Panels>
       </Tab.Group>
 
-      {/* Modal de seleção múltipla de líderes */}
-      <Dialog open={showAddLeaderModal} onOpenChange={setShowAddLeaderModal}>
-        <DialogContent>
-          <DialogTitle>Adicionar Líder(es) ao Pequeno Grupo</DialogTitle>
-          <input
-            type="text"
-            placeholder="Buscar por nome, e-mail ou telefone..."
-            value={searchLeader}
-            onChange={e => setSearchLeader(e.target.value)}
-            className="border rounded px-3 py-2 w-full mb-3"
-            autoFocus
-          />
-          <div className="max-h-60 overflow-y-auto mb-4">
-            {eligibleLeadersLoading ? (
-              <div className="text-center py-4">Carregando líderes...</div>
-            ) : eligibleLeadersError ? (
-              <div className="text-center py-4 text-red-600">{eligibleLeadersError}</div>
-            ) : eligibleLeaders.length ? (
-              eligibleLeaders.map(l => (
-                <label key={l.id} className="flex items-center gap-2 py-1 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedLeaders.includes(l.id)}
-                    onChange={e => {
-                      if (e.target.checked) setSelectedLeaders(prev => [...prev, l.id]);
-                      else setSelectedLeaders(prev => prev.filter(id => id !== l.id));
-                    }}
-                  />
-                  <span className="font-medium">{l.name}</span>
-                  <span className="text-gray-500 text-xs">{l.email}</span>
-                  <span className="text-gray-400 text-xs">{l.phone}</span>
-                </label>
-              ))
-            ) : (
-              <div className="text-gray-500 text-sm">Nenhum líder encontrado.</div>
-            )}
-          </div>
-          <div className="flex justify-end gap-2">
-            <button className="px-4 py-2 rounded bg-gray-200" onClick={() => setShowAddLeaderModal(false)}>Cancelar</button>
-            <button className="px-4 py-2 rounded bg-blue-600 text-white font-semibold disabled:opacity-50" disabled={selectedLeaders.length === 0 || eligibleLeadersLoading} onClick={handleAddLeaders}>
-              Adicionar {selectedLeaders.length > 0 ? `(${selectedLeaders.length})` : ''}
-            </button>
-          </div>
-          {feedback && <div className={`mt-4 p-3 rounded ${feedback.includes('sucesso') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{feedback}</div>}
-        </DialogContent>
-      </Dialog>
 
-      {/* Modal de seleção múltipla de membros */}
-      <Dialog open={showAddMemberModal} onOpenChange={setShowAddMemberModal}>
-        <DialogContent>
-          <DialogTitle>Adicionar Membro(s) ao Pequeno Grupo</DialogTitle>
-          <input
-            type="text"
-            placeholder="Buscar por nome, e-mail ou telefone..."
-            value={searchMember}
-            onChange={e => setSearchMember(e.target.value)}
-            className="border rounded px-3 py-2 w-full mb-3"
-            autoFocus
-          />
-          <div className="max-h-60 overflow-y-auto mb-4">
-            {eligibleMembersLoading ? (
-              <div className="text-center py-4">Carregando membros...</div>
-            ) : eligibleMembersError ? (
-              <div className="text-center py-4 text-red-600">{eligibleMembersError}</div>
-            ) : eligibleMembers.length ? (
-              eligibleMembers.map(m => (
-                <label key={m.id} className="flex items-center gap-2 py-1 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedMembers.includes(m.id)}
-                    onChange={e => {
-                      if (e.target.checked) setSelectedMembers(prev => [...prev, m.id]);
-                      else setSelectedMembers(prev => prev.filter(id => id !== m.id));
-                    }}
-                  />
-                  <span className="font-medium">{m.name}</span>
-                  <span className="text-gray-500 text-xs">{m.email}</span>
-                  <span className="text-gray-400 text-xs">{m.phone}</span>
-                </label>
-              ))
-            ) : (
-              <div className="text-gray-500 text-sm">Nenhum membro encontrado.</div>
-            )}
-          </div>
-          <div className="flex justify-end gap-2">
-            <button className="px-4 py-2 rounded bg-gray-200" onClick={() => setShowAddMemberModal(false)}>Cancelar</button>
-            <button className="px-4 py-2 rounded bg-green-600 text-white font-semibold disabled:opacity-50" disabled={selectedMembers.length === 0 || eligibleMembersLoading} onClick={handleAddMembers}>
-              Adicionar {selectedMembers.length > 0 ? `(${selectedMembers.length})` : ''}
-            </button>
-          </div>
-          {feedback && <div className={`mt-4 p-3 rounded ${feedback.includes('sucesso') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{feedback}</div>}
-        </DialogContent>
-      </Dialog>
+
+
 
       {/* Modal de confirmação de remoção de líder */}
       {confirmRemoveLeader && (

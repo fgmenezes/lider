@@ -44,13 +44,17 @@ export default function MemberDetailsPage() {
   useEffect(() => {
     if (!id) return;
     setLoading(true);
+    console.log('🔍 Buscando membro com ID:', id);
     fetch(`/api/members/${id}`)
       .then(res => res.json())
       .then(data => {
+        console.log('📥 Dados recebidos da API:', data);
+        console.log('👤 Dados do membro:', data.member);
         setMember(data.member);
         setLoading(false);
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error('❌ Erro ao carregar membro:', error);
         setError("Erro ao carregar membro");
         setLoading(false);
       });
@@ -243,6 +247,7 @@ export default function MemberDetailsPage() {
           {/* Dados Pessoais */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-2 text-blue-700">Dados Pessoais</h3>
+            {console.log('🎨 Renderizando dados pessoais:', { name: member.name, dataNascimento: member.dataNascimento, sexo: member.sexo, estadoCivil: member.estadoCivil })}
             <div><b>Nome:</b> {member.name}</div>
             <div><b>Data de Nascimento:</b> {member.dataNascimento ? new Date(member.dataNascimento).toLocaleDateString('pt-BR') : '-'}</div>
             <div><b>Idade:</b> {calcularIdade(member.dataNascimento) ?? '-'}</div>
@@ -252,12 +257,14 @@ export default function MemberDetailsPage() {
           {/* Contato */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-2 text-blue-700">Contato</h3>
+            {console.log('📞 Renderizando contato:', { phone: member.phone, email: member.email })}
             <div><b>Celular:</b> {member.phone || '-'}</div>
             <div><b>E-mail:</b> {member.email || '-'}</div>
           </div>
           {/* Endereço */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-2 text-blue-700">Endereço</h3>
+            {console.log('🏠 Renderizando endereço:', { cep: member.cep, rua: member.rua, numero: member.numero, bairro: member.bairro, municipio: member.municipio, estado: member.estado })}
             <div><b>CEP:</b> {member.cep || '-'}</div>
             <div><b>Rua:</b> {member.rua || '-'}</div>
             <div><b>Número:</b> {member.numero || '-'}</div>
@@ -503,4 +510,4 @@ export default function MemberDetailsPage() {
       <button className="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded" onClick={() => router.back()}>Voltar</button>
     </div>
   );
-} 
+}

@@ -10,8 +10,8 @@ export function maskDate(value: string) {
   return value
     .replace(/\D/g, '')
     .replace(/(\d{2})(\d)/, '$1/$2')
-    .replace(/(\d{2})(\d)/, '$1/$2')
-    .replace(/(\d{4})\d+?$/, '$1');
+    .replace(/(\d{2})\/(\d{2})(\d)/, '$1/$2/$3')
+    .replace(/(\d{10})\d+?$/, '$1');
 }
 
 // Máscara para telefone celular (formato brasileiro)
@@ -29,4 +29,4 @@ export function maskCep(value: string) {
     .replace(/\D/g, '')
     .replace(/(\d{5})(\d)/, '$1-$2')
     .replace(/(-\d{3})\d+?$/, '$1');
-} 
+}

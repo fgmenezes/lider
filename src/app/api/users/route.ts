@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
     const onlyAvailableMasters = searchParams.get('onlyAvailableMasters') === 'true';
     let whereClause: any = {};
     const ministryId = searchParams.get('ministryId');
+    const masterMinistryId = searchParams.get('masterMinistryId');
 
     // Se o usuário for MASTER, sempre filtrar pelo ministryId do usuário logado
     if (session.user.role === 'MASTER') {
@@ -29,6 +30,9 @@ export async function GET(request: NextRequest) {
         { ministryId: session.user.masterMinistryId },
         { masterMinistryId: session.user.masterMinistryId }
       ];
+    } else if (masterMinistryId) {
+      // Buscar usuários que são masters deste ministério específico
+      whereClause.masterMinistryId = masterMinistryId;
     } else if (ministryId) {
       whereClause.ministryId = ministryId;
     }
@@ -202,4 +206,4 @@ export async function POST(req: Request) {
     console.error('Erro ao criar usuário:', error);
     return NextResponse.json({ message: error?.message || String(error) || 'Erro ao criar usuário' }, { status: 500 });
   }
-} 
+}

@@ -26,7 +26,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       members: {
         include: { member: true }
       },
-      meetings: true,
+      meetings: {
+        include: {
+          attendances: true
+        },
+        orderBy: {
+          date: 'desc'
+        }
+      },
     },
   });
 
@@ -44,5 +51,47 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ error: 'Sem permissão para acessar este grupo' }, { status: 403 });
   }
 
+  // Atualizar status das reuniões automaticamente
+  const now = new Date();
+  const meetingsToUpdate = [];
+  
+  for (const meeting of group.meetings) {
+    const meetingDate = new Date(meeting.date);
+    const meetingEndTime = meeting.endTime ? new Date(meeting.endTime) : meetingDate;
+    const hasAttendances = meeting.attendances && meeting.attendances.length > 0;
+    
+    let newStatus = meeting.status;
+    
+    // Lógica para determinar o status correto
+    if (now > meetingEndTime || hasAttendances) {
+      newStatus = 'FINALIZADA';
+    } else if (now >= meetingDate && now <= meetingEndTime) {
+      newStatus = 'EM_ANDAMENTO';
+    } else if (now < meetingDate) {
+      newStatus = 'AGENDADA';
+    }
+    
+    // Se o status mudou, atualizar no banco
+    if (newStatus !== meeting.status) {
+      meetingsToUpdate.push({
+        id: meeting.id,
+        status: newStatus
+      });
+      meeting.status = newStatus; // Atualizar no objeto retornado
+    }
+  }
+  
+  // Atualizar status no banco de dados se necessário
+  if (meetingsToUpdate.length > 0) {
+    await Promise.all(
+      meetingsToUpdate.map(meeting =>
+        prisma.smallGroupMeeting.update({
+          where: { id: meeting.id },
+          data: { status: meeting.status }
+        })
+      )
+    );
+  }
+
   return NextResponse.json({ group });
-} 
+}

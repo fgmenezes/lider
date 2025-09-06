@@ -55,7 +55,22 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ message: 'Acesso negado' }, { status: 403 });
     }
 
-    return NextResponse.json({ member });
+    // Buscar dados relacionados (responsáveis, irmãos e primos)
+    const [responsaveis, irmaos, primos] = await Promise.all([
+      prisma.responsavel.findMany({ where: { memberId: params.id } }),
+      prisma.memberIrmao.findMany({ where: { memberId: params.id }, include: { irmao: { select: { id: true, name: true } } } }),
+      prisma.memberPrimo.findMany({ where: { memberId: params.id }, include: { primo: { select: { id: true, name: true } } } })
+    ]);
+
+    // Retornar membro com dados relacionados
+    const memberWithRelations = {
+      ...member,
+      responsaveis,
+      irmaos: irmaos.map(i => i.irmao),
+      primos: primos.map(p => p.primo)
+    };
+
+    return NextResponse.json({ member: memberWithRelations });
 
   } catch (error) {
     console.error('Erro ao buscar membro:', error);

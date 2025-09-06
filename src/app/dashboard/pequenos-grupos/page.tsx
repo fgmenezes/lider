@@ -119,6 +119,7 @@ function SmallGroupWizard({ open, onClose, onCreated }: { open: boolean; onClose
   const [frequencia, setFrequencia] = useState("");
   const [diaSemana, setDiaSemana] = useState("");
   const [horario, setHorario] = useState("");
+  const [horarioTermino, setHorarioTermino] = useState("");
   const [dataUnica, setDataUnica] = useState("");
   const [dataInicio, setDataInicio] = useState("");
   const [validationError, setValidationError] = useState("");
@@ -269,6 +270,7 @@ function SmallGroupWizard({ open, onClose, onCreated }: { open: boolean; onClose
         dayOfWeek: tipoEncontro === 'recorrente' ? diaSemana : null,
         frequency: tipoEncontro === 'recorrente' ? frequencia : null,
         time: horario,
+        endTime: horarioTermino || null,
         startDate: tipoEncontro === 'recorrente'
           ? (dataInicio ? brToISO(dataInicio) : null)
           : (dataUnica ? brToISO(dataUnica) : null),
@@ -339,7 +341,8 @@ function SmallGroupWizard({ open, onClose, onCreated }: { open: boolean; onClose
               <>
                 <Select label="Frequência *" value={frequencia} onChange={e => setFrequencia(e.target.value)} options={FREQUENCIAS} required error={!frequencia && validationError ? 'Obrigatório' : undefined} ref={frequenciaRef} />
                 <Select label="Dia da Semana *" value={diaSemana} onChange={e => setDiaSemana(e.target.value)} options={DIAS_SEMANA} required error={!diaSemana && validationError ? 'Obrigatório' : undefined} />
-                <Input label="Horário do Encontro *" type="time" value={horario} onChange={e => setHorario(e.target.value)} required error={!horario && validationError ? 'Obrigatório' : undefined} />
+                <Input label="Horário de Início *" type="time" value={horario} onChange={e => setHorario(e.target.value)} required error={!horario && validationError ? 'Obrigatório' : undefined} />
+                <Input label="Horário de Término" type="time" value={horarioTermino} onChange={e => setHorarioTermino(e.target.value)} />
                 <Input label="Data de início (opcional)"
                   type="text"
                   placeholder="DD/MM/AAAA"
@@ -372,7 +375,8 @@ function SmallGroupWizard({ open, onClose, onCreated }: { open: boolean; onClose
                   error={erroDataUnica || (!dataUnica && validationError ? 'Obrigatório' : undefined)}
                   ref={dataUnicaRef}
                 />
-                <Input label="Horário do Encontro *" type="time" value={horario} onChange={e => setHorario(e.target.value)} required error={!horario && validationError ? 'Obrigatório' : undefined} />
+                <Input label="Horário de Início *" type="time" value={horario} onChange={e => setHorario(e.target.value)} required error={!horario && validationError ? 'Obrigatório' : undefined} />
+                <Input label="Horário de Término" type="time" value={horarioTermino} onChange={e => setHorarioTermino(e.target.value)} />
               </>
             )}
             {validationError && (
@@ -381,8 +385,8 @@ function SmallGroupWizard({ open, onClose, onCreated }: { open: boolean; onClose
             {/* Resumo dinâmico */}
             <div className="bg-gray-50 border rounded p-3 mt-2 text-sm text-gray-700">
               <b>Resumo:</b> {tipoEncontro === 'recorrente'
-                ? `Seu grupo se reunirá ${frequencia ? FREQUENCIAS_LABEL[frequencia] : ''}${frequencia && diaSemana ? ', ' : ''}${diaSemana ? 'toda ' + DIAS_SEMANA.find(d => d.value === diaSemana)?.label : ''}${horario ? ', às ' + horario : ''}${dataInicio ? ', a partir de ' + formatDateBR(dataInicio) : ''}.`
-                : `Seu grupo terá um encontro único em ${dataUnica ? formatDateBR(dataUnica) : '[data não definida]'}${horario ? ', às ' + horario : ''}.`}
+                ? `Seu grupo se reunirá ${frequencia ? FREQUENCIAS_LABEL[frequencia] : ''}${frequencia && diaSemana ? ', ' : ''}${diaSemana ? 'toda ' + DIAS_SEMANA.find(d => d.value === diaSemana)?.label : ''}${horario ? ', das ' + horario : ''}${horarioTermino ? ' às ' + horarioTermino : ''}${dataInicio ? ', a partir de ' + formatDateBR(dataInicio) : ''}.`
+                : `Seu grupo terá um encontro único em ${dataUnica ? formatDateBR(dataUnica) : '[data não definida]'}${horario ? ', das ' + horario : ''}${horarioTermino ? ' às ' + horarioTermino : ''}.`}
             </div>
           </div>
         )}

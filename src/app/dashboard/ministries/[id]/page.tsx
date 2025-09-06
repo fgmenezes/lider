@@ -15,6 +15,7 @@ export default function MinistryDetailsPage() {
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [masters, setMasters] = useState<any[]>([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     async function fetchMinistry() {
@@ -31,19 +32,9 @@ export default function MinistryDetailsPage() {
       }
     }
     if (id) fetchMinistry();
-  }, [id]);
+  }, [id, refreshTrigger]);
 
-  // Buscar masters do ministério
-  useEffect(() => {
-    if (!id) return;
-    fetch(`/api/users?role=MASTER&masterMinistryId=${id}`)
-      .then(async (res) => {
-        if (!res.ok) throw new Error('Erro ao buscar masters');
-        const data = await res.json();
-        setMasters(data.users || []);
-      })
-      .catch(() => setMasters([]));
-  }, [id]);
+  // Remover busca duplicada de masters - usar apenas ministry.masters da API principal
 
   async function handleSelectMaster(user: any) {
     setSaving(true);
@@ -142,7 +133,10 @@ export default function MinistryDetailsPage() {
               </button>
               <SelectMasterModal
                 open={showSelectMaster}
-                onClose={() => setShowSelectMaster(false)}
+                onClose={() => {
+                  setShowSelectMaster(false);
+                  setRefreshTrigger(prev => prev + 1);
+                }}
                 onSelect={handleSelectMaster}
                 ministryId={id}
               />
@@ -158,46 +152,51 @@ export default function MinistryDetailsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {ministry.master ? (
-                      <tr>
-                        <td className="px-4 py-2">
-                          <a
-                            href={`/dashboard/users/${ministry.master.id}`}
-                            className="text-blue-700 hover:underline font-semibold cursor-pointer"
-                            title="Ver detalhes do usuário"
-                          >
-                            {ministry.master.name}
-                          </a>
-                        </td>
-                        <td className="px-4 py-2">{ministry.master.email}</td>
-                        <td className="px-4 py-2">{ministry.master.celular || ministry.master.phone || '-'}</td>
-                        <td className="px-4 py-2">
-                          <button
-                            className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-xs disabled:opacity-50"
-                            disabled={saving}
-                            onClick={async () => {
-                              if (!confirm('Tem certeza que deseja desassociar este líder master?')) return;
-                              setSaving(true);
-                              setFeedback(null);
-                              try {
-                                const res = await fetch(`/api/ministries/${id}/dissociate-master`, { method: 'POST' });
-                                if (!res.ok) throw new Error('Erro ao desassociar líder master');
-                                const data = await res.json();
-                                setMinistry(data.ministry);
-                                setFeedback({ type: 'success', message: 'Líder master desassociado com sucesso!' });
-                                setTimeout(() => setFeedback(null), 3500);
-                              } catch (e) {
-                                setFeedback({ type: 'error', message: 'Erro ao desassociar líder master' });
-                                setTimeout(() => setFeedback(null), 3500);
-                              } finally {
-                                setSaving(false);
-                              }
-                            }}
-                          >
-                            Desassociar
-                          </button>
-                        </td>
-                      </tr>
+                    {ministry.masters && ministry.masters.length > 0 ? (
+                      ministry.masters.map((master: any) => (
+                        <tr key={master.id}>
+                          <td className="px-4 py-2">
+                            <a
+                              href={`/dashboard/users/${master.id}`}
+                              className="text-blue-700 hover:underline font-semibold cursor-pointer"
+                              title="Ver detalhes do usuário"
+                            >
+                              {master.name}
+                            </a>
+                          </td>
+                          <td className="px-4 py-2">{master.email}</td>
+                          <td className="px-4 py-2">{master.celular || master.phone || '-'}</td>
+                          <td className="px-4 py-2">
+                            <button
+                              className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-xs disabled:opacity-50"
+                              disabled={saving}
+                              onClick={async () => {
+                                if (!confirm('Tem certeza que deseja desassociar este líder master?')) return;
+                                setSaving(true);
+                                setFeedback(null);
+                                try {
+                                  const res = await fetch(`/api/ministries/${id}/dissociate-master`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ masterId: master.id })
+                                  });
+                                  if (!res.ok) throw new Error('Erro ao desassociar líder master');
+                                  setRefreshTrigger(prev => prev + 1);
+                                  setFeedback({ type: 'success', message: 'Líder master desassociado com sucesso!' });
+                                  setTimeout(() => setFeedback(null), 3500);
+                                } catch (e) {
+                                  setFeedback({ type: 'error', message: 'Erro ao desassociar líder master' });
+                                  setTimeout(() => setFeedback(null), 3500);
+                                } finally {
+                                  setSaving(false);
+                                }
+                              }}
+                            >
+                              Desassociar
+                            </button>
+                          </td>
+                        </tr>
+                      ))
                     ) : (
                       <tr>
                         <td colSpan={4} className="text-gray-500 text-center py-4">Nenhum líder master associado.</td>
@@ -252,4 +251,4 @@ export default function MinistryDetailsPage() {
       )}
     </div>
   );
-} 
+}
