@@ -4,6 +4,9 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { MoreVertical } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@radix-ui/react-dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { useRef } from 'react';
 import { useSession } from 'next-auth/react';
 
@@ -145,72 +148,76 @@ function NewFinanceModal({ open, onClose, onSuccess, ministryId, initialData, is
       <DialogContent>
         <DialogTitle>{isEdit ? 'Editar Lançamento' : 'Novo Lançamento'}</DialogTitle>
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-          <div>
-            <label className="block text-sm font-medium mb-1">Título *</label>
-            <input type="text" className="w-full border rounded px-3 py-2" value={title} onChange={e => setTitle(e.target.value)} required />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Tipo *</label>
-            <select className="w-full border rounded px-3 py-2" value={type} onChange={e => setType(e.target.value as 'ENTRADA' | 'SAIDA')} required>
-              <option value="ENTRADA">Entrada</option>
-              <option value="SAIDA">Saída</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Data *</label>
-            <input
+          <Input
+            label="Título *"
+            type="text"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            required
+          />
+          <Select
+            label="Tipo *"
+            value={type}
+            onChange={e => setType(e.target.value as 'ENTRADA' | 'SAIDA')}
+            options={[
+              { value: 'ENTRADA', label: 'Entrada' },
+              { value: 'SAIDA', label: 'Saída' }
+            ]}
+            required
+          />
+          <Input
+            label="Data *"
+            type="text"
+            placeholder="DD/MM/AAAA"
+            value={date}
+            onChange={e => setDate(maskDateBR(e.target.value))}
+            maxLength={10}
+            required
+          />
+          <Input
+            label="Valor (R$) *"
+            type="text"
+            inputMode="decimal"
+            value={amount}
+            onChange={e => setAmount(maskCurrencyBR(e.target.value))}
+            required
+          />
+          <Select
+            label="Categoria"
+            value={category}
+            onChange={e => setCategory(e.target.value)}
+            options={[
+              { value: '', label: 'Selecione uma categoria' },
+              ...['Ofertas', 'Dízimos', 'Doações', 'Eventos (arrecadação)', 'Vendas', 'Contribuição de membros', 'Parcerias/Patrocínios', 'Reembolsos recebidos', 'Aluguéis recebidos', 'Pagamento de contas', 'Aluguel de espaço', 'Compra de materiais', 'Manutenção', 'Salários/honorários', 'Ajuda social/beneficente', 'Alimentação/eventos', 'Transporte/combustível', 'Material de divulgação', 'Cursos/treinamentos', 'Presentes/brindes', 'Taxas bancárias', 'Outros'].map(cat => ({ value: cat, label: cat }))
+            ]}
+            required
+          />
+          {category === 'Outros' && (
+            <Input
               type="text"
-              placeholder="DD/MM/AAAA"
-              value={date}
-              onChange={e => setDate(maskDateBR(e.target.value))}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-              maxLength={10}
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Valor (R$) *</label>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={amount}
-              onChange={e => setAmount(maskCurrencyBR(e.target.value))}
-              className="w-full border rounded px-3 py-2"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Categoria</label>
-            <select
-              className="w-full border rounded px-3 py-2"
+              placeholder="Digite a categoria personalizada"
               value={category}
               onChange={e => setCategory(e.target.value)}
               required
-            >
-              <option value="">Selecione uma categoria</option>
-              {['Ofertas', 'Dízimos', 'Doações', 'Eventos (arrecadação)', 'Vendas', 'Contribuição de membros', 'Parcerias/Patrocínios', 'Reembolsos recebidos', 'Aluguéis recebidos', 'Pagamento de contas', 'Aluguel de espaço', 'Compra de materiais', 'Manutenção', 'Salários/honorários', 'Ajuda social/beneficente', 'Alimentação/eventos', 'Transporte/combustível', 'Material de divulgação', 'Cursos/treinamentos', 'Presentes/brindes', 'Taxas bancárias', 'Outros'].map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-            {category === 'Outros' && (
-              <input
-                type="text"
-                className="w-full border rounded px-3 py-2 mt-2"
-                placeholder="Digite a categoria personalizada"
-                value={category}
-                onChange={e => setCategory(e.target.value)}
-                required
-              />
-            )}
-          </div>
+            />
+          )}
           <div>
-            <label className="block text-sm font-medium mb-1">Descrição</label>
-            <textarea className="w-full border rounded px-3 py-2" value={description} onChange={e => setDescription(e.target.value)} />
+            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>Descrição</label>
+            <textarea 
+              className="w-full border rounded px-3 py-2" 
+              style={{ 
+                borderColor: 'var(--color-neutral)',
+                backgroundColor: 'var(--bg-primary)',
+                color: 'var(--text-primary)'
+              }}
+              value={description} 
+              onChange={e => setDescription(e.target.value)} 
+            />
           </div>
-          {error && <div className="text-red-500 text-sm">{error}</div>}
+          {error && <div style={{ color: 'var(--color-danger)' }} className="text-sm">{error}</div>}
           <div className="flex justify-end gap-2 mt-4">
-            <button type="button" className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300" onClick={onClose} disabled={loading}>Cancelar</button>
-            <button type="submit" className="px-4 py-2 rounded bg-green-600 text-white font-bold hover:bg-green-700" disabled={loading}>{loading ? 'Salvando...' : 'Adicionar'}</button>
+            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>Cancelar</Button>
+            <Button type="submit" variant="primary" disabled={loading}>{loading ? 'Salvando...' : 'Adicionar'}</Button>
           </div>
         </form>
       </DialogContent>
@@ -362,77 +369,111 @@ export default function MinistryFinancePage({ params }: { params: { id: string }
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-4xl">
-      <h1 className="text-2xl font-bold mb-6">Gerenciamento Financeiro</h1>
+      <h1 className="text-2xl font-bold mb-6" style={{ color: 'var(--text-primary)' }}>Gerenciamento Financeiro</h1>
       <div>
         {/* Botão Novo Lançamento */}
         <div className="flex justify-end mb-4">
           {userRole !== 'LEADER' && (
-            <button
-              className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded shadow"
+            <Button
+              variant="primary"
               onClick={() => setModalOpen(true)}
             >
               Novo Lançamento
-            </button>
+            </Button>
           )}
         </div>
-        <div className="bg-white rounded shadow p-4 mb-6">
+        <div 
+          className="rounded shadow p-4 mb-6" 
+          style={{ 
+            backgroundColor: 'var(--bg-primary)',
+            boxShadow: 'var(--shadow-md)'
+          }}
+        >
           <div className="flex items-center gap-4">
-            <span className="text-lg font-semibold">Saldo disponível:</span>
-            <span className={`text-2xl font-bold ${saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(saldo)}</span>
+            <span className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Saldo disponível:</span>
+            <span 
+              className="text-2xl font-bold" 
+              style={{ color: saldo >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}
+            >
+              {formatCurrency(saldo)}
+            </span>
           </div>
           {((search || filters.period || filters.type || filters.category || filters.minValue || filters.maxValue) && filteredFinances.length !== finances.length) && (
-            <div className="mt-2 text-sm text-gray-600">
+            <div className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
               Saldo dos lançamentos filtrados (de acordo com os filtros aplicados):
-              <span className={`font-bold ${(filteredSaldo ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <span 
+                className="font-bold" 
+                style={{ color: (filteredSaldo ?? 0) >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}
+              >
                 {formatCurrency(filteredSaldo ?? 0)}
               </span>
             </div>
           )}
         </div>
         <div className="flex items-center gap-4 mb-4">
-          <input
+          <Input
             type="text"
             placeholder="Buscar por título, categoria ou descrição..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="border rounded px-3 py-2 w-full max-w-xs"
+            className="w-full max-w-xs"
             onKeyDown={e => {
               if (e.key === 'Enter') {
                 setSearch(e.currentTarget.value);
               }
             }}
           />
-          <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow" onClick={() => setFilterModalOpen(true)}>
+          <Button variant="primary" onClick={() => setFilterModalOpen(true)}>
             Filtrar
-          </button>
+          </Button>
         </div>
         {loading ? (
-          <div className="text-center text-gray-400">Carregando...</div>
+          <div className="text-center" style={{ color: 'var(--text-muted)' }}>Carregando...</div>
         ) : error ? (
-          <div className="text-center text-red-500">{error}</div>
+          <div className="text-center" style={{ color: 'var(--color-danger)' }}>{error}</div>
         ) : filteredFinances.length === 0 ? (
-          <div className="text-center text-gray-400">Nenhum lançamento encontrado.</div>
+          <div className="text-center" style={{ color: 'var(--text-muted)' }}>Nenhum lançamento encontrado.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="bg-gray-100">
-                  <th className="px-4 py-2 text-left">Título</th>
-                  <th className="px-4 py-2 text-left">Tipo</th>
-                  <th className="px-4 py-2 text-left">Data</th>
-                  <th className="px-4 py-2 text-left">Valor</th>
-                  <th className="px-4 py-2 text-center">Ações</th>
+                <tr style={{ backgroundColor: 'var(--bg-secondary)' }}>
+                  <th className="px-4 py-2 text-left" style={{ color: 'var(--text-primary)' }}>Título</th>
+                  <th className="px-4 py-2 text-left" style={{ color: 'var(--text-primary)' }}>Tipo</th>
+                  <th className="px-4 py-2 text-left" style={{ color: 'var(--text-primary)' }}>Data</th>
+                  <th className="px-4 py-2 text-left" style={{ color: 'var(--text-primary)' }}>Valor</th>
+                  <th className="px-4 py-2 text-center" style={{ color: 'var(--text-primary)' }}>Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredFinances.map((lanc) => (
-                  <tr key={lanc.id} className="border-b hover:bg-gray-50">
-                    <td className="px-4 py-2 font-semibold">{lanc.title}</td>
+                  <tr 
+                    key={lanc.id} 
+                    className="border-b hover:bg-gray-50" 
+                    style={{ 
+                      borderBottomColor: 'var(--color-neutral)',
+                      '&:hover': { backgroundColor: 'var(--bg-secondary)' }
+                    }}
+                  >
+                    <td className="px-4 py-2 font-semibold" style={{ color: 'var(--text-primary)' }}>{lanc.title}</td>
                     <td className="px-4 py-2">
-                      <span className={`px-2 py-1 rounded text-xs font-bold ${lanc.type === 'ENTRADA' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{lanc.type === 'ENTRADA' ? 'Entrada' : 'Saída'}</span>
+                      <span 
+                        className="px-2 py-1 rounded text-xs font-bold" 
+                        style={{
+                          backgroundColor: lanc.type === 'ENTRADA' ? 'var(--color-success-light)' : 'var(--color-danger-light)',
+                          color: lanc.type === 'ENTRADA' ? 'var(--color-success)' : 'var(--color-danger)'
+                        }}
+                      >
+                        {lanc.type === 'ENTRADA' ? 'Entrada' : 'Saída'}
+                      </span>
                     </td>
-                    <td className="px-4 py-2">{formatDateBR(lanc.date)}</td>
-                    <td className={`px-4 py-2 font-bold ${lanc.type === 'ENTRADA' ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(lanc.amount)}</td>
+                    <td className="px-4 py-2" style={{ color: 'var(--text-primary)' }}>{formatDateBR(lanc.date)}</td>
+                    <td 
+                      className="px-4 py-2 font-bold" 
+                      style={{ color: lanc.type === 'ENTRADA' ? 'var(--color-success)' : 'var(--color-danger)' }}
+                    >
+                      {formatCurrency(lanc.amount)}
+                    </td>
                     <td className="px-4 py-2 text-center">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -485,7 +526,7 @@ export default function MinistryFinancePage({ params }: { params: { id: string }
               </div>
             )}
             <div className="flex justify-end mt-4">
-              <button className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300" onClick={() => setViewModal({ open: false })}>Fechar</button>
+              <Button variant="outline" onClick={() => setViewModal({ open: false })}>Fechar</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -504,8 +545,8 @@ export default function MinistryFinancePage({ params }: { params: { id: string }
             <DialogTitle>Confirmar Exclusão</DialogTitle>
             <div className="mt-2">Deseja realmente excluir o lançamento <b>{deleteModal.lanc?.title}</b>?</div>
             <div className="flex justify-end gap-2 mt-4">
-              <button className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300" onClick={() => setDeleteModal({ open: false })}>Cancelar</button>
-              <button className="px-4 py-2 rounded bg-red-600 text-white font-bold hover:bg-red-700" onClick={confirmDelete}>Excluir</button>
+              <Button variant="outline" onClick={() => setDeleteModal({ open: false })}>Cancelar</Button>
+              <Button variant="danger" onClick={confirmDelete}>Excluir</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -514,21 +555,37 @@ export default function MinistryFinancePage({ params }: { params: { id: string }
           <DialogContent>
             <DialogTitle>Filtros Avançados</DialogTitle>
             <form className="space-y-4 mt-2">
-              <div>
-                <label className="block text-sm font-medium mb-1">Período</label>
-                <select className="w-full border rounded px-3 py-2" value={filters.period} onChange={e => setFilters(f => ({ ...f, period: e.target.value }))}>
-                  <option value="">Todos</option>
-                  <option value="7d">Últimos 7 dias</option>
-                  <option value="14d">Últimos 14 dias</option>
-                  <option value="1m">Último mês</option>
-                  <option value="2m">Últimos 2 meses</option>
-                  <option value="custom">Personalizado</option>
-                </select>
-              </div>
+              <Select
+                label="Período"
+                value={filters.period}
+                onChange={e => setFilters(f => ({ ...f, period: e.target.value }))}
+                options={[
+                  { value: '', label: 'Todos' },
+                  { value: '7d', label: 'Últimos 7 dias' },
+                  { value: '14d', label: 'Últimos 14 dias' },
+                  { value: '1m', label: 'Último mês' },
+                  { value: '2m', label: 'Últimos 2 meses' },
+                  { value: 'custom', label: 'Personalizado' }
+                ]}
+              />
               {filters.period === 'custom' && (
                 <div className="flex gap-2">
-                  <input type="text" placeholder="Data inicial (DD/MM/AAAA)" className="border rounded px-3 py-2 w-1/2" value={filters.customStart} onChange={e => setFilters(f => ({ ...f, customStart: maskDateBR(e.target.value) }))} maxLength={10} />
-                  <input type="text" placeholder="Data final (DD/MM/AAAA)" className="border rounded px-3 py-2 w-1/2" value={filters.customEnd} onChange={e => setFilters(f => ({ ...f, customEnd: maskDateBR(e.target.value) }))} maxLength={10} />
+                  <Input 
+                    type="text" 
+                    placeholder="Data inicial (DD/MM/AAAA)" 
+                    className="w-1/2" 
+                    value={filters.customStart} 
+                    onChange={e => setFilters(f => ({ ...f, customStart: maskDateBR(e.target.value) }))} 
+                    maxLength={10} 
+                  />
+                  <Input 
+                    type="text" 
+                    placeholder="Data final (DD/MM/AAAA)" 
+                    className="w-1/2" 
+                    value={filters.customEnd} 
+                    onChange={e => setFilters(f => ({ ...f, customEnd: maskDateBR(e.target.value) }))} 
+                    maxLength={10} 
+                  />
                 </div>
               )}
               <div>
@@ -579,19 +636,25 @@ export default function MinistryFinancePage({ params }: { params: { id: string }
                 </div>
               </div>
               <div className="flex gap-2">
-                <div className="w-1/2">
-                  <label className="block text-sm font-medium mb-1">Valor mínimo</label>
-                  <input type="text" className="w-full border rounded px-3 py-2" value={filters.minValue} onChange={e => setFilters(f => ({ ...f, minValue: e.target.value.replace(/[^0-9.,]/g, '') }))} />
-                </div>
-                <div className="w-1/2">
-                  <label className="block text-sm font-medium mb-1">Valor máximo</label>
-                  <input type="text" className="w-full border rounded px-3 py-2" value={filters.maxValue} onChange={e => setFilters(f => ({ ...f, maxValue: e.target.value.replace(/[^0-9.,]/g, '') }))} />
-                </div>
+                <Input
+                  label="Valor mínimo"
+                  type="text"
+                  className="w-1/2"
+                  value={filters.minValue}
+                  onChange={e => setFilters(f => ({ ...f, minValue: e.target.value.replace(/[^0-9.,]/g, '') }))}
+                />
+                <Input
+                  label="Valor máximo"
+                  type="text"
+                  className="w-1/2"
+                  value={filters.maxValue}
+                  onChange={e => setFilters(f => ({ ...f, maxValue: e.target.value.replace(/[^0-9.,]/g, '') }))}
+                />
               </div>
               <div className="flex justify-end gap-2 mt-4">
-                <button type="button" className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300" onClick={() => setFilterModalOpen(false)}>Cancelar</button>
-                <button type="button" className="px-4 py-2 rounded bg-yellow-400 text-white font-bold hover:bg-yellow-500" onClick={() => setFilters({ period: '', customStart: '', customEnd: '', type: [], category: [], minValue: '', maxValue: '' })}>Limpar filtros</button>
-                <button type="button" className="px-4 py-2 rounded bg-blue-600 text-white font-bold hover:bg-blue-700" onClick={() => setFilterModalOpen(false)}>Filtrar</button>
+                <Button type="button" variant="outline" onClick={() => setFilterModalOpen(false)}>Cancelar</Button>
+                <Button type="button" variant="secondary" onClick={() => setFilters({ period: '', customStart: '', customEnd: '', type: [], category: [], minValue: '', maxValue: '' })}>Limpar filtros</Button>
+                <Button type="button" variant="primary" onClick={() => setFilterModalOpen(false)}>Filtrar</Button>
               </div>
             </form>
           </DialogContent>
@@ -599,4 +662,4 @@ export default function MinistryFinancePage({ params }: { params: { id: string }
       </div>
     </div>
   );
-} 
+}

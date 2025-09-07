@@ -17,7 +17,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string, 
   // Só permite editar se for o autor ou líder master (validação extra pode ser feita aqui)
   const obs = await prisma.memberObservacao.findUnique({ where: { id: params.obsId } });
   if (!obs) return NextResponse.json({ error: 'Observação não encontrada' }, { status: 404 });
-  if (obs.autorId !== session.user.id && session.user.role !== 'MASTER') {
+  // ADMIN pode editar qualquer observação, autor pode editar sua própria, MASTER pode editar
+  if (session.user.role !== 'ADMIN' && obs.autorId !== session.user.id && session.user.role !== 'MASTER') {
     return NextResponse.json({ error: 'Sem permissão para editar' }, { status: 403 });
   }
   const updated = await prisma.memberObservacao.update({
@@ -37,7 +38,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   // Só permite remover se for o autor ou líder master
   const obs = await prisma.memberObservacao.findUnique({ where: { id: params.obsId } });
   if (!obs) return NextResponse.json({ error: 'Observação não encontrada' }, { status: 404 });
-  if (obs.autorId !== session.user.id && session.user.role !== 'MASTER') {
+  // ADMIN pode excluir qualquer observação, autor pode excluir sua própria, MASTER pode excluir
+  if (session.user.role !== 'ADMIN' && obs.autorId !== session.user.id && session.user.role !== 'MASTER') {
     return NextResponse.json({ error: 'Sem permissão para remover' }, { status: 403 });
   }
   await prisma.memberObservacao.delete({ where: { id: params.obsId } });

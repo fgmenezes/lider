@@ -4,6 +4,10 @@ import { useEffect, useState, useRef } from "react";
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Tab } from '@headlessui/react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import LeaderCreateModal from "@/components/forms/LeaderCreateModal";
 import { HiOutlineDotsVertical } from 'react-icons/hi';
 
@@ -182,23 +186,22 @@ export default function LeadersPage() {
       </table>
     </div>
   );
-  if (error) return <div className="p-8 text-center text-red-600">{error}</div>;
+  if (error) return <div className="p-8 text-center text-[var(--color-danger)]">{error}</div>;
 
   return (
     <div className="max-w-4xl mx-auto p-4">
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Líderes</h1>
-        <button
-          className="px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition"
+        <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Líderes</h1>
+        <Button
+          variant="primary"
           onClick={() => setShowCreateModal(true)}
         >
           Novo Líder
-        </button>
+        </Button>
       </div>
       <div className="flex flex-col md:flex-row md:items-center md:gap-4 mb-4">
-        <input
+        <Input
           ref={searchInputRef}
-          type="text"
           placeholder="Buscar por nome ou e-mail"
           value={searchInput}
           onChange={e => setSearchInput(e.target.value)}
@@ -208,18 +211,18 @@ export default function LeadersPage() {
               setPage(1);
             }
           }}
-          className="border border-gray-300 rounded p-2 mb-2 md:mb-0 w-full md:w-auto focus:outline-blue-500 focus:ring-2 focus:ring-blue-300"
+          className="mb-2 md:mb-0 w-full md:w-auto"
           aria-label="Buscar líderes"
         />
       </div>
       {/* Barra de ações em massa */}
       {selectedIds.length > 0 && (
-        <div className="flex items-center gap-2 mb-2 p-2 bg-blue-50 border border-blue-200 rounded">
-          <span>{selectedIds.length} selecionado(s)</span>
-          <button className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs focus:outline-blue-500 focus:ring-2 focus:ring-blue-300" onClick={() => handleBulkStatus(true, selectedIds)}>Ativar</button>
-          <button className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs focus:outline-blue-500 focus:ring-2 focus:ring-blue-300" onClick={() => handleBulkStatus(false, selectedIds)}>Inativar</button>
-          <button className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs focus:outline-blue-500 focus:ring-2 focus:ring-blue-300" onClick={async () => { if (confirm('Tem certeza que deseja excluir os líderes selecionados?')) { for (const id of selectedIds) { await handleDelete(id); } setSelectedIds([]); } }}>Excluir</button>
-          <button className="ml-2 px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs focus:outline-blue-500 focus:ring-2 focus:ring-blue-300" onClick={() => setSelectedIds([])}>Limpar seleção</button>
+        <div className="flex items-center gap-2 mb-2 p-2 bg-[var(--color-primary-light)] border border-[var(--color-border)] rounded">
+          <span className="text-[var(--color-text-primary)]">{selectedIds.length} selecionado(s)</span>
+          <Button size="sm" variant="outline" className="text-[var(--color-success)] border-[var(--color-success)] hover:bg-[var(--color-success-light)]" onClick={() => handleBulkStatus(true, selectedIds)}>Ativar</Button>
+          <Button size="sm" variant="secondary" onClick={() => handleBulkStatus(false, selectedIds)}>Inativar</Button>
+          <Button size="sm" variant="danger" onClick={async () => { if (confirm('Tem certeza que deseja excluir os líderes selecionados?')) { for (const id of selectedIds) { await handleDelete(id); } setSelectedIds([]); } }}>Excluir</Button>
+          <Button size="sm" variant="secondary" onClick={() => setSelectedIds([])}>Limpar seleção</Button>
         </div>
       )}
       <div className="overflow-x-auto rounded shadow bg-white">
@@ -241,7 +244,7 @@ export default function LeadersPage() {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {leaders.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-8">Nenhum líder encontrado</td></tr>
+              <tr><td colSpan={9} className="text-center py-8 text-[var(--color-text-secondary)]">Nenhum líder encontrado</td></tr>
             ) : leaders.map(leader => (
               <tr key={leader.id} className="hover:bg-gray-50 cursor-pointer">
                 <td className="px-2 py-4 text-center">
@@ -271,19 +274,37 @@ export default function LeadersPage() {
       {/* Paginação */}
       <div className="flex justify-between items-center mt-4">
         <div className="flex items-center gap-2">
-          <span>Itens por página:</span>
-          <select value={perPage} onChange={e => { setPerPage(Number(e.target.value)); setPage(1); }} className="border rounded p-1">
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-          </select>
+          <span className="text-[var(--color-text-primary)]">Itens por página:</span>
+          <Select
+            value={perPage.toString()}
+            onValueChange={(value) => {
+              setPerPage(Number(value));
+              setPage(1);
+            }}
+          >
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </Select>
         </div>
-        <span>Total: {(pagination.total !== undefined ? pagination.total : leaders.length)} líderes</span>
+        <span className="text-[var(--color-text-primary)]">Total: {(pagination.total !== undefined ? pagination.total : leaders.length)} líderes</span>
         <div className="flex items-center gap-2">
-          <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50">Anterior</button>
-          <span>Página {pagination.page || 1} de {pagination.totalPages || 1}</span>
-          <button disabled={!pagination.hasNext} onClick={() => setPage(page + 1)} className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50">Próxima</button>
+          <Button
+            variant="secondary"
+            disabled={page <= 1}
+            onClick={() => setPage(page - 1)}
+          >
+            Anterior
+          </Button>
+          <span className="text-[var(--color-text-primary)]">Página {pagination.page || 1} de {pagination.totalPages || 1}</span>
+          <Button
+            variant="secondary"
+            disabled={!pagination.hasNext}
+            onClick={() => setPage(page + 1)}
+          >
+            Próxima
+          </Button>
         </div>
       </div>
       <LeaderCreateModal
@@ -378,10 +399,10 @@ function LeaderActionsMenu({ leader, onEdit, onDelete, onToggleStatus, onView }:
         <HiOutlineDotsVertical className="w-5 h-5" />
       </button>
       {open && (
-        <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded shadow-lg z-50 flex flex-col" role="menu">
+        <div className="absolute right-0 mt-2 w-44 bg-[var(--color-background)] border border-[var(--color-border)] rounded shadow-lg z-50 flex flex-col" role="menu">
           <button
             ref={optionRefs[0]}
-            className="px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+            className="px-4 py-2 text-left hover:bg-[var(--color-neutral)] focus:bg-[var(--color-neutral)] focus:outline-none text-[var(--color-text-primary)]"
             onClick={() => { setOpen(false); onView(); }}
             onKeyDown={handleKeyDown}
             tabIndex={0}
@@ -389,7 +410,7 @@ function LeaderActionsMenu({ leader, onEdit, onDelete, onToggleStatus, onView }:
           >Ver detalhes</button>
           <button
             ref={optionRefs[1]}
-            className="px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+            className="px-4 py-2 text-left hover:bg-[var(--color-neutral)] focus:bg-[var(--color-neutral)] focus:outline-none text-[var(--color-text-primary)]"
             onClick={() => { setOpen(false); onEdit(); }}
             onKeyDown={handleKeyDown}
             tabIndex={0}
@@ -397,7 +418,7 @@ function LeaderActionsMenu({ leader, onEdit, onDelete, onToggleStatus, onView }:
           >Editar</button>
           <button
             ref={optionRefs[2]}
-            className="px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none text-red-600"
+            className="px-4 py-2 text-left hover:bg-[var(--color-danger-light)] focus:bg-[var(--color-danger-light)] focus:outline-none text-[var(--color-danger)]"
             onClick={() => { setOpen(false); onDelete(); }}
             onKeyDown={handleKeyDown}
             tabIndex={0}
@@ -405,7 +426,7 @@ function LeaderActionsMenu({ leader, onEdit, onDelete, onToggleStatus, onView }:
           >Excluir</button>
           <button
             ref={optionRefs[3]}
-            className="px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+            className="px-4 py-2 text-left hover:bg-[var(--color-neutral)] focus:bg-[var(--color-neutral)] focus:outline-none text-[var(--color-text-primary)]"
             onClick={() => { setOpen(false); onToggleStatus(); }}
             onKeyDown={handleKeyDown}
             tabIndex={0}
@@ -432,39 +453,36 @@ function LeaderEditTabs({ leader, open, onClose, onSave, ministries, session }: 
   const tabs = [
     { name: 'Dados Pessoais', content: (
       <div className="space-y-4">
-        <label className="block">
+        <label className="block text-[var(--color-text-primary)]">
           Nome completo
-          <input
+          <Input
             ref={nomeRef}
-            className="border rounded p-2 w-full"
             value={form.name || ''}
             onChange={e => setForm((f: any) => ({ ...f, name: e.target.value }))}
           />
         </label>
-        <label className="block">
+        <label className="block text-[var(--color-text-primary)]">
           Data de Nascimento
-          <input
-            className="border rounded p-2 w-full"
+          <Input
+            type="date"
             value={form.dataNascimento || ''}
             onChange={e => setForm((f: any) => ({ ...f, dataNascimento: e.target.value }))}
           />
         </label>
-        <label className="block">
+        <label className="block text-[var(--color-text-primary)]">
           Sexo
-          <select
-            className="border rounded p-2 w-full"
+          <Select
             value={form.sexo || ''}
-            onChange={e => setForm((f: any) => ({ ...f, sexo: e.target.value }))}
+            onValueChange={value => setForm((f: any) => ({ ...f, sexo: value }))}
           >
             <option value="">Selecione</option>
             <option value="MASCULINO">Masculino</option>
             <option value="FEMININO">Feminino</option>
-          </select>
+          </Select>
         </label>
-        <label className="block">
+        <label className="block text-[var(--color-text-primary)]">
           Estado Civil
-          <input
-            className="border rounded p-2 w-full"
+          <Input
             value={form.estadoCivil || ''}
             onChange={e => setForm((f: any) => ({ ...f, estadoCivil: e.target.value }))}
           />
@@ -473,18 +491,17 @@ function LeaderEditTabs({ leader, open, onClose, onSave, ministries, session }: 
     ) },
     { name: 'Contato', content: (
       <div className="space-y-4">
-        <label className="block">
+        <label className="block text-[var(--color-text-primary)]">
           Celular
-          <input
-            className="border rounded p-2 w-full"
+          <Input
             value={form.celular || ''}
             onChange={e => setForm((f: any) => ({ ...f, celular: e.target.value }))}
           />
         </label>
-        <label className="block">
+        <label className="block text-[var(--color-text-primary)]">
           E-mail
-          <input
-            className="border rounded p-2 w-full"
+          <Input
+            type="email"
             value={form.email || ''}
             onChange={e => setForm((f: any) => ({ ...f, email: e.target.value }))}
           />
@@ -493,58 +510,51 @@ function LeaderEditTabs({ leader, open, onClose, onSave, ministries, session }: 
     ) },
     { name: 'Endereço', content: (
       <div className="space-y-4">
-        <label className="block">
+        <label className="block text-[var(--color-text-primary)]">
           CEP
-          <input
-            className="border rounded p-2 w-full"
+          <Input
             value={form.cep || ''}
             onChange={e => setForm((f: any) => ({ ...f, cep: e.target.value }))}
           />
         </label>
-        <label className="block">
+        <label className="block text-[var(--color-text-primary)]">
           Rua
-          <input
-            className="border rounded p-2 w-full"
+          <Input
             value={form.rua || ''}
             onChange={e => setForm((f: any) => ({ ...f, rua: e.target.value }))}
           />
         </label>
-        <label className="block">
+        <label className="block text-[var(--color-text-primary)]">
           Número
-          <input
-            className="border rounded p-2 w-full"
+          <Input
             value={form.numero || ''}
             onChange={e => setForm((f: any) => ({ ...f, numero: e.target.value }))}
           />
         </label>
-        <label className="block">
+        <label className="block text-[var(--color-text-primary)]">
           Complemento
-          <input
-            className="border rounded p-2 w-full"
+          <Input
             value={form.complemento || ''}
             onChange={e => setForm((f: any) => ({ ...f, complemento: e.target.value }))}
           />
         </label>
-        <label className="block">
+        <label className="block text-[var(--color-text-primary)]">
           Bairro
-          <input
-            className="border rounded p-2 w-full"
+          <Input
             value={form.bairro || ''}
             onChange={e => setForm((f: any) => ({ ...f, bairro: e.target.value }))}
           />
         </label>
-        <label className="block">
+        <label className="block text-[var(--color-text-primary)]">
           Município
-          <input
-            className="border rounded p-2 w-full"
+          <Input
             value={form.municipio || ''}
             onChange={e => setForm((f: any) => ({ ...f, municipio: e.target.value }))}
           />
         </label>
-        <label className="block">
+        <label className="block text-[var(--color-text-primary)]">
           Estado
-          <input
-            className="border rounded p-2 w-full"
+          <Input
             value={form.estado || ''}
             onChange={e => setForm((f: any) => ({ ...f, estado: e.target.value }))}
           />
@@ -553,34 +563,32 @@ function LeaderEditTabs({ leader, open, onClose, onSave, ministries, session }: 
     ) },
     { name: 'Permissões', content: (
       <div className="space-y-4">
-        <label className="block">
+        <label className="block text-[var(--color-text-primary)]">
           Tipo de Líder
-          <select
-            className="border rounded p-2 w-full"
+          <Select
             value={form.role || ''}
-            onChange={e => setForm((f: any) => ({ ...f, role: e.target.value }))}
+            onValueChange={value => setForm((f: any) => ({ ...f, role: value }))}
           >
             <option value="">Selecione</option>
             <option value="LEADER">Líder</option>
             <option value="MASTER">Líder Master</option>
-          </select>
+          </Select>
         </label>
       </div>
     ) },
     { name: 'Login', content: (
       <div className="space-y-4">
-        <label className="block">
+        <label className="block text-[var(--color-text-primary)]">
           E-mail de Login
-          <input
-            className="border rounded p-2 w-full"
+          <Input
+            type="email"
             value={form.emailLogin || form.email || ''}
             onChange={e => setForm((f: any) => ({ ...f, emailLogin: e.target.value }))}
           />
         </label>
-        <label className="block">
+        <label className="block text-[var(--color-text-primary)]">
           Senha (deixe em branco para não alterar)
-          <input
-            className="border rounded p-2 w-full"
+          <Input
             type="password"
             value={form.senha || ''}
             onChange={e => setForm((f: any) => ({ ...f, senha: e.target.value }))}
@@ -631,13 +639,13 @@ function LeaderEditTabs({ leader, open, onClose, onSave, ministries, session }: 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-2xl">
-        <h2 className="text-xl font-bold mb-4">Editar Líder</h2>
+      <div className="bg-[var(--color-background)] rounded-lg shadow-lg p-8 w-full max-w-2xl border border-[var(--color-border)]">
+        <h2 className="text-xl font-bold mb-4 text-[var(--color-text-primary)]">Editar Líder</h2>
         <Tab.Group selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-          <Tab.List className="flex space-x-2 border-b mb-4">
+          <Tab.List className="flex space-x-2 border-b border-[var(--color-border)] mb-4">
             {tabs.map((tab, idx) => (
               <Tab key={tab.name} className={({ selected }) =>
-                `px-4 py-2 text-sm font-medium rounded-t ${selected ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`
+                `px-4 py-2 text-sm font-medium rounded-t ${selected ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-neutral)] text-[var(--color-text-secondary)]'}`
               }>
                 {tab.name}
               </Tab>
@@ -650,11 +658,11 @@ function LeaderEditTabs({ leader, open, onClose, onSave, ministries, session }: 
           </Tab.Panels>
         </Tab.Group>
         <div className="flex justify-end gap-2 mt-4">
-          <button onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-700 rounded" disabled={saving}>Cancelar</button>
-          <button onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded" disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</button>
+          <Button variant="secondary" onClick={onClose} disabled={saving}>Cancelar</Button>
+          <Button variant="primary" onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
         </div>
-        {formError && <div className="text-red-600 text-sm mt-2">{formError}</div>}
+        {formError && <div className="text-[var(--color-danger)] text-sm mt-2">{formError}</div>}
       </div>
     </div>
   );
-} 
+}

@@ -69,7 +69,11 @@ export default function DashboardPage() {
   }, [status, router]);
 
   if (status === 'loading' || isLoadingPermissions || isLoadingMetrics) {
-    return <div>Carregando...</div>;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div style={{ color: 'var(--color-text-secondary)' }}>Carregando...</div>
+      </div>
+    );
   }
 
   if (status === 'authenticated' && session) {
@@ -134,8 +138,8 @@ export default function DashboardPage() {
     return (
       <div className="container mx-auto py-8 px-4">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Bem-vindo, {session.user?.name || 'usuário'}!</h1>
-          <p className="text-gray-600">Aqui está o resumo do seu ministério</p>
+          <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>Bem-vindo, {session.user?.name || 'usuário'}!</h1>
+          <p style={{ color: 'var(--color-text-secondary)' }}>Aqui está o resumo do seu ministério</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -251,7 +255,7 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        <h2 className="text-xl font-semibold mb-4">Acesso Rápido</h2>
+        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>Acesso Rápido</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {availableCards.map((card) => (
             <Link href={card.href} key={card.title}>
@@ -269,10 +273,10 @@ export default function DashboardPage() {
         </div>
 
         <div className="mt-8">
-          <h2 className="text-xl font-semibold mb-4">Atividades Recentes</h2>
+          <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>Atividades Recentes</h2>
           <Card>
             <CardContent className="pt-6">
-              <p className="text-muted-foreground">Nenhuma atividade recente para exibir.</p>
+              <p style={{ color: 'var(--color-text-secondary)' }}>Nenhuma atividade recente para exibir.</p>
             </CardContent>
           </Card>
         </div>
@@ -281,4 +285,4 @@ export default function DashboardPage() {
   }
 
   return null;
-} 
+}

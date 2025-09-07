@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import Input from './Input';
+import { Input } from '@/components/ui/input';
 import * as Dialog from '@radix-ui/react-dialog';
 import { Tab } from '@headlessui/react';
 
@@ -623,4 +623,4 @@ export default function MinistryCreateModal({ open, onOpenChange, onSuccess, min
       </Dialog.Portal>
     </Dialog.Root>
   );
-} 
+}

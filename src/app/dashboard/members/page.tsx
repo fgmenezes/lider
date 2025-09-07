@@ -7,9 +7,9 @@ import { fetchAddressByCep } from '@/lib/utils/viaCep';
 import { useSession } from 'next-auth/react';
 import { Tab } from '@headlessui/react';
 import React from 'react';
-import Input from '@/components/forms/Input';
-import Select from '@/components/forms/Select';
-import Checkbox from '@/components/forms/Checkbox';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { HiOutlineDotsVertical } from 'react-icons/hi';
 
 // Importação segura do file-saver
@@ -50,8 +50,11 @@ function MemberFormStep1({ form, setForm, onCancel }: { form: any, setForm: (dat
   const nameRef = useRef<HTMLInputElement>(null);
   useEffect(() => { if (nameRef.current) nameRef.current.focus(); }, []);
   useEffect(() => {
-    setForm((prev: any) => ({ ...prev, idade: calculateAge(prev.dataNascimento) }));
-  }, [setForm]);
+    const idade = calculateAge(form.dataNascimento);
+    if (idade !== form.idade) {
+      setForm((prev: any) => ({ ...prev, idade }));
+    }
+  }, [form.dataNascimento, setForm]);
 
   return (
     <div className="space-y-4">
@@ -107,7 +110,20 @@ function MemberFormStep1({ form, setForm, onCancel }: { form: any, setForm: (dat
         ]}
       />
       <div className="flex justify-end gap-2 mt-6">
-        <button type="button" className="px-4 py-2 bg-gray-200 text-gray-700 rounded" onClick={onCancel}>Cancelar</button>
+        <button 
+          type="button" 
+          className="px-4 py-2 rounded transition-default focus-ring" 
+          style={{
+            backgroundColor: 'var(--color-neutral)',
+            color: 'var(--color-text-primary)',
+            ':hover': {
+              backgroundColor: 'var(--color-neutral-dark)'
+            }
+          }}
+          onClick={onCancel}
+        >
+          Cancelar
+        </button>
       </div>
     </div>
   );
@@ -180,8 +196,8 @@ function MemberFormStep3({ form, setForm, onCancel }: { form: any, setForm: (dat
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Endereço</h3>
-        <p className="text-sm text-gray-600 mb-4">
+        <h3 className="text-lg font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>Endereço</h3>
+        <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
           Informe o endereço completo do membro. O CEP será preenchido automaticamente.
         </p>
       </div>
@@ -545,8 +561,8 @@ function MemberFormStepMinisterial({ form, setForm, onBack, onNext, onCancel }: 
     return value
       .replace(/\D/g, '')
       .replace(/(\d{2})(\d)/, '$1/$2')
-      .replace(/(\d{2})(\d)/, '$1/$2')
-      .replace(/(\d{4})\d+?$/, '$1');
+      .replace(/(\d{2})\/(\d{2})(\d)/, '$1/$2/$3')
+      .replace(/(\d{10})\d+?$/, '$1');
   }
 
   return (
@@ -586,7 +602,7 @@ function MemberFormStepMinisterial({ form, setForm, onBack, onNext, onCancel }: 
   );
 }
 
-function MemberFormResumo({ form, onBack, onCreate, onCancel }: { form: any, onBack: () => void, onCreate: () => void, onCancel: () => void }) {
+function MemberFormResumo({ form, onBack, onCreate, onCancel, loading = false }: { form: any, onBack: () => void, onCreate: () => void, onCancel: () => void, loading?: boolean }) {
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-bold mb-4 text-blue-700">Resumo do Cadastro</h3>
@@ -595,6 +611,7 @@ function MemberFormResumo({ form, onBack, onCreate, onCancel }: { form: any, onB
         <h4 className="text-base font-semibold mb-2 text-blue-700">Dados Pessoais</h4>
         <div className="mb-1"><span className="font-semibold">Nome:</span> {form.name}</div>
         <div className="mb-1"><span className="font-semibold">Data de Nascimento:</span> {form.dataNascimento}</div>
+        <div className="mb-1"><span className="font-semibold">Idade:</span> {form.idade || '-'}</div>
         <div className="mb-1"><span className="font-semibold">Sexo:</span> {form.sexo || '-'}</div>
         <div className="mb-1"><span className="font-semibold">Estado Civil:</span> {form.estadoCivil || '-'}</div>
       </div>
@@ -644,9 +661,11 @@ function MemberFormResumo({ form, onBack, onCreate, onCancel }: { form: any, onB
         <div className="mb-1"><span className="font-semibold">Status:</span> {form.status || '-'}</div>
       </div>
       <div className="flex justify-between mt-6">
-        <button onClick={onBack} className="px-4 py-2 bg-gray-200 text-gray-700 rounded">Voltar</button>
-        <button onClick={onCreate} className="px-4 py-2 bg-green-600 text-white rounded">Criar</button>
-        <button onClick={onCancel} className="px-4 py-2 bg-gray-200 text-gray-700 rounded">Cancelar</button>
+        <button onClick={onBack} disabled={loading} className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50">Voltar</button>
+        <button onClick={onCreate} disabled={loading} className="px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50">
+          {loading ? 'Criando...' : 'Criar'}
+        </button>
+        <button onClick={onCancel} disabled={loading} className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50">Cancelar</button>
       </div>
     </div>
   );
@@ -763,12 +782,25 @@ export default function MembersPage() {
   const [visibleColumns, setVisibleColumns] = useState<{ name: boolean; phone: boolean; status: boolean }>({ name: true, phone: true, status: true });
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [viewMember, setViewMember] = useState<any>(null);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Verificar se o componente está montado no cliente
   useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    // Debug da sessão
+    console.log('🔐 Status da sessão:', session);
+    if (session?.user) {
+      console.log('👤 Usuário logado:', {
+        id: session.user.id,
+        email: session.user.email,
+        role: session.user.role,
+        ministryId: session.user.ministryId,
+        masterMinistryId: session.user.masterMinistryId
+      });
+    }
+  }, [session]);
 
   const fetchMembers = useCallback(async () => {
     setLoading(true);
@@ -947,10 +979,15 @@ export default function MembersPage() {
   };
 
   const handleSubmit = async () => {
+    console.log('🚀 Iniciando handleSubmit');
+    console.log('📝 Form data:', form);
+    
     setFormLoading(true);
     try {
       const method = editMember ? "PUT" : "POST";
       const url = editMember ? `/api/members/${editMember.id}` : "/api/members";
+      console.log('🌐 URL:', url, 'Method:', method);
+      
       // Conversão de dataNascimento para ISO se necessário
       let dataNascimentoISO = form.dataNascimento;
       if (form.dataNascimento && form.dataNascimento.includes('/')) {
@@ -959,9 +996,22 @@ export default function MembersPage() {
           dataNascimentoISO = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
         }
       }
+      console.log('📅 Data de nascimento convertida:', dataNascimentoISO);
+      
+      // Conversão de dataIngresso para ISO se necessário
+      let dataIngressoISO = form.dataIngresso;
+      if (form.dataIngresso && form.dataIngresso.includes('/')) {
+        const [d, m, y] = form.dataIngresso.split('/');
+        if (d && m && y) {
+          dataIngressoISO = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+        }
+      }
+      console.log('📅 Data de ingresso convertida:', dataIngressoISO);
+      
       const payload = {
         ...form,
         dataNascimento: dataNascimentoISO,
+        dataIngresso: dataIngressoISO,
         irmaosIds: form.irmaosMinisterio?.map((i: any) => i.id) || [],
         primosIds: form.primosMinisterio?.map((i: any) => i.id) || [],
       };
@@ -970,24 +1020,53 @@ export default function MembersPage() {
       delete (payload as any).temIrmaos;
       delete (payload as any).temPrimos;
       delete (payload as any).idade;
+      
+      console.log('📦 Payload final:', payload);
 
+      console.log('🔄 Enviando requisição...');
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-Debug-Info": "member-creation-request"
+        },
         body: JSON.stringify(payload),
+        cache: 'no-store'
       });
+      
+      console.log('📡 Resposta recebida - Status:', res.status);
+      console.log('📡 Headers da resposta:', Object.fromEntries(res.headers.entries()));
+      
+      let responseData;
+      const responseText = await res.text();
+      console.log('📄 Resposta texto:', responseText);
+      
       if (!res.ok) {
-        const data = await res.json();
-        console.error('Erro ao salvar membro', data);
-        throw new Error(data.message || "Erro ao salvar membro");
+        console.error('❌ Erro ao salvar membro', responseText);
+        throw new Error(responseText || "Erro ao salvar membro");
       }
+      
+      try {
+        responseData = JSON.parse(responseText);
+        console.log('✅ Resposta de sucesso:', responseData);
+      } catch (e) {
+        console.log('⚠️ Resposta não é JSON válido, usando texto bruto');
+        responseData = { message: responseText };
+      }
+      
       toast.success(editMember ? "Membro atualizado!" : "Membro criado!");
+      console.log('🎉 Toast exibido, fechando modal...');
+      
       handleCloseModal();
+      console.log('🔄 Atualizando lista de membros...');
       fetchMembers();
+      console.log('✅ handleSubmit concluído com sucesso');
     } catch (err: any) {
-      console.error('Erro no handleSubmit', err);
+      console.error('💥 Erro no handleSubmit', err);
+      console.error('💥 Stack trace:', err.stack);
       toast.error(err.message);
     } finally {
+      console.log('🏁 Finalizando handleSubmit, setFormLoading(false)');
       setFormLoading(false);
     }
   };
@@ -1112,7 +1191,7 @@ export default function MembersPage() {
           <span>{selectedIds.length} selecionado(s)</span>
           <button onClick={() => handleBulkStatus('ATIVO', selectedIds)} className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs focus:outline-blue-500 focus:ring-2 focus:ring-blue-300" aria-label="Ativar membros selecionados">Ativar</button>
           <button onClick={() => handleBulkStatus('INATIVO', selectedIds)} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs focus:outline-blue-500 focus:ring-2 focus:ring-blue-300" aria-label="Inativar membros selecionados">Inativar</button>
-          <button onClick={() => handleBulkDelete(selectedIds)} className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs focus:outline-blue-500 focus:ring-2 focus:ring-blue-300" aria-label="Excluir membros selecionados">Excluir</button>
+          <button onClick={() => setShowBulkDeleteModal(true)} className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs focus:outline-blue-500 focus:ring-2 focus:ring-blue-300" aria-label="Excluir membros selecionados">Excluir</button>
           <button onClick={clearSelection} className="ml-2 px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs focus:outline-blue-500 focus:ring-2 focus:ring-blue-300" aria-label="Limpar seleção">Limpar seleção</button>
         </div>
       )}
@@ -1247,25 +1326,22 @@ export default function MembersPage() {
                   <MemberFormStepMinisterial form={form} setForm={setForm} onBack={() => setFormStep(5)} onNext={() => setFormStep(7)} onCancel={handleCloseModal} />
                 )}
                 {formStep === 7 && !editMember && (
-                  <MemberFormResumo form={form} onBack={() => setFormStep(6)} onCreate={handleSubmit} onCancel={handleCloseModal} />
+                  <MemberFormResumo form={form} onBack={() => setFormStep(6)} onCreate={handleSubmit} onCancel={handleCloseModal} loading={formLoading} />
                 )}
-                <div className="flex justify-between mt-4">
-                  {formStep > 1 && formStep <= 6 && ![5,6].includes(formStep) && (
-                    <button onClick={() => setFormStep(formStep - 1)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded">Voltar</button>
-                  )}
-                  {formStep === 4 && (
-                    <button onClick={() => setFormStep(5)} className="px-4 py-2 bg-blue-600 text-white rounded">Avançar</button>
-                  )}
-                  {formStep === 5 && (
-                    <button onClick={() => setFormStep(6)} className="px-4 py-2 bg-blue-600 text-white rounded">Avançar</button>
-                  )}
-                  {formStep < 6 && ![4,5].includes(formStep) && (
-                    <button onClick={() => setFormStep(formStep + 1)} className="px-4 py-2 bg-blue-600 text-white rounded">Avançar</button>
-                  )}
-                  {formStep === 6 && editMember && (
-                    <button onClick={handleSubmit} className="px-4 py-2 bg-green-600 text-white rounded">Salvar</button>
-                  )}
-                </div>
+                {/* Botões de navegação apenas para steps que não têm botões próprios */}
+                {![5, 6, 7].includes(formStep) && (
+                  <div className="flex justify-between mt-4">
+                    {formStep > 1 && (
+                      <button onClick={() => setFormStep(formStep - 1)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded">Voltar</button>
+                    )}
+                    {formStep === 4 && (
+                      <button onClick={() => setFormStep(5)} className="px-4 py-2 bg-blue-600 text-white rounded">Avançar</button>
+                    )}
+                    {formStep < 4 && (
+                      <button onClick={() => setFormStep(formStep + 1)} className="px-4 py-2 bg-blue-600 text-white rounded">Avançar</button>
+                    )}
+                  </div>
+                )}
               </>
             )}
           </DialogContent>
@@ -1302,6 +1378,40 @@ export default function MembersPage() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Modal de confirmação de exclusão em lote */}
+      <Dialog open={showBulkDeleteModal} onOpenChange={setShowBulkDeleteModal}>
+        <DialogContent>
+          <DialogTitle>Confirmar Exclusão em Lote</DialogTitle>
+          <div className="mt-4">
+            <p className="text-gray-600 mb-4">
+              Tem certeza que deseja excluir <span className="font-semibold text-red-600">{selectedIds.length} membro(s)</span> selecionado(s)?
+            </p>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+              <p className="text-sm text-red-800">
+                ⚠️ <strong>Atenção:</strong> Esta ação não pode ser desfeita e todos os dados relacionados aos membros serão removidos permanentemente.
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 mt-6">
+            <button
+              onClick={() => setShowBulkDeleteModal(false)}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => {
+                handleBulkDelete(selectedIds);
+                setShowBulkDeleteModal(false);
+              }}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold"
+            >
+              Excluir {selectedIds.length} Membro(s)
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -1376,17 +1486,38 @@ function MemberActionsMenu({ member, onEdit, onDelete, onToggleStatus, onView }:
         onKeyDown={handleKeyDown}
         aria-haspopup="true"
         aria-expanded={open}
-        className="p-2 rounded-full hover:bg-gray-200 focus:outline-none"
+        className="p-2 rounded-full focus-ring transition-default"
+        style={{
+          ':hover': {
+            backgroundColor: 'var(--color-neutral-light)'
+          }
+        }}
         tabIndex={0}
         title="Ações"
       >
-        <HiOutlineDotsVertical className="w-5 h-5" />
+        <HiOutlineDotsVertical className="w-5 h-5" style={{ color: 'var(--color-text-secondary)' }} />
       </button>
       {open && (
-        <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded shadow-lg z-50 flex flex-col" role="menu">
+        <div 
+          className="absolute right-0 mt-2 w-44 rounded shadow-lg z-50 flex flex-col" 
+          role="menu"
+          style={{
+            backgroundColor: 'var(--color-background)',
+            border: '1px solid var(--color-border)'
+          }}
+        >
           <button
             ref={optionRefs[0]}
-            className="px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+            className="px-4 py-2 text-left focus-ring transition-default"
+            style={{
+              color: 'var(--color-text-primary)',
+              ':hover': {
+                backgroundColor: 'var(--color-neutral-light)'
+              },
+              ':focus': {
+                backgroundColor: 'var(--color-neutral-light)'
+              }
+            }}
             onClick={() => { setOpen(false); onView(); }}
             onKeyDown={handleKeyDown}
             tabIndex={0}
@@ -1394,7 +1525,16 @@ function MemberActionsMenu({ member, onEdit, onDelete, onToggleStatus, onView }:
           >Ver detalhes</button>
           <button
             ref={optionRefs[1]}
-            className="px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+            className="px-4 py-2 text-left focus-ring transition-default"
+            style={{
+              color: 'var(--color-text-primary)',
+              ':hover': {
+                backgroundColor: 'var(--color-neutral-light)'
+              },
+              ':focus': {
+                backgroundColor: 'var(--color-neutral-light)'
+              }
+            }}
             onClick={() => { setOpen(false); onEdit(); }}
             onKeyDown={handleKeyDown}
             tabIndex={0}
@@ -1402,7 +1542,16 @@ function MemberActionsMenu({ member, onEdit, onDelete, onToggleStatus, onView }:
           >Editar</button>
           <button
             ref={optionRefs[2]}
-            className="px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none text-red-600"
+            className="px-4 py-2 text-left focus-ring transition-default"
+            style={{
+              color: 'var(--color-danger)',
+              ':hover': {
+                backgroundColor: 'var(--color-neutral-light)'
+              },
+              ':focus': {
+                backgroundColor: 'var(--color-neutral-light)'
+              }
+            }}
             onClick={() => { setOpen(false); onDelete(); }}
             onKeyDown={handleKeyDown}
             tabIndex={0}
@@ -1410,7 +1559,16 @@ function MemberActionsMenu({ member, onEdit, onDelete, onToggleStatus, onView }:
           >Excluir</button>
           <button
             ref={optionRefs[3]}
-            className="px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+            className="px-4 py-2 text-left focus-ring transition-default"
+            style={{
+              color: 'var(--color-text-primary)',
+              ':hover': {
+                backgroundColor: 'var(--color-neutral-light)'
+              },
+              ':focus': {
+                backgroundColor: 'var(--color-neutral-light)'
+              }
+            }}
             onClick={() => { setOpen(false); onToggleStatus(); }}
             onKeyDown={handleKeyDown}
             tabIndex={0}

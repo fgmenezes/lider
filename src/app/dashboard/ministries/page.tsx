@@ -5,6 +5,9 @@ import MinistryCreateModal from '@/components/forms/MinistryCreateModal';
 import { useRouter } from 'next/navigation';
 import { HiOutlineDotsVertical } from 'react-icons/hi';
 import * as React from 'react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Ministry {
   id: string;
@@ -15,7 +18,7 @@ interface Ministry {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const color = status === 'ATIVO' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-gray-100 text-gray-600 border-gray-300';
+  const color = status === 'ATIVO' ? 'bg-[var(--color-success-light)] text-[var(--color-success-dark)] border-[var(--color-success)]' : 'bg-[var(--color-background-secondary)] text-[var(--color-text-secondary)] border-[var(--color-border)]';
   return (
     <span className={`inline-block px-2 py-1 rounded border text-xs font-semibold ${color}`}>{status}</span>
   );
@@ -36,18 +39,18 @@ function ActionsMenu({ ministry, onEdit, onDelete, onToggleStatus, onView }: { m
   return (
     <div className="relative" ref={menuRef}>
       <button
-        className="p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="p-2 rounded-full hover:bg-[var(--color-background-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
         onClick={() => setOpen(o => !o)}
         aria-label="Ações"
       >
-        <HiOutlineDotsVertical size={20} />
+        <HiOutlineDotsVertical size={20} className="text-[var(--color-text-primary)]" />
       </button>
       {open && (
-        <div className="absolute right-0 z-10 mt-2 w-44 bg-white border border-gray-200 rounded shadow-lg py-1">
-          <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100" onClick={() => { onView(); setOpen(false); }}>Ver detalhes</button>
-          <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100" onClick={() => { onEdit(); setOpen(false); }}>Editar</button>
-          <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 text-red-600" onClick={() => { onDelete(); setOpen(false); }}>Excluir</button>
-          <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100" onClick={() => { onToggleStatus(); setOpen(false); }}>{ministry.status === 'ATIVO' ? 'Desativar' : 'Ativar'}</button>
+        <div className="absolute right-0 z-10 mt-2 w-44 bg-[var(--color-background)] border border-[var(--color-border)] rounded shadow-lg py-1">
+          <button className="w-full text-left px-4 py-2 text-sm hover:bg-[var(--color-background-secondary)] text-[var(--color-text-primary)]" onClick={() => { onView(); setOpen(false); }}>Ver detalhes</button>
+          <button className="w-full text-left px-4 py-2 text-sm hover:bg-[var(--color-background-secondary)] text-[var(--color-text-primary)]" onClick={() => { onEdit(); setOpen(false); }}>Editar</button>
+          <button className="w-full text-left px-4 py-2 text-sm hover:bg-[var(--color-background-secondary)] text-[var(--color-danger)]" onClick={() => { onDelete(); setOpen(false); }}>Excluir</button>
+          <button className="w-full text-left px-4 py-2 text-sm hover:bg-[var(--color-background-secondary)] text-[var(--color-text-primary)]" onClick={() => { onToggleStatus(); setOpen(false); }}>{ministry.status === 'ATIVO' ? 'Desativar' : 'Ativar'}</button>
         </div>
       )}
     </div>
@@ -132,6 +135,7 @@ export default function MinistriesPage() {
       toast.error("Erro ao excluir ministério");
     }
   };
+
   const handleToggleStatus = async (ministry: Ministry) => {
     try {
       const newStatus = ministry.status === 'ATIVO' ? 'DESATIVADO' : 'ATIVO';
@@ -152,60 +156,60 @@ export default function MinistriesPage() {
     <div className="max-w-4xl mx-auto p-4">
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h1 className="text-2xl font-bold">Ministérios</h1>
-          <p className="text-gray-600 text-sm mt-1">Gerencie, cadastre, edite, ative/desative e exclua ministérios da sua organização. Utilize o menu de ações para acessar todas as funcionalidades.</p>
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Ministérios</h1>
+          <p className="text-[var(--color-text-secondary)] text-sm mt-1">Gerencie, cadastre, edite, ative/desative e exclua ministérios da sua organização. Utilize o menu de ações para acessar todas as funcionalidades.</p>
         </div>
-        <button onClick={() => handleOpenModal()} className="px-4 py-2 bg-blue-600 text-white rounded">Novo Ministério</button>
+        <Button onClick={() => handleOpenModal()}>Novo Ministério</Button>
       </div>
       <div className="flex flex-col md:flex-row md:items-center md:gap-4 mb-4">
-        <input
+        <Input
           ref={searchInputRef}
           type="text"
           placeholder="Buscar por nome ou igreja..."
           value={searchInput}
           onChange={e => setSearchInput(e.target.value)}
-          className="border border-gray-300 rounded p-2 mb-2 md:mb-0 w-full md:w-auto focus:outline-blue-500 focus:ring-2 focus:ring-blue-300"
+          className="mb-2 md:mb-0 w-full md:w-auto"
           aria-label="Buscar ministérios"
         />
       </div>
-      <div className="overflow-x-auto rounded shadow bg-white">
-        <table className="min-w-full bg-white border border-gray-200">
-          <thead className="bg-gray-50">
+      <div className="overflow-x-auto rounded shadow bg-[var(--color-background)]">
+        <table className="min-w-full bg-[var(--color-background)] border border-[var(--color-border)]">
+          <thead className="bg-[var(--color-background-secondary)]">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer select-none" onClick={() => handleSort('name')}>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase cursor-pointer select-none" onClick={() => handleSort('name')}>
                 Nome {sortField === 'name' && (sortOrder === 'asc' ? '▲' : '▼')}
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer select-none" onClick={() => handleSort('churchName')}>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase cursor-pointer select-none" onClick={() => handleSort('churchName')}>
                 Igreja {sortField === 'churchName' && (sortOrder === 'asc' ? '▲' : '▼')}
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Líder Master</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer select-none" onClick={() => handleSort('status')}>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase">Líder Master</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase cursor-pointer select-none" onClick={() => handleSort('status')}>
                 Status {sortField === 'status' && (sortOrder === 'asc' ? '▲' : '▼')}
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase">Ações</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-[var(--color-background)] divide-y divide-[var(--color-border)]">
             {loading ? (
               Array.from({ length: perPage }).map((_, idx) => (
                 <tr key={idx}>
-                  <td className="px-6 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse" /></td>
-                  <td className="px-6 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 rounded w-2/3 animate-pulse" /></td>
-                  <td className="px-6 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse" /></td>
-                  <td className="px-6 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse" /></td>
+                  <td className="px-6 py-4 whitespace-nowrap"><div className="h-4 bg-[var(--color-background-secondary)] rounded w-3/4 animate-pulse" /></td>
+                  <td className="px-6 py-4 whitespace-nowrap"><div className="h-4 bg-[var(--color-background-secondary)] rounded w-2/3 animate-pulse" /></td>
+                  <td className="px-6 py-4 whitespace-nowrap"><div className="h-4 bg-[var(--color-background-secondary)] rounded w-1/2 animate-pulse" /></td>
+                  <td className="px-6 py-4 whitespace-nowrap"><div className="h-4 bg-[var(--color-background-secondary)] rounded w-1/2 animate-pulse" /></td>
                 </tr>
               ))
             ) : ministries.length === 0 ? (
-              <tr><td colSpan={4} className="text-center py-8">Nenhum ministério encontrado</td></tr>
+              <tr><td colSpan={4} className="text-center py-8 text-[var(--color-text-secondary)]">Nenhum ministério encontrado</td></tr>
             ) : ministries.map((ministry: any) => (
               <tr key={ministry.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-blue-700 hover:underline cursor-pointer"
+                <td className="px-6 py-4 whitespace-nowrap text-[var(--color-primary)] hover:underline cursor-pointer"
                     onClick={() => router.push(`/dashboard/ministries/${ministry.id}`)}
                 >
                   {ministry.name}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">{ministry.churchName || '-'}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{ministry.master?.name || '-'}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-[var(--color-text-primary)]">{ministry.churchName || '-'}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-[var(--color-text-primary)]">{ministry.master?.name || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap"><StatusBadge status={ministry.status || 'ATIVO'} /></td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <ActionsMenu
@@ -217,26 +221,31 @@ export default function MinistriesPage() {
                   />
                 </td>
               </tr>
-            ))}
+            ))
           </tbody>
         </table>
       </div>
       {/* Paginação */}
       <div className="flex justify-between items-center mt-4">
         <div className="flex items-center gap-2">
-          <span>Itens por página:</span>
-          <select value={perPage} onChange={e => { setPerPage(Number(e.target.value)); setPage(1); }} className="border rounded p-1">
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-          </select>
+          <span className="text-[var(--color-text-primary)]">Itens por página:</span>
+          <Select value={perPage.toString()} onValueChange={(value) => { setPerPage(Number(value)); setPage(1); }}>
+            <SelectTrigger className="w-20">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="20">20</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <span>Total: {pagination.total || 0} ministérios</span>
+        <span className="text-[var(--color-text-primary)]">Total: {pagination.total || 0} ministérios</span>
         <div className="flex items-center gap-2">
-          <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50">Anterior</button>
-          <span>Página {pagination.page || 1} de {pagination.totalPages || 1}</span>
-          <button disabled={pagination.page >= pagination.totalPages} onClick={() => setPage(page + 1)} className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50">Próxima</button>
+          <Button variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>Anterior</Button>
+          <span className="text-[var(--color-text-primary)]">Página {pagination.page || 1} de {pagination.totalPages || 1}</span>
+          <Button variant="outline" disabled={pagination.page >= pagination.totalPages} onClick={() => setPage(page + 1)}>Próxima</Button>
         </div>
       </div>
       <MinistryCreateModal
@@ -247,4 +256,4 @@ export default function MinistriesPage() {
       />
     </div>
   );
-} 
+}

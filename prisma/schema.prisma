@@ -46,6 +46,8 @@ model Ministry {
   updatedAt      DateTime          @updatedAt
   assistantChats AssistantChat[]
   status         String            @default("ATIVO")
+  meetingNotes   SmallGroupMeetingNote[]
+  visitors       SmallGroupVisitor[]
 }
 
 model User {
@@ -169,6 +171,7 @@ model Member {
   status        String      @default("ATIVO")
   smallGroupMemberships SmallGroupMember[] @relation("MemberToSmallGroupMember")
   smallGroupAttendances SmallGroupAttendance[] @relation("MemberToSmallGroupAttendance")
+  invitedVisitors SmallGroupVisitor[]
 }
 
 model MemberIrmao {
@@ -196,11 +199,13 @@ model SmallGroup {
   address    String?
   dayOfWeek  String?
   time       String?
+  endTime    String?
   status     String  @default("ATIVO")
   description String? @db.Text // Descrição longa
   meetings   SmallGroupMeeting[]
   leaders    SmallGroupLeader[]
   members    SmallGroupMember[] // relação com SmallGroupMember
+  visitors   SmallGroupVisitor[]
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   frequency  String? // Frequência do grupo: DIARIO, SEMANAL, QUINZENAL, MENSAL
@@ -214,6 +219,10 @@ model SmallGroup {
   bairro     String?
   municipio  String?
   estado     String?
+  // Configurações de janela de tempo para registro de presença
+  attendanceWindowBefore Int @default(60) // Minutos antes do início da reunião
+  attendanceWindowAfter  Int @default(1440) // Minutos após o término da reunião (24h)
+  meetingNotes   SmallGroupMeetingNote[]
 }
 
 model SmallGroupLeader {
@@ -222,9 +231,10 @@ model SmallGroupLeader {
   smallGroupId String
   user         User        @relation(fields: [userId], references: [id])
   userId       String
-  role         String      // Ex: 'LIDER', 'CO-LIDER', 'ANFITRIAO', 'AUXILIAR'
+  role         String      // Ex: 'LIDER_PRINCIPAL', 'CO_LIDER', 'AUXILIAR'
   since        DateTime    @default(now())
   until        DateTime?
+  reason       String?     // Motivo da mudança de role
 }
 
 model SmallGroupMember {
@@ -236,6 +246,10 @@ model SmallGroupMember {
   role          String    // Ex: 'MEMBRO', 'LIDER', 'ANFITRIAO'
   joinedAt      DateTime  @default(now())
   leftAt        DateTime?
+  status        String    @default("ATIVO") // ATIVO, INATIVO, TEMPORARIO, AFASTADO
+  statusChangedAt DateTime? // Data da mudança de status
+  statusChangeReason String? // Motivo da mudança de status
+  requiresApproval Boolean @default(false) // Se a mudança requer aprovação
 }
 
 model SmallGroupAttendance {
@@ -253,9 +267,12 @@ model SmallGroupMeeting {
   smallGroup    SmallGroup @relation(fields: [smallGroupId], references: [id], onDelete: Cascade)
   smallGroupId  String
   date          DateTime
+  endTime       DateTime? // Horário de término da reunião
   location      String?
   type          String   // Ex: 'PG', 'ENCONTRAO', 'RETIRO'
   theme         String?
+  status        String   @default("AGENDADA") // AGENDADA, EM_ANDAMENTO, FINALIZADA, CANCELADA
+  cancelReason  String?  // Motivo do cancelamento
   notes         SmallGroupMeetingNote[]
   attendances   SmallGroupAttendance[]
   visitors      SmallGroupVisitor[]
@@ -268,9 +285,32 @@ model SmallGroupVisitor {
   id            String   @id @default(cuid())
   meeting       SmallGroupMeeting @relation(fields: [meetingId], references: [id])
   meetingId     String
+  smallGroup    SmallGroup @relation(fields: [smallGroupId], references: [id])
+  smallGroupId  String
+  ministry      Ministry @relation(fields: [ministryId], references: [id])
+  ministryId    String
   name          String
-  contact       String?
+  phone         String?
+  email         String?
+  invitedBy     Member? @relation(fields: [invitedById], references: [id])
+  invitedById   String?
   notes         String?
+  // Campos para futura migração para membro
+  dataNascimento DateTime?
+  sexo           String?
+  estadoCivil    String?
+  cep            String?
+  rua            String?
+  numero         String?
+  complemento    String?
+  bairro         String?
+  municipio      String?
+  estado         String?
+  // Controle de migração
+  migratedToMember Boolean @default(false)
+  migratedMemberId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model SmallGroupPrayerRequest {
@@ -284,13 +324,19 @@ model SmallGroupPrayerRequest {
 }
 
 model SmallGroupMeetingNote {
-  id         String   @id @default(cuid())
-  meeting    SmallGroupMeeting @relation(fields: [meetingId], references: [id])
-  meetingId  String
-  author     User?    @relation(fields: [authorId], references: [id])
-  authorId   String?
-  content    String
-  createdAt  DateTime @default(now())
+  id           String            @id @default(cuid())
+  title        String
+  content      String
+  meeting      SmallGroupMeeting @relation(fields: [meetingId], references: [id])
+  meetingId    String
+  smallGroup   SmallGroup        @relation(fields: [smallGroupId], references: [id])
+  smallGroupId String
+  ministry     Ministry          @relation(fields: [ministryId], references: [id])
+  ministryId   String
+  author       User?             @relation(fields: [authorId], references: [id])
+  authorId     String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 }
 
 model Finance {

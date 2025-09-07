@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import Select from '@/components/forms/Select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
 import { HiOutlineUser } from 'react-icons/hi';
 import { FiEdit2, FiTrash2 } from 'react-icons/fi';
@@ -44,13 +44,17 @@ export default function MemberDetailsPage() {
   useEffect(() => {
     if (!id) return;
     setLoading(true);
+    console.log('🔍 Buscando membro com ID:', id);
     fetch(`/api/members/${id}`)
       .then(res => res.json())
       .then(data => {
+        console.log('📥 Dados recebidos da API:', data);
+        console.log('👤 Dados do membro:', data.member);
         setMember(data.member);
         setLoading(false);
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error('❌ Erro ao carregar membro:', error);
         setError("Erro ao carregar membro");
         setLoading(false);
       });
@@ -503,4 +507,4 @@ export default function MemberDetailsPage() {
       <button className="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded" onClick={() => router.back()}>Voltar</button>
     </div>
   );
-} 
+}

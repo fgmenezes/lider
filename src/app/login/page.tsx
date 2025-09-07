@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 const LoginSchema = z.object({
   email: z.string().email({
@@ -51,50 +53,68 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-black">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded shadow-md">
-        <h2 className="text-2xl font-bold text-center text-gray-900">Entrar</h2>
+    <div 
+      className="flex min-h-screen items-center justify-center"
+      style={{ backgroundColor: 'var(--color-background)' }}
+    >
+      <div 
+        className="w-full max-w-md p-8 space-y-6 rounded shadow-md"
+        style={{ 
+          backgroundColor: 'var(--color-background)',
+          borderColor: 'var(--color-border)',
+          border: '1px solid'
+        }}
+      >
+        <h2 
+          className="text-2xl font-bold text-center" 
+          style={{ color: 'var(--color-text-primary)' }}
+        >
+          Entrar
+        </h2>
         {error && (
-          <div className="p-3 text-sm text-red-700 bg-red-100 rounded-md">
+          <div 
+            className="p-3 text-sm rounded-md"
+            style={{
+              color: 'var(--color-danger)',
+              backgroundColor: 'var(--color-danger-bg)',
+              borderColor: 'var(--color-danger)',
+              border: '1px solid'
+            }}
+          >
             {error}
           </div>
         )}
         <form className="space-y-4" onSubmit={handleSubmit(onSubmit)} autoComplete="on">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              {...register('email')}
-              disabled={isSubmitting}
-              className="mt-1 block w-full border rounded-md shadow-sm p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 border-gray-300"
-            />
-            {errors.email && <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>}
-          </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              {...register('password')}
-              disabled={isSubmitting}
-              className="mt-1 block w-full border rounded-md shadow-sm p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 border-gray-300"
-            />
-            {errors.password && <p className="mt-2 text-sm text-red-600">{errors.password.message}</p>}
-          </div>
-          <div>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex justify-center w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? 'Entrando...' : 'Entrar'}
-            </button>
-          </div>
+          <Input
+            id="email"
+            type="email"
+            label="Email"
+            autoComplete="email"
+            {...register('email')}
+            disabled={isSubmitting}
+            error={errors.email?.message}
+            required
+          />
+          <Input
+            id="password"
+            type="password"
+            label="Senha"
+            autoComplete="current-password"
+            {...register('password')}
+            disabled={isSubmitting}
+            error={errors.password?.message}
+            required
+          />
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={isSubmitting}
+            className="w-full"
+          >
+            {isSubmitting ? 'Entrando...' : 'Entrar'}
+          </Button>
         </form>
       </div>
     </div>
   )
-} 
+}

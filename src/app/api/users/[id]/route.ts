@@ -28,11 +28,23 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
         estadoCivil: true,
         dataNascimento: true,
         ministry: { select: { id: true, name: true, church: { select: { name: true } } } },
+        masterMinistry: { select: { id: true, name: true, church: { select: { name: true } } } },
       },
     });
     if (!user) return NextResponse.json({ message: 'Usuário não encontrado' }, { status: 404 });
+    
+    // Determinar qual ministério exibir com base no papel do usuário
+    let displayMinistry = user.ministry;
+    if (user.role === 'MASTER' && user.masterMinistry) {
+      displayMinistry = user.masterMinistry;
+    }
+    
     // Adicionar campo status para compatibilidade com frontend
-    const userWithStatus = { ...user, status: user.isActive ? 'Ativo' : 'Inativo' };
+    const userWithStatus = { 
+      ...user, 
+      status: user.isActive ? 'Ativo' : 'Inativo',
+      ministry: displayMinistry 
+    };
     return NextResponse.json({ user: userWithStatus });
   } catch (error) {
     return NextResponse.json({ message: 'Erro ao buscar usuário' }, { status: 500 });
@@ -237,4 +249,4 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
   } catch (error) {
     return NextResponse.json({ message: 'Erro ao excluir usuário' }, { status: 500 });
   }
-} 
+}

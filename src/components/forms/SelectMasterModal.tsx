@@ -72,13 +72,17 @@ export default function SelectMasterModal({ open, onClose, onSelect, ministryId 
       }
       setSubmitSuccess('Líder(es) master associado(s) com sucesso!');
       setSelectedIds([]);
+      
       // Atualiza lista de masters
-      fetch(`/api/users?role=MASTER&masterMinistryId=${ministryId}`)
-        .then(async (res) => {
-          if (!res.ok) throw new Error("Erro ao buscar masters");
-          const data = await res.json();
-          setMasters(data.users || []);
-        });
+      const mastersRes = await fetch(`/api/users?role=MASTER&masterMinistryId=${ministryId}`);
+      if (!mastersRes.ok) throw new Error("Erro ao buscar masters");
+      const mastersData = await mastersRes.json();
+      setMasters(mastersData.users || []);
+      
+      // Fechar o modal após um breve delay para mostrar a mensagem de sucesso
+      setTimeout(() => {
+        onClose();
+      }, 1500);
     } catch (err: any) {
       setSubmitError(err.message || 'Erro ao associar líder master');
     } finally {
@@ -191,4 +195,4 @@ export default function SelectMasterModal({ open, onClose, onSelect, ministryId 
       </DialogContent>
     </Dialog>
   );
-} 
+}

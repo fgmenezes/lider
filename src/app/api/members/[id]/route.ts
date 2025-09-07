@@ -55,7 +55,22 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ message: 'Acesso negado' }, { status: 403 });
     }
 
-    return NextResponse.json({ member });
+    // Buscar dados relacionados (responsáveis, irmãos e primos)
+    const [responsaveis, irmaos, primos] = await Promise.all([
+      prisma.responsavel.findMany({ where: { memberId: params.id } }),
+      prisma.memberIrmao.findMany({ where: { memberId: params.id }, include: { irmao: { select: { id: true, name: true } } } }),
+      prisma.memberPrimo.findMany({ where: { memberId: params.id }, include: { primo: { select: { id: true, name: true } } } })
+    ]);
+
+    // Retornar membro com dados relacionados
+    const memberWithRelations = {
+      ...member,
+      responsaveis,
+      irmaos: irmaos.map(i => i.irmao),
+      primos: primos.map(p => p.primo)
+    };
+
+    return NextResponse.json({ member: memberWithRelations });
 
   } catch (error) {
     console.error('Erro ao buscar membro:', error);
@@ -177,9 +192,18 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       return NextResponse.json({ message: 'Acesso negado' }, { status: 403 });
     }
 
+    // Remover todas as relações do membro antes de excluí-lo
     await prisma.responsavel.deleteMany({ where: { memberId: params.id } });
     await prisma.memberIrmao.deleteMany({ where: { memberId: params.id } });
     await prisma.memberPrimo.deleteMany({ where: { memberId: params.id } });
+    await prisma.memberObservacao.deleteMany({ where: { memberId: params.id } });
+    await prisma.smallGroupMember.deleteMany({ where: { memberId: params.id } });
+    await prisma.smallGroupAttendance.deleteMany({ where: { memberId: params.id } });
+    
+    // Remover referências onde este membro é irmão ou primo de outros
+    await prisma.memberIrmao.deleteMany({ where: { irmaoId: params.id } });
+    await prisma.memberPrimo.deleteMany({ where: { primoId: params.id } });
+    
     await prisma.member.delete({ where: { id: params.id } });
 
     return NextResponse.json({ message: 'Membro excluído com sucesso' });

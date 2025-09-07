@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
 }
 
 const allowedFields = [
-  'name', 'description', 'dayOfWeek', 'frequency', 'time', 'startDate',
+  'name', 'description', 'dayOfWeek', 'frequency', 'time', 'endTime', 'startDate',
   'hostName', 'hostPhone', 'cep', 'rua', 'numero', 'complemento',
   'bairro', 'municipio', 'estado', 'ministryId'
 ];
@@ -174,4 +174,4 @@ export async function DELETE(req: NextRequest) {
     console.error('[SmallGroup] Erro ao excluir grupo:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-} 
+}

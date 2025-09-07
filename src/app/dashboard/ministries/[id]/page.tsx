@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import { Tab } from '@headlessui/react';
 import SelectMasterModal from '@/components/forms/SelectMasterModal';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 export default function MinistryDetailsPage() {
   const { id: rawId } = useParams();
@@ -15,6 +16,7 @@ export default function MinistryDetailsPage() {
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [masters, setMasters] = useState<any[]>([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     async function fetchMinistry() {
@@ -31,19 +33,9 @@ export default function MinistryDetailsPage() {
       }
     }
     if (id) fetchMinistry();
-  }, [id]);
+  }, [id, refreshTrigger]);
 
-  // Buscar masters do ministério
-  useEffect(() => {
-    if (!id) return;
-    fetch(`/api/users?role=MASTER&masterMinistryId=${id}`)
-      .then(async (res) => {
-        if (!res.ok) throw new Error('Erro ao buscar masters');
-        const data = await res.json();
-        setMasters(data.users || []);
-      })
-      .catch(() => setMasters([]));
-  }, [id]);
+  // Remover busca duplicada de masters - usar apenas ministry.masters da API principal
 
   async function handleSelectMaster(user: any) {
     setSaving(true);
@@ -66,11 +58,11 @@ export default function MinistryDetailsPage() {
     }
   }
 
-  if (loading) return <div className="container mx-auto py-8 px-4 max-w-2xl">Carregando...</div>;
+  if (loading) return <div className="container mx-auto py-8 px-4 max-w-2xl text-[var(--color-text-primary)]">Carregando...</div>;
   if (error || !ministry) return (
     <div className="container mx-auto py-8 px-4 max-w-2xl">
-      <h1 className="text-2xl font-bold mb-4">Ministério não encontrado</h1>
-      <p className="text-gray-600">O ministério solicitado não existe ou ocorreu um erro ao buscar os dados.</p>
+      <h1 className="text-2xl font-bold mb-4 text-[var(--color-text-primary)]">Ministério não encontrado</h1>
+      <p className="text-[var(--color-text-secondary)]">O ministério solicitado não existe ou ocorreu um erro ao buscar os dados.</p>
     </div>
   );
 
@@ -79,29 +71,27 @@ export default function MinistryDetailsPage() {
       {/* Adiciona o botão Financeiro no topo da página, seguindo o padrão do projeto */}
       <div className="flex justify-end mb-4">
         <Link href={`/dashboard/ministries/${id}/finance`}>
-          <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow">
-            Financeiro
-          </button>
+          <Button>Financeiro</Button>
         </Link>
       </div>
-      <h1 className="text-2xl font-bold mb-4">Detalhes do Ministério</h1>
+      <h1 className="text-2xl font-bold mb-4 text-[var(--color-text-primary)]">Detalhes do Ministério</h1>
       <Tab.Group>
-        <Tab.List className="flex space-x-2 border-b mb-6">
-          <Tab className={({ selected }) => `px-4 py-2 text-sm font-medium rounded-t ${selected ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}>Dados do Ministério</Tab>
-          <Tab className={({ selected }) => `px-4 py-2 text-sm font-medium rounded-t ${selected ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}>Líder Master</Tab>
-          <Tab className={({ selected }) => `px-4 py-2 text-sm font-medium rounded-t ${selected ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}>Membros</Tab>
+        <Tab.List className="flex space-x-2 border-b border-[var(--color-border)] mb-6">
+          <Tab className={({ selected }) => `px-4 py-2 text-sm font-medium rounded-t ${selected ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-background-secondary)] text-[var(--color-text-primary)]'}`}>Dados do Ministério</Tab>
+          <Tab className={({ selected }) => `px-4 py-2 text-sm font-medium rounded-t ${selected ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-background-secondary)] text-[var(--color-text-primary)]'}`}>Líder Master</Tab>
+          <Tab className={({ selected }) => `px-4 py-2 text-sm font-medium rounded-t ${selected ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-background-secondary)] text-[var(--color-text-primary)]'}`}>Membros</Tab>
         </Tab.List>
         <Tab.Panels>
           {/* Guia 1: Dados do Ministério */}
           <Tab.Panel>
-            <div className="bg-white rounded shadow p-6 mb-6 space-y-6">
+            <div className="bg-[var(--color-background)] rounded shadow p-6 mb-6 space-y-6">
               <div>
-                <h2 className="text-lg font-semibold mb-2 text-blue-700">Dados do Ministério</h2>
-                <div className="mb-1"><span className="font-semibold">Nome:</span> {ministry.name}</div>
-                <div className="mb-1"><span className="font-semibold">Igreja:</span> {ministry.church?.name || ministry.churchName || 'Sem igreja'}</div>
+                <h2 className="text-lg font-semibold mb-2 text-[var(--color-primary)]">Dados do Ministério</h2>
+                <div className="mb-1 text-[var(--color-text-primary)]"><span className="font-semibold">Nome:</span> {ministry.name}</div>
+                <div className="mb-1 text-[var(--color-text-primary)]"><span className="font-semibold">Igreja:</span> {ministry.church?.name || ministry.churchName || 'Sem igreja'}</div>
               </div>
               <div>
-                <h2 className="text-lg font-semibold mb-2 text-blue-700">Endereço da Igreja</h2>
+                <h2 className="text-lg font-semibold mb-2 text-[var(--color-primary)]">Endereço da Igreja</h2>
                 <div className="mb-1"><span className="font-semibold">Rua:</span> {ministry.rua || 'Não informado'}</div>
                 <div className="mb-1"><span className="font-semibold">Número:</span> {ministry.numero || 'Não informado'}</div>
                 <div className="mb-1"><span className="font-semibold">Complemento:</span> {ministry.complemento || 'Não informado'}</div>
@@ -142,7 +132,10 @@ export default function MinistryDetailsPage() {
               </button>
               <SelectMasterModal
                 open={showSelectMaster}
-                onClose={() => setShowSelectMaster(false)}
+                onClose={() => {
+                  setShowSelectMaster(false);
+                  setRefreshTrigger(prev => prev + 1);
+                }}
                 onSelect={handleSelectMaster}
                 ministryId={id}
               />
@@ -158,46 +151,51 @@ export default function MinistryDetailsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {ministry.master ? (
-                      <tr>
-                        <td className="px-4 py-2">
-                          <a
-                            href={`/dashboard/users/${ministry.master.id}`}
-                            className="text-blue-700 hover:underline font-semibold cursor-pointer"
-                            title="Ver detalhes do usuário"
-                          >
-                            {ministry.master.name}
-                          </a>
-                        </td>
-                        <td className="px-4 py-2">{ministry.master.email}</td>
-                        <td className="px-4 py-2">{ministry.master.celular || ministry.master.phone || '-'}</td>
-                        <td className="px-4 py-2">
-                          <button
-                            className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-xs disabled:opacity-50"
-                            disabled={saving}
-                            onClick={async () => {
-                              if (!confirm('Tem certeza que deseja desassociar este líder master?')) return;
-                              setSaving(true);
-                              setFeedback(null);
-                              try {
-                                const res = await fetch(`/api/ministries/${id}/dissociate-master`, { method: 'POST' });
-                                if (!res.ok) throw new Error('Erro ao desassociar líder master');
-                                const data = await res.json();
-                                setMinistry(data.ministry);
-                                setFeedback({ type: 'success', message: 'Líder master desassociado com sucesso!' });
-                                setTimeout(() => setFeedback(null), 3500);
-                              } catch (e) {
-                                setFeedback({ type: 'error', message: 'Erro ao desassociar líder master' });
-                                setTimeout(() => setFeedback(null), 3500);
-                              } finally {
-                                setSaving(false);
-                              }
-                            }}
-                          >
-                            Desassociar
-                          </button>
-                        </td>
-                      </tr>
+                    {ministry.masters && ministry.masters.length > 0 ? (
+                      ministry.masters.map((master: any) => (
+                        <tr key={master.id}>
+                          <td className="px-4 py-2">
+                            <a
+                              href={`/dashboard/users/${master.id}`}
+                              className="text-blue-700 hover:underline font-semibold cursor-pointer"
+                              title="Ver detalhes do usuário"
+                            >
+                              {master.name}
+                            </a>
+                          </td>
+                          <td className="px-4 py-2">{master.email}</td>
+                          <td className="px-4 py-2">{master.celular || master.phone || '-'}</td>
+                          <td className="px-4 py-2">
+                            <button
+                              className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-xs disabled:opacity-50"
+                              disabled={saving}
+                              onClick={async () => {
+                                if (!confirm('Tem certeza que deseja desassociar este líder master?')) return;
+                                setSaving(true);
+                                setFeedback(null);
+                                try {
+                                  const res = await fetch(`/api/ministries/${id}/dissociate-master`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ masterId: master.id })
+                                  });
+                                  if (!res.ok) throw new Error('Erro ao desassociar líder master');
+                                  setRefreshTrigger(prev => prev + 1);
+                                  setFeedback({ type: 'success', message: 'Líder master desassociado com sucesso!' });
+                                  setTimeout(() => setFeedback(null), 3500);
+                                } catch (e) {
+                                  setFeedback({ type: 'error', message: 'Erro ao desassociar líder master' });
+                                  setTimeout(() => setFeedback(null), 3500);
+                                } finally {
+                                  setSaving(false);
+                                }
+                              }}
+                            >
+                              Desassociar
+                            </button>
+                          </td>
+                        </tr>
+                      ))
                     ) : (
                       <tr>
                         <td colSpan={4} className="text-gray-500 text-center py-4">Nenhum líder master associado.</td>
@@ -252,4 +250,4 @@ export default function MinistryDetailsPage() {
       )}
     </div>
   );
-} 
+}

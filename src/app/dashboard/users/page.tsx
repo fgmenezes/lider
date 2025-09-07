@@ -7,9 +7,10 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { MoreVertical } from "lucide-react";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
-import Input from '@/components/forms/Input';
-import Select from '@/components/forms/Select';
-import Checkbox from '@/components/forms/Checkbox';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { fetchAddressByCep } from '@/lib/utils/viaCep';
 import { Tab } from '@headlessui/react';
 
@@ -18,21 +19,30 @@ function maskDate(value: string) {
   return value
     .replace(/\D/g, "")
     .replace(/(\d{2})(\d)/, "$1/$2")
-    .replace(/(\d{2})\/(\d{2})(\d)/, "$1/$2$3")
-    .replace(/(\d{2})\/(\d{2})\/(\d{4}).*/, "$1/$2/$3")
-    .slice(0, 10);
+    .replace(/(\d{2})\/(\d{2})(\d)/, "$1/$2/$3")
+    .replace(/(\d{10})\d+?$/, "$1");
 }
 
 function calculateAge(dateStr: string) {
-  if (!dateStr || dateStr.length !== 10) return '';
+  if (!dateStr || typeof dateStr !== 'string' || dateStr.length !== 10) return '';
   const [d, m, y] = dateStr.split('/');
-  const birth = new Date(`${y}-${m}-${d}`);
+  if (!d || !m || !y || d.length !== 2 || m.length !== 2 || y.length !== 4) return '';
+  
+  const day = parseInt(d, 10);
+  const month = parseInt(m, 10);
+  const year = parseInt(y, 10);
+  
+  if (isNaN(day) || isNaN(month) || isNaN(year)) return '';
+  
+  const birth = new Date(year, month - 1, day);
   if (isNaN(birth.getTime())) return '';
+  
   const today = new Date();
   let age = today.getFullYear() - birth.getFullYear();
   const mDiff = today.getMonth() - birth.getMonth();
   if (mDiff < 0 || (mDiff === 0 && today.getDate() < birth.getDate())) age--;
-  return age.toString();
+  
+  return age >= 0 ? age.toString() : '';
 }
 
 function maskPhone(value: string) {
@@ -71,14 +81,19 @@ function UserFormStep1({ form, setForm, onCancel }: { form: any, setForm: (data:
     if (nameRef.current) nameRef.current.focus();
   }, []);
   useEffect(() => {
-    setForm((prev: any) => ({ ...prev, idade: calculateAge(prev.dataNascimento) }));
-  }, [form.dataNascimento, setForm]);
+    if (form.dataNascimento) {
+      const idade = calculateAge(form.dataNascimento);
+      if (idade !== form.idade) {
+        setForm((prev: any) => ({ ...prev, idade }));
+      }
+    }
+  }, [form.dataNascimento]);
 
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Dados Pessoais</h3>
-        <p className="text-sm text-gray-600 mb-4">
+        <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-2">Dados Pessoais</h3>
+        <p className="text-sm text-[var(--color-text-secondary)] mb-4">
           Informe os dados pessoais do usuário
         </p>
       </div>
@@ -103,16 +118,16 @@ function UserFormStep1({ form, setForm, onCancel }: { form: any, setForm: (data:
         label="Idade"
         value={form.idade || ''}
         readOnly
-        className="bg-gray-100"
+        className="bg-[var(--color-neutral)]"
       />
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Sexo</label>
+        <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">Sexo</label>
         <div className="flex gap-4">
-          <label className="flex items-center gap-1">
+          <label className="flex items-center gap-1 text-[var(--color-text-primary)]">
             <input type="radio" name="gender" value="M" checked={form.sexo === "M"} onChange={() => setForm((prev: any) => ({ ...prev, sexo: "M" }))}/>
             Masculino
           </label>
-          <label className="flex items-center gap-1">
+          <label className="flex items-center gap-1 text-[var(--color-text-primary)]">
             <input type="radio" name="gender" value="F" checked={form.sexo === "F"} onChange={() => setForm((prev: any) => ({ ...prev, sexo: "F" }))}/>
             Feminino
           </label>
@@ -131,7 +146,7 @@ function UserFormStep1({ form, setForm, onCancel }: { form: any, setForm: (data:
         ]}
       />
       <div className="flex justify-end mt-6">
-        <button type="button" className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md" onClick={onCancel}>Cancelar</button>
+        <Button variant="secondary" onClick={onCancel}>Cancelar</Button>
       </div>
     </div>
   );
@@ -144,8 +159,8 @@ function UserFormStep2({ form, setForm, onCancel }: { form: any, setForm: (data:
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Contato</h3>
-        <p className="text-sm text-gray-600 mb-4">
+        <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-2">Contato</h3>
+        <p className="text-sm text-[var(--color-text-secondary)] mb-4">
           Informe os dados de contato do usuário
         </p>
       </div>
@@ -166,7 +181,7 @@ function UserFormStep2({ form, setForm, onCancel }: { form: any, setForm: (data:
         required
       />
       <div className="flex justify-end mt-6 gap-2">
-        <button type="button" className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md" onClick={onCancel}>Cancelar</button>
+        <Button variant="secondary" onClick={onCancel}>Cancelar</Button>
       </div>
     </div>
   );
@@ -365,7 +380,7 @@ function UserFormStep4({ form, setForm, onCancel }: { form: any, setForm: (data:
 function UserFormStep5({ form, setForm, onCancel }: { form: any, setForm: (data: any) => void, onCancel: () => void }) {
   const email = form.email || "";
   const [password, setPassword] = useState(form.password || "");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState(form.password || "");
   const [error, setError] = useState("");
   const emailRef = useRef<HTMLInputElement>(null);
 
@@ -384,7 +399,7 @@ function UserFormStep5({ form, setForm, onCancel }: { form: any, setForm: (data:
     } else {
       setError("");
     }
-    setForm((prev: any) => ({ ...prev, password }));
+    setForm((prev: any) => ({ ...prev, password, confirmPassword }));
   }, [password, confirmPassword, setForm]);
 
   return (
@@ -562,7 +577,23 @@ export default function UsersPage() {
     name: "",
     dataNascimento: "",
     dataIngresso: "",
-    // ... outros campos ...
+    idade: "",
+    sexo: "",
+    estadoCivil: "",
+    phone: "",
+    email: "",
+    cep: "",
+    rua: "",
+    numero: "",
+    complemento: "",
+    bairro: "",
+    municipio: "",
+    estado: "",
+    cargo: "",
+    ministryId: "",
+    church: "",
+    password: "",
+    isActive: true
   });
   const [submitLoading, setSubmitLoading] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -606,11 +637,18 @@ export default function UsersPage() {
   }
 
   const validateDate = (dateStr: string) => {
-    if (!dateStr || typeof dateStr !== 'string') return false;
+    if (!dateStr || typeof dateStr !== 'string' || dateStr.length !== 10) return false;
     const [d, m, y] = dateStr.split('/');
-    if (!d || !m || !y) return false;
-    const date = new Date(`${y}-${m}-${d}`);
-    return !isNaN(date.getTime()) && dateStr.length === 10;
+    if (!d || !m || !y || d.length !== 2 || m.length !== 2 || y.length !== 4) return false;
+    
+    const day = parseInt(d, 10);
+    const month = parseInt(m, 10);
+    const year = parseInt(y, 10);
+    
+    if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1900 || year > new Date().getFullYear()) return false;
+    
+    const date = new Date(year, month - 1, day);
+    return date.getDate() === day && date.getMonth() === month - 1 && date.getFullYear() === year;
   };
 
   const handleSaveUser = async () => {
@@ -630,7 +668,10 @@ export default function UsersPage() {
         const parts = dateStr.split("/");
         if (parts.length !== 3) return undefined;
         const [d, m, y] = parts;
-        if (!d || !m || !y) return undefined;
+        if (!d || !m || !y || d.length !== 2 || m.length !== 2 || y.length !== 4) return undefined;
+        // Validar se é uma data válida
+        const date = new Date(`${y}-${m}-${d}`);
+        if (isNaN(date.getTime())) return undefined;
         return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
       };
       const roleMap = {
@@ -668,7 +709,28 @@ export default function UsersPage() {
       }
       setEditUser(null);
       setFormStep(1);
-      setFormData({});
+      setFormData({
+        name: "",
+        dataNascimento: "",
+        dataIngresso: "",
+        idade: "",
+        sexo: "",
+        estadoCivil: "",
+        phone: "",
+        email: "",
+        cep: "",
+        rua: "",
+        numero: "",
+        complemento: "",
+        bairro: "",
+        municipio: "",
+        estado: "",
+        cargo: "",
+        ministryId: "",
+        church: "",
+        password: "",
+        isActive: true
+      });
       fetchUsers(search, page);
       toast.success('Usuário atualizado com sucesso!');
     } catch (err: any) {
@@ -684,16 +746,45 @@ export default function UsersPage() {
       <Toaster position="top-right" />
       <h1 className="text-2xl font-bold mb-6">Gerenciamento de Usuários</h1>
       <div className="flex items-center justify-end mb-4">
-        <Dialog.Root open={open || !!editUser} onOpenChange={(v) => { setOpen(v); if (!v) setEditUser(null); }}>
+        <Dialog.Root open={open || !!editUser} onOpenChange={(v) => { 
+            setOpen(v); 
+            if (!v) {
+              setEditUser(null);
+              // Limpar completamente o formulário ao fechar o modal
+              setFormStep(1);
+              setFormData({
+                name: "",
+                dataNascimento: "",
+                dataIngresso: "",
+                idade: "",
+                sexo: "",
+                estadoCivil: "",
+                phone: "",
+                email: "",
+                cep: "",
+                rua: "",
+                numero: "",
+                complemento: "",
+                bairro: "",
+                municipio: "",
+                estado: "",
+                cargo: "",
+                ministryId: "",
+                church: "",
+                password: "",
+                isActive: true
+              });
+            }
+          }}>
           <Dialog.Trigger asChild>
-            <button className="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700">
+            <Button variant="primary">
               Adicionar Usuário
-            </button>
+            </Button>
           </Dialog.Trigger>
           <Dialog.Portal>
             <Dialog.Overlay className="fixed inset-0 bg-black/40 z-40" />
-            <Dialog.Content aria-label={editUser ? 'Editar Usuário' : 'Criar Novo Usuário'} className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-lg p-8 w-full max-w-lg">
-              <Dialog.Title className="text-xl font-bold mb-4">{editUser ? 'Editar Usuário' : 'Criar Novo Usuário'}</Dialog.Title>
+            <Dialog.Content aria-label={editUser ? 'Editar Usuário' : 'Criar Novo Usuário'} className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-[var(--color-background)] rounded-lg shadow-lg p-8 w-full max-w-lg border border-[var(--color-border)]">
+              <Dialog.Title className="text-xl font-bold mb-4 text-[var(--color-text-primary)]">{editUser ? 'Editar Usuário' : 'Criar Novo Usuário'}</Dialog.Title>
               {editUser ? (
                 <Dialog.Root open={!!editUser} onOpenChange={() => { setEditUser(null); setFormStep(1); setFormData({}); }}>
                   <Dialog.Content>
@@ -710,7 +801,32 @@ export default function UsersPage() {
                 <UserCreateWizard
                   form={formData}
                   setForm={setFormData}
-                  onCancel={() => { setOpen(false); setFormStep(1); setFormData({ name: "", dataNascimento: "", dataIngresso: "" }); }}
+                  onCancel={() => { 
+                    setOpen(false); 
+                    setFormStep(1); 
+                    setFormData({
+                      name: "",
+                      dataNascimento: "",
+                      dataIngresso: "",
+                      idade: "",
+                      sexo: "",
+                      estadoCivil: "",
+                      phone: "",
+                      email: "",
+                      cep: "",
+                      rua: "",
+                      numero: "",
+                      complemento: "",
+                      bairro: "",
+                      municipio: "",
+                      estado: "",
+                      cargo: "",
+                      ministryId: "",
+                      church: "",
+                      password: "",
+                      isActive: true
+                    }); 
+                  }}
                   onSave={async () => {
                     setSubmitLoading(true);
                     setSubmitError("");
@@ -737,9 +853,9 @@ export default function UsersPage() {
                         'LEADER': 'LEADER',
                       };
                       const payload = {
-                        name: formData.name || '',
-                        email: formData.email || '',
-                        password: formData.password || '',
+                        nomeCompleto: formData.name || '',
+                        emailLogin: formData.email || '',
+                        senha: formData.password || '',
                         isActive: formData.isActive,
                         ministryId: formData.ministryId || undefined,
                         dataIngresso: (typeof formData.dataIngresso === 'string' && formData.dataIngresso && formData.dataIngresso.includes('/')) ? mapDate(formData.dataIngresso) : undefined,
@@ -754,6 +870,7 @@ export default function UsersPage() {
                         sexo: formData.sexo || '',
                         estadoCivil: formData.estadoCivil || '',
                         dataNascimento: toISODate(formData.dataNascimento),
+                        tipoLider: formData.cargo || 'LEADER',
                       };
                       const res = await fetch(`/api/users`, {
                         method: 'POST',
@@ -766,7 +883,28 @@ export default function UsersPage() {
                       }
                       setOpen(false);
                       setFormStep(1);
-                      setFormData({});
+                      setFormData({
+                        name: "",
+                        dataNascimento: "",
+                        dataIngresso: "",
+                        idade: "",
+                        sexo: "",
+                        estadoCivil: "",
+                        phone: "",
+                        email: "",
+                        cep: "",
+                        rua: "",
+                        numero: "",
+                        complemento: "",
+                        bairro: "",
+                        municipio: "",
+                        estado: "",
+                        cargo: "",
+                        ministryId: "",
+                        church: "",
+                        password: "",
+                        isActive: true
+                      });
                       fetchUsers(search, page);
                       toast.success('Usuário criado com sucesso!');
                     } catch (err: any) {
@@ -781,58 +919,57 @@ export default function UsersPage() {
                 />
               )}
               <Dialog.Close asChild>
-                <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-700">×</button>
+                <button className="absolute top-2 right-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">×</button>
               </Dialog.Close>
             </Dialog.Content>
           </Dialog.Portal>
         </Dialog.Root>
       </div>
       <div className="mb-6">
-        <input
-          type="text"
+        <Input
           placeholder="Buscar usuário..."
           value={search}
           onChange={e => { setSearch(e.target.value); setPage(1); }}
-          className="border border-gray-300 rounded-md p-2 w-64"
+          className="w-64"
         />
       </div>
       <div>
-        <h2 className="text-xl font-semibold mb-4">Usuários Cadastrados</h2>
-        {error && <div className="text-red-600 mb-4">{error}</div>}
+        <h2 className="text-xl font-semibold mb-4 text-[var(--color-text-primary)]">Usuários Cadastrados</h2>
+        {error && <div className="text-[var(--color-danger)] mb-4">{error}</div>}
         {loading ? (
           <div aria-live="polite">Carregando...</div>
         ) : users.length === 0 ? (
-          <div className="text-gray-500">Nenhum usuário encontrado.</div>
+          <div className="text-[var(--color-text-secondary)]">Nenhum usuário encontrado.</div>
         ) : (
           <>
             {/* Tabela para desktop */}
-            <div className="hidden md:block overflow-x-auto rounded-md shadow bg-white">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+            <div className="hidden md:block overflow-x-auto rounded-md shadow bg-[var(--color-background)]">
+              <table className="min-w-full divide-y divide-[var(--color-border)]">
+                <thead className="bg-[var(--color-neutral)]">
                   <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Papel</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase">Nome</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase">Email</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase">Papel</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-[var(--color-border)]">
                   {users.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-2 font-medium text-gray-900">{user.name}</td>
-                      <td className="px-4 py-2">{user.email}</td>
-                      <td className="px-4 py-2">{user.role}</td>
+                    <tr key={user.id} className="hover:bg-[var(--color-neutral)]">
+                      <td className="px-4 py-2 font-medium text-[var(--color-text-primary)]">{user.name}</td>
+                      <td className="px-4 py-2 text-[var(--color-text-primary)]">{user.email}</td>
+                      <td className="px-4 py-2 text-[var(--color-text-primary)]">{user.role}</td>
                       <td className="px-4 py-2">
                         <DropdownMenu.Root>
                           <DropdownMenu.Trigger asChild>
-                            <button aria-label="Abrir menu de ações" className="p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" tabIndex={0}>
+                            <button aria-label="Abrir menu de ações" className="p-2 rounded-full hover:bg-[var(--color-neutral)] focus:outline-none focus-ring transition-default" tabIndex={0}>
                               <MoreVertical size={20} />
                             </button>
                           </DropdownMenu.Trigger>
-                          <DropdownMenu.Content aria-label="Menu de ações do usuário" className="bg-white rounded shadow-lg p-1 min-w-[140px] z-50">
-                            <DropdownMenu.Item aria-label="Ver detalhes" className="px-3 py-2 text-sm hover:bg-gray-100 rounded cursor-pointer" onSelect={() => router.push(`/dashboard/users/${user.id}`)}>Detalhes</DropdownMenu.Item>
-                            <DropdownMenu.Item aria-label="Editar usuário" className="px-3 py-2 text-sm hover:bg-gray-100 rounded cursor-pointer" onSelect={() => setEditUser(user)}>Editar</DropdownMenu.Item>
-                            <DropdownMenu.Item aria-label="Excluir usuário" className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded cursor-pointer" onSelect={() => handleDelete(user.id)}>Excluir</DropdownMenu.Item>
+                          <DropdownMenu.Content aria-label="Menu de ações do usuário" className="bg-[var(--color-background)] rounded shadow-lg p-1 min-w-[140px] z-50 border border-[var(--color-border)]">
+                            <DropdownMenu.Item aria-label="Ver detalhes" className="px-3 py-2 text-sm hover:bg-[var(--color-neutral)] rounded cursor-pointer text-[var(--color-text-primary)]" onSelect={() => router.push(`/dashboard/users/${user.id}`)}>Detalhes</DropdownMenu.Item>
+                            <DropdownMenu.Item aria-label="Editar usuário" className="px-3 py-2 text-sm hover:bg-[var(--color-neutral)] rounded cursor-pointer text-[var(--color-text-primary)]" onSelect={() => setEditUser(user)}>Editar</DropdownMenu.Item>
+                            <DropdownMenu.Item aria-label="Excluir usuário" className="px-3 py-2 text-sm text-[var(--color-danger)] hover:bg-[var(--color-danger-light)] rounded cursor-pointer" onSelect={() => handleDelete(user.id)}>Excluir</DropdownMenu.Item>
                           </DropdownMenu.Content>
                         </DropdownMenu.Root>
                       </td>
@@ -849,25 +986,25 @@ export default function UsersPage() {
                   tabIndex={0}
                   aria-label={`Usuário ${user.name}`}
                   role="region"
-                  className="user-card bg-white rounded shadow p-4 flex flex-col gap-2 transition hover:shadow-lg focus-within:ring-2 focus-within:ring-blue-500"
+                  className="user-card bg-[var(--color-background)] rounded shadow p-4 flex flex-col gap-2 transition-default hover:shadow-lg focus-within:ring-2 focus-within:ring-[var(--color-primary)]"
                 >
                   <div className="flex items-center justify-between">
-                    <div className="font-bold text-lg">{user.name}</div>
+                    <div className="font-bold text-lg text-[var(--color-text-primary)]">{user.name}</div>
                     <DropdownMenu.Root>
                       <DropdownMenu.Trigger asChild>
-                        <button aria-label="Abrir menu de ações" className="p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" tabIndex={0}>
+                        <button aria-label="Abrir menu de ações" className="p-2 rounded-full hover:bg-[var(--color-neutral)] focus:outline-none focus-ring transition-default" tabIndex={0}>
                           <MoreVertical size={20} />
                         </button>
                       </DropdownMenu.Trigger>
-                      <DropdownMenu.Content aria-label="Menu de ações do usuário" className="bg-white rounded shadow-lg p-1 min-w-[140px] z-50">
-                        <DropdownMenu.Item aria-label="Ver detalhes" className="px-3 py-2 text-sm hover:bg-gray-100 rounded cursor-pointer" onSelect={() => router.push(`/dashboard/users/${user.id}`)}>Detalhes</DropdownMenu.Item>
-                        <DropdownMenu.Item aria-label="Editar usuário" className="px-3 py-2 text-sm hover:bg-gray-100 rounded cursor-pointer" onSelect={() => setEditUser(user)}>Editar</DropdownMenu.Item>
-                        <DropdownMenu.Item aria-label="Excluir usuário" className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded cursor-pointer" onSelect={() => handleDelete(user.id)}>Excluir</DropdownMenu.Item>
+                      <DropdownMenu.Content aria-label="Menu de ações do usuário" className="bg-[var(--color-background)] rounded shadow-lg p-1 min-w-[140px] z-50 border border-[var(--color-border)]">
+                        <DropdownMenu.Item aria-label="Ver detalhes" className="px-3 py-2 text-sm hover:bg-[var(--color-neutral)] rounded cursor-pointer text-[var(--color-text-primary)]" onSelect={() => router.push(`/dashboard/users/${user.id}`)}>Detalhes</DropdownMenu.Item>
+                        <DropdownMenu.Item aria-label="Editar usuário" className="px-3 py-2 text-sm hover:bg-[var(--color-neutral)] rounded cursor-pointer text-[var(--color-text-primary)]" onSelect={() => setEditUser(user)}>Editar</DropdownMenu.Item>
+                        <DropdownMenu.Item aria-label="Excluir usuário" className="px-3 py-2 text-sm text-[var(--color-danger)] hover:bg-[var(--color-danger-light)] rounded cursor-pointer" onSelect={() => handleDelete(user.id)}>Excluir</DropdownMenu.Item>
                       </DropdownMenu.Content>
                     </DropdownMenu.Root>
                   </div>
-                  <div className="text-sm text-gray-600">Email: {user.email}</div>
-                  <div className="text-sm text-gray-600">Papel: {user.role}</div>
+                  <div className="text-sm text-[var(--color-text-secondary)]">Email: {user.email}</div>
+                  <div className="text-sm text-[var(--color-text-secondary)]">Papel: {user.role}</div>
                 </div>
               ))}
             </div>
@@ -876,24 +1013,26 @@ export default function UsersPage() {
         {/* Paginação */}
         {totalPages > 1 && (
           <div className="flex justify-center items-center gap-2 mt-6">
-            <button
+            <Button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-3 py-1 rounded bg-gray-200 text-gray-700 disabled:opacity-50"
+              variant="secondary"
+              className="disabled:opacity-50"
             >
               Anterior
-            </button>
-            <span className="mx-2">Página {page} de {totalPages}</span>
-            <button
+            </Button>
+            <span className="mx-2 text-[var(--color-text-primary)]">Página {page} de {totalPages}</span>
+            <Button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="px-3 py-1 rounded bg-gray-200 text-gray-700 disabled:opacity-50"
+              variant="secondary"
+              className="disabled:opacity-50"
             >
               Próxima
-            </button>
+            </Button>
           </div>
         )}
       </div>
     </div>
   );
-} 
+}

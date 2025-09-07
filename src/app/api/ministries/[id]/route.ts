@@ -100,11 +100,23 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     return NextResponse.json({ message: 'Não autorizado' }, { status: 403 });
   }
   try {
-    const ministry = await prisma.ministry.update({
-      where: { id: params.id },
-      data: { masters: { set: [] } }, // desconecta todos os masters
-      include: { church: true, masters: true, members: true }, // corrigido
+    const { masterId } = await req.json();
+    if (!masterId) {
+      return NextResponse.json({ message: 'masterId é obrigatório' }, { status: 400 });
+    }
+
+    // Remove o master específico do ministério
+    await prisma.user.update({
+      where: { id: masterId },
+      data: { masterMinistryId: null, role: 'LEADER' }
     });
+
+    // Retorna o ministério atualizado
+    const ministry = await prisma.ministry.findUnique({
+      where: { id: params.id },
+      include: { church: true, masters: true, members: true }
+    });
+    
     return NextResponse.json({ ministry });
   } catch (error) {
     return NextResponse.json({ message: 'Erro ao desassociar líder master' }, { status: 500 });

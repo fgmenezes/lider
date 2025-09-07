@@ -1,6 +1,7 @@
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { cn } from "@/lib/utils";
+import { X } from "lucide-react";
 
 const Dialog = DialogPrimitive.Root;
 const DialogTrigger = DialogPrimitive.Trigger;
@@ -10,7 +11,7 @@ const DialogOverlay = React.forwardRef<React.ElementRef<typeof DialogPrimitive.O
     <DialogPrimitive.Overlay
       ref={ref}
       className={cn(
-        "fixed inset-0 z-50 bg-black/50 backdrop-blur-sm",
+        "modal-overlay backdrop-blur-sm",
         className
       )}
       {...props}
@@ -26,12 +27,16 @@ const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.C
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          "fixed left-1/2 top-1/2 z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-white p-6 shadow-lg duration-200 sm:rounded-lg",
+          "fixed left-1/2 top-1/2 z-50 grid translate-x-[-50%] translate-y-[-50%] gap-4 border transition-default modal-content",
           className
         )}
         {...props}
       >
         {children}
+        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 transition-default hover:opacity-100 focus-ring disabled:pointer-events-none">
+          <X className="h-4 w-4" />
+          <span className="sr-only">Fechar</span>
+        </DialogPrimitive.Close>
       </DialogPrimitive.Content>
     </DialogPortal>
   )
@@ -42,11 +47,13 @@ const DialogTitle = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Tit
   ({ className, ...props }, ref) => (
     <DialogPrimitive.Title
       ref={ref}
-      className={cn("text-lg font-bold", className)}
+      className={cn("text-subtitle", className)}
       {...props}
     />
   )
 );
 DialogTitle.displayName = DialogPrimitive.Title.displayName;
 
-export { Dialog, DialogTrigger, DialogContent, DialogTitle }; 
+const DialogClose = DialogPrimitive.Close;
+
+export { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogClose };

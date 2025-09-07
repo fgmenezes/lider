@@ -1,9 +1,9 @@
 "use client";
 import React, { useReducer, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "../ui/dialog";
-import Input from "./Input";
+import { Input } from "../ui/input";
 import RadioGroup from "./RadioGroup";
-import Select from "./Select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { useState } from "react";
 import { fetchAddressByCep } from "../../lib/utils/viaCep";
 
@@ -758,4 +758,4 @@ export default function LeaderCreateModal({ open, onClose, ministryId }: LeaderC
       </DialogContent>
     </Dialog>
   );
-} 
+}

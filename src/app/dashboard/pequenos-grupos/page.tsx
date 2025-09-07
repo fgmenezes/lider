@@ -2,9 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import Input from "@/components/forms/Input";
-import Select from "@/components/forms/Select";
-import Checkbox from "@/components/forms/Checkbox";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import RadioGroup from "@/components/forms/RadioGroup";
 import { fetchAddressByCep } from "@/lib/utils/viaCep";
 import { useSession } from "next-auth/react";
@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { FREQUENCIAS_LABEL } from "@/constants/frequencias";
 import { useRouter } from "next/navigation";
 import { Tab } from '@headlessui/react';
+import { Button } from '@/components/ui/button';
 
 // Função de máscara robusta para data DD/MM/AAAA
 function maskDateBR(value: string) {
@@ -119,6 +120,7 @@ function SmallGroupWizard({ open, onClose, onCreated }: { open: boolean; onClose
   const [frequencia, setFrequencia] = useState("");
   const [diaSemana, setDiaSemana] = useState("");
   const [horario, setHorario] = useState("");
+  const [horarioTermino, setHorarioTermino] = useState("");
   const [dataUnica, setDataUnica] = useState("");
   const [dataInicio, setDataInicio] = useState("");
   const [validationError, setValidationError] = useState("");
@@ -269,6 +271,7 @@ function SmallGroupWizard({ open, onClose, onCreated }: { open: boolean; onClose
         dayOfWeek: tipoEncontro === 'recorrente' ? diaSemana : null,
         frequency: tipoEncontro === 'recorrente' ? frequencia : null,
         time: horario,
+        endTime: horarioTermino || null,
         startDate: tipoEncontro === 'recorrente'
           ? (dataInicio ? brToISO(dataInicio) : null)
           : (dataUnica ? brToISO(dataUnica) : null),
@@ -339,7 +342,8 @@ function SmallGroupWizard({ open, onClose, onCreated }: { open: boolean; onClose
               <>
                 <Select label="Frequência *" value={frequencia} onChange={e => setFrequencia(e.target.value)} options={FREQUENCIAS} required error={!frequencia && validationError ? 'Obrigatório' : undefined} ref={frequenciaRef} />
                 <Select label="Dia da Semana *" value={diaSemana} onChange={e => setDiaSemana(e.target.value)} options={DIAS_SEMANA} required error={!diaSemana && validationError ? 'Obrigatório' : undefined} />
-                <Input label="Horário do Encontro *" type="time" value={horario} onChange={e => setHorario(e.target.value)} required error={!horario && validationError ? 'Obrigatório' : undefined} />
+                <Input label="Horário de Início *" type="time" value={horario} onChange={e => setHorario(e.target.value)} required error={!horario && validationError ? 'Obrigatório' : undefined} />
+                <Input label="Horário de Término" type="time" value={horarioTermino} onChange={e => setHorarioTermino(e.target.value)} />
                 <Input label="Data de início (opcional)"
                   type="text"
                   placeholder="DD/MM/AAAA"
@@ -372,7 +376,8 @@ function SmallGroupWizard({ open, onClose, onCreated }: { open: boolean; onClose
                   error={erroDataUnica || (!dataUnica && validationError ? 'Obrigatório' : undefined)}
                   ref={dataUnicaRef}
                 />
-                <Input label="Horário do Encontro *" type="time" value={horario} onChange={e => setHorario(e.target.value)} required error={!horario && validationError ? 'Obrigatório' : undefined} />
+                <Input label="Horário de Início *" type="time" value={horario} onChange={e => setHorario(e.target.value)} required error={!horario && validationError ? 'Obrigatório' : undefined} />
+                <Input label="Horário de Término" type="time" value={horarioTermino} onChange={e => setHorarioTermino(e.target.value)} />
               </>
             )}
             {validationError && (
@@ -381,8 +386,8 @@ function SmallGroupWizard({ open, onClose, onCreated }: { open: boolean; onClose
             {/* Resumo dinâmico */}
             <div className="bg-gray-50 border rounded p-3 mt-2 text-sm text-gray-700">
               <b>Resumo:</b> {tipoEncontro === 'recorrente'
-                ? `Seu grupo se reunirá ${frequencia ? FREQUENCIAS_LABEL[frequencia] : ''}${frequencia && diaSemana ? ', ' : ''}${diaSemana ? 'toda ' + DIAS_SEMANA.find(d => d.value === diaSemana)?.label : ''}${horario ? ', às ' + horario : ''}${dataInicio ? ', a partir de ' + formatDateBR(dataInicio) : ''}.`
-                : `Seu grupo terá um encontro único em ${dataUnica ? formatDateBR(dataUnica) : '[data não definida]'}${horario ? ', às ' + horario : ''}.`}
+                ? `Seu grupo se reunirá ${frequencia ? FREQUENCIAS_LABEL[frequencia] : ''}${frequencia && diaSemana ? ', ' : ''}${diaSemana ? 'toda ' + DIAS_SEMANA.find(d => d.value === diaSemana)?.label : ''}${horario ? ', das ' + horario : ''}${horarioTermino ? ' às ' + horarioTermino : ''}${dataInicio ? ', a partir de ' + formatDateBR(dataInicio) : ''}.`
+                : `Seu grupo terá um encontro único em ${dataUnica ? formatDateBR(dataUnica) : '[data não definida]'}${horario ? ', das ' + horario : ''}${horarioTermino ? ' às ' + horarioTermino : ''}.`}
             </div>
           </div>
         )}
@@ -445,13 +450,13 @@ function SmallGroupWizard({ open, onClose, onCreated }: { open: boolean; onClose
                 <>
                   <div><b>Frequência:</b> {FREQUENCIAS_LABEL[frequencia] || '-'}</div>
                   <div><b>Dia da Semana:</b> {DIAS_SEMANA.find(d => d.value === diaSemana)?.label || '-'}</div>
-                  <div><b>Horário:</b> {horario || '-'}</div>
+                  <div><b>Horário:</b> {horario || '-'}{horarioTermino ? ` às ${horarioTermino}` : ''}</div>
                   <div><b>Data de início:</b> {dataInicio ? formatDateBR(dataInicio) : '-'}</div>
                 </>
               ) : (
                 <>
                   <div><b>Data do Encontro:</b> {dataUnica ? formatDateBR(dataUnica) : '-'}</div>
-                  <div><b>Horário:</b> {horario || '-'}</div>
+                  <div><b>Horário:</b> {horario || '-'}{horarioTermino ? ` às ${horarioTermino}` : ''}</div>
                 </>
               )}
             </div>
@@ -614,13 +619,13 @@ function SmallGroupEditTabsModal({ open, onClose, group, onUpdated }: { open: bo
                       <>
                         <div><b>Frequência:</b> {FREQUENCIAS_LABEL[frequencia] || '-'}</div>
                         <div><b>Dia da Semana:</b> {DIAS_SEMANA.find(d => d.value === diaSemana)?.label || '-'}</div>
-                        <div><b>Horário:</b> {horario || '-'}</div>
+                        <div><b>Horário:</b> {horario || '-'}{group?.endTime ? ` às ${group.endTime}` : ''}</div>
                         <div><b>Data de início:</b> {dataInicio ? formatDateBR(dataInicio) : '-'}</div>
                       </>
                     ) : (
                       <>
                         <div><b>Data do Encontro:</b> {dataUnica ? formatDateBR(dataUnica) : '-'}</div>
-                        <div><b>Horário:</b> {horario || '-'}</div>
+                        <div><b>Horário:</b> {horario || '-'}{group?.endTime ? ` às ${group.endTime}` : ''}</div>
                       </>
                     )}
                   </div>
@@ -958,49 +963,49 @@ export default function SmallGroupsPage() {
     <div className="container mx-auto py-8 px-4 max-w-4xl">
       <h1 className="text-2xl font-bold mb-2">Pequenos Grupos</h1>
       <div className="flex justify-end mb-6">
-        <button
-          className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded shadow"
+        <Button
+          variant="primary"
           onClick={() => setModalOpen(true)}
-        >Novo Pequeno Grupo</button>
+        >Novo Pequeno Grupo</Button>
       </div>
       {exportError && <div className="text-red-600 text-sm mb-2">{exportError}</div>}
       <div className="flex justify-between items-center mb-4 gap-2">
         <div className="flex gap-2 w-full max-w-xl">
-          <input
+          <Input
             type="text"
             placeholder="Buscar por nome do grupo..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="border rounded px-3 py-2 w-full"
+            className="w-full"
           />
-          <button
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded shadow"
+          <Button
+            variant="primary"
             onClick={() => setFilterModalOpen(true)}
           >
             Filtrar
-          </button>
-          <button
-            className="bg-gray-100 border px-3 py-2 rounded text-sm hover:bg-gray-200 disabled:opacity-50"
+          </Button>
+          <Button
+            variant="outline"
             onClick={() => handleExport('csv')}
             disabled={exporting !== null}
-          >{exporting === 'csv' ? 'Exportando...' : 'Exportar CSV'}</button>
-          <button
-            className="bg-gray-100 border px-3 py-2 rounded text-sm hover:bg-gray-200 disabled:opacity-50"
+          >{exporting === 'csv' ? 'Exportando...' : 'Exportar CSV'}</Button>
+          <Button
+            variant="outline"
             onClick={() => handleExport('pdf')}
             disabled={exporting !== null}
-          >{exporting === 'pdf' ? 'Exportando...' : 'Exportar PDF'}</button>
+          >{exporting === 'pdf' ? 'Exportando...' : 'Exportar PDF'}</Button>
         </div>
       </div>
       {loading ? (
-        <div className="text-center py-8">Carregando...</div>
+        <div className="text-center py-8" style={{ color: 'var(--text-muted)' }}>Carregando...</div>
       ) : error ? (
-        <div className="text-center text-red-600 py-8">{error}</div>
+        <div className="text-center py-8" style={{ color: 'var(--color-danger)' }}>{error}</div>
       ) : (
         <>
           <div className="overflow-x-auto">
-            <table className="min-w-full bg-white rounded shadow divide-y">
+            <table className="min-w-full rounded shadow divide-y" style={{ backgroundColor: 'var(--bg-primary)' }}>
               <thead>
-                <tr className="bg-gray-100 text-gray-700 text-sm">
+                <tr className="text-sm" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
                   <th className="px-4 py-2 text-left">Grupo</th>
                   <th className="px-4 py-2 text-left">Dia da Semana</th>
                   <th className="px-4 py-2 text-left">Recorrência</th>
@@ -1014,12 +1019,12 @@ export default function SmallGroupsPage() {
               </thead>
               <tbody>
                 {groups.length === 0 ? (
-                  <tr><td colSpan={9} className="px-4 py-3 text-gray-500 text-center">Nenhum grupo encontrado.</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-3 text-center" style={{ color: 'var(--text-muted)' }}>Nenhum grupo encontrado.</td></tr>
                 ) : (
                   groups.map((group) => {
                     const canEdit = session?.user?.role === 'ADMIN' || session?.user?.masterMinistryId === group.ministryId;
                     return (
-                      <tr key={group.id} className="border-b hover:bg-gray-50">
+                      <tr key={group.id} className="border-b" style={{ borderColor: 'var(--color-neutral)', ':hover': { backgroundColor: 'var(--bg-secondary)' } }}>
                         <td className="px-4 py-2 font-medium">
                           <button
                             className="text-blue-700 hover:underline focus:outline-none"
@@ -1056,37 +1061,40 @@ export default function SmallGroupsPage() {
           </div>
           {/* Controles de paginação */}
           <div className="flex justify-between items-center mt-4">
-            <div className="text-sm text-gray-600">
+            <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
               Página {pagination.page} de {pagination.totalPages} | Total: {pagination.total}
             </div>
             <div className="flex gap-2">
-              <button
-                className="px-2 py-1 rounded border text-sm disabled:opacity-50"
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => fetchGroups(1, pagination.perPage)}
                 disabled={pagination.page === 1}
-              >{'<<'}</button>
-              <button
-                className="px-2 py-1 rounded border text-sm disabled:opacity-50"
+              >{'<<'}</Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => fetchGroups(pagination.page - 1, pagination.perPage)}
                 disabled={pagination.page === 1}
-              >{'<'}</button>
-              <button
-                className="px-2 py-1 rounded border text-sm disabled:opacity-50"
+              >{'<'}</Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => fetchGroups(pagination.page + 1, pagination.perPage)}
                 disabled={pagination.page === pagination.totalPages || pagination.totalPages === 0}
-              >{'>'}</button>
-              <button
-                className="px-2 py-1 rounded border text-sm disabled:opacity-50"
+              >{'>'}</Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => fetchGroups(pagination.totalPages, pagination.perPage)}
                 disabled={pagination.page === pagination.totalPages || pagination.totalPages === 0}
-              >{'>>'}</button>
-              <select
-                className="ml-2 px-2 py-1 border rounded text-sm"
-                value={pagination.perPage}
+              >{'>>'}</Button>
+              <Select
+                className="ml-2"
+                value={pagination.perPage.toString()}
                 onChange={e => fetchGroups(1, Number(e.target.value))}
-              >
-                {[5, 10, 20, 50].map(n => <option key={n} value={n}>{n} por página</option>)}
-              </select>
+                options={[5, 10, 20, 50].map(n => ({ value: n.toString(), label: `${n} por página` }))}
+              />
             </div>
           </div>
         </>
@@ -1096,49 +1104,39 @@ export default function SmallGroupsPage() {
         <DialogContent>
           <DialogTitle>Filtros Avançados</DialogTitle>
           <div className="space-y-4 mt-2">
-            <div>
-              <label className="block text-sm font-medium mb-1">Status</label>
-              <select
-                className="w-full border rounded px-3 py-2"
-                value={filters.status}
-                onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}
-              >
-                <option value="">Todos</option>
-                <option value="ATIVO">Ativo</option>
-                <option value="INATIVO">Inativo</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Dia da Semana</label>
-              <select
-                className="w-full border rounded px-3 py-2"
-                value={filters.dayOfWeek}
-                onChange={e => setFilters(f => ({ ...f, dayOfWeek: e.target.value }))}
-              >
-                <option value="">Todos</option>
-                {DIAS_SEMANA.map(d => (
-                  <option key={d.value} value={d.value}>{d.label}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Frequência</label>
-              <select
-                className="w-full border rounded px-3 py-2"
-                value={filters.frequency}
-                onChange={e => setFilters(f => ({ ...f, frequency: e.target.value }))}
-              >
-                <option value="">Todas</option>
-                {FREQUENCIAS.map(f => (
-                  <option key={f.value} value={f.value}>{f.label}</option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="Status"
+              value={filters.status}
+              onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}
+              options={[
+                { value: "", label: "Todos" },
+                { value: "ATIVO", label: "Ativo" },
+                { value: "INATIVO", label: "Inativo" }
+              ]}
+            />
+            <Select
+              label="Dia da Semana"
+              value={filters.dayOfWeek}
+              onChange={e => setFilters(f => ({ ...f, dayOfWeek: e.target.value }))}
+              options={[
+                { value: "", label: "Todos" },
+                ...DIAS_SEMANA.map(d => ({ value: d.value, label: d.label }))
+              ]}
+            />
+            <Select
+              label="Frequência"
+              value={filters.frequency}
+              onChange={e => setFilters(f => ({ ...f, frequency: e.target.value }))}
+              options={[
+                { value: "", label: "Todas" },
+                ...FREQUENCIAS.map(f => ({ value: f.value, label: f.label }))
+              ]}
+            />
           </div>
           <div className="flex justify-end gap-2 mt-6">
-            <button className="bg-gray-200 px-4 py-2 rounded" onClick={() => setFilterModalOpen(false)}>Fechar</button>
-            <button className="bg-gray-200 px-4 py-2 rounded" onClick={() => setFilters({ status: "", dayOfWeek: "", frequency: "", leader: "" })}>Limpar</button>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded" onClick={() => setFilterModalOpen(false)}>Aplicar</button>
+            <Button variant="outline" onClick={() => setFilterModalOpen(false)}>Fechar</Button>
+            <Button variant="secondary" onClick={() => setFilters({ status: "", dayOfWeek: "", frequency: "", leader: "" })}>Limpar</Button>
+            <Button variant="primary" onClick={() => setFilterModalOpen(false)}>Aplicar</Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -5,6 +5,15 @@ import { FREQUENCIAS_LABEL } from "@/constants/frequencias";
 import { Tab } from '@headlessui/react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useSession } from "next-auth/react";
+import { PlusCircle, Edit, Trash2, CheckCircle, XCircle, MoreVertical, Eye, Users, UserPlus, FileText } from "lucide-react";
+import PeopleTab from "@/components/forms/PeopleTab";
+import GroupObservationsSection from "./GroupObservationsSection";
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import AttendanceModal from '@/components/forms/AttendanceModal';
+import VisitorModal from '@/components/forms/VisitorModal';
+import NoteModal from '@/components/forms/NoteModal';
+import toast from 'react-hot-toast';
+import { Button } from '@/components/ui/button';
 
 export default function SmallGroupDetailsPage() {
   const router = useRouter();
@@ -16,23 +25,34 @@ export default function SmallGroupDetailsPage() {
   const [meetings, setMeetings] = useState<any[]>([]);
   const [meetingsLoading, setMeetingsLoading] = useState(false);
   const [meetingsError, setMeetingsError] = useState("");
-  const [showAddLeaderModal, setShowAddLeaderModal] = useState(false);
-  const [searchLeader, setSearchLeader] = useState("");
-  const [selectedLeaders, setSelectedLeaders] = useState<string[]>([]);
-  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
-  const [searchMember, setSearchMember] = useState("");
-  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
-  const [eligibleLeaders, setEligibleLeaders] = useState<any[]>([]);
-  const [eligibleLeadersLoading, setEligibleLeadersLoading] = useState(false);
-  const [eligibleLeadersError, setEligibleLeadersError] = useState("");
-  const [eligibleMembers, setEligibleMembers] = useState<any[]>([]);
-  const [eligibleMembersLoading, setEligibleMembersLoading] = useState(false);
-  const [eligibleMembersError, setEligibleMembersError] = useState("");
+
   const [feedback, setFeedback] = useState<string | null>(null);
   const [removingLeaderId, setRemovingLeaderId] = useState<string | null>(null);
   const [confirmRemoveLeader, setConfirmRemoveLeader] = useState<null | { id: string; name: string }>(null);
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
   const [confirmRemoveMember, setConfirmRemoveMember] = useState<null | { id: string; name: string }>(null);
+  
+  // Estados para gerenciamento de reuniões
+  const [showAddMeetingModal, setShowAddMeetingModal] = useState(false);
+  const [meetingDate, setMeetingDate] = useState("");
+  const [meetingTime, setMeetingTime] = useState("");
+  const [meetingType, setMeetingType] = useState("PG");
+  const [meetingSubmitting, setMeetingSubmitting] = useState(false);
+  const [meetingError, setMeetingError] = useState("");
+  const [meetingSuccess, setMeetingSuccess] = useState(false);
+  
+  // Estados para modais de ações das reuniões
+  const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [showVisitorModal, setShowVisitorModal] = useState(false);
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
+  const [selectedMeeting, setSelectedMeeting] = useState<any | null>(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [members, setMembers] = useState<any[]>([]);
+  const [confirmDeleteMeeting, setConfirmDeleteMeeting] = useState<null | { id: string; date: string }>(null);
+  const [deletingMeetingId, setDeletingMeetingId] = useState<string | null>(null);
+  const [attendanceList, setAttendanceList] = useState<any[]>([]);
+  const [savingAttendance, setSavingAttendance] = useState(false);
 
   const { data: session } = useSession();
 
@@ -55,81 +75,92 @@ export default function SmallGroupDetailsPage() {
     if (groupId) fetchGroup();
   }, [groupId]);
 
-  // Buscar líderes elegíveis ao abrir modal
-  useEffect(() => {
-    if (showAddLeaderModal && group?.ministryId) {
-      setEligibleLeadersLoading(true);
-      setEligibleLeadersError("");
-      const excludeIds = group.leaders?.map((l: any) => l.userId).join(",") || "";
-      fetch(`/api/ministries/${group.ministryId}/leaders?search=${encodeURIComponent(searchLeader)}&excludeIds=${excludeIds}`)
-        .then(res => res.json())
-        .then(data => setEligibleLeaders(data.leaders || []))
-        .catch(() => setEligibleLeadersError("Erro ao buscar líderes."))
-        .finally(() => setEligibleLeadersLoading(false));
+  // Função para recarregar dados do grupo
+  const fetchGroup = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/small-groups/${groupId}`);
+      if (!res.ok) throw new Error("Erro ao buscar grupo");
+      const data = await res.json();
+      setGroup(data.group);
+      setMeetings(data.group.meetings || []);
+    } catch (e: any) {
+      setError(e.message || "Erro ao buscar grupo");
+    } finally {
+      setLoading(false);
     }
-  }, [showAddLeaderModal, searchLeader, group?.ministryId, group?.leaders]);
+  };
 
-  // Buscar membros elegíveis ao abrir modal
-  useEffect(() => {
-    if (showAddMemberModal && group?.ministryId) {
-      setEligibleMembersLoading(true);
-      setEligibleMembersError("");
-      const excludeIds = group.members?.map((m: any) => m.memberId).join(",") || "";
-      fetch(`/api/members?ministryId=${group.ministryId}&search=${encodeURIComponent(searchMember)}`)
-        .then(res => res.json())
-        .then(data => {
-          // Excluir já associados
-          const filtered = (data.members || []).filter((m: any) => !group.members.some((gm: any) => gm.memberId === m.id));
-          setEligibleMembers(filtered);
+  // Funções para ações das reuniões
+  const handleCancelMeeting = async (meetingId: string) => {
+    if (!confirm('Tem certeza que deseja cancelar esta reunião?')) return;
+    
+    try {
+      setIsUpdatingStatus(true);
+      const response = await fetch(`/api/small-groups/${groupId}/meetings/${meetingId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: 'CANCELADA'
         })
-        .catch(() => setEligibleMembersError("Erro ao buscar membros."))
-        .finally(() => setEligibleMembersLoading(false));
-    }
-  }, [showAddMemberModal, searchMember, group?.ministryId, group?.members]);
-
-  // Função para associar líderes
-  async function handleAddLeaders() {
-    if (!selectedLeaders.length) return;
-    setFeedback(null);
-    try {
-      const res = await fetch(`/api/small-groups/${groupId}/add-leaders`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userIds: selectedLeaders }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || data.message || "Erro ao associar líderes.");
-      setShowAddLeaderModal(false);
-      setSelectedLeaders([]);
-      setFeedback("Líderes adicionados com sucesso!");
-      // Atualizar grupo
-      await fetchGroup();
-    } catch (e: any) {
-      setFeedback(e.message || "Erro ao associar líderes.");
-    }
-  }
 
-  // Função para associar membros
-  async function handleAddMembers() {
-    if (!selectedMembers.length) return;
-    setFeedback(null);
-    try {
-      const res = await fetch(`/api/small-groups/${groupId}/add-members`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ memberIds: selectedMembers }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || data.message || "Erro ao associar membros.");
-      setShowAddMemberModal(false);
-      setSelectedMembers([]);
-      setFeedback("Membros adicionados com sucesso!");
-      // Atualizar grupo
+      if (!response.ok) throw new Error('Erro ao cancelar reunião');
+      
+      toast.success('Reunião cancelada com sucesso!');
       await fetchGroup();
-    } catch (e: any) {
-      setFeedback(e.message || "Erro ao associar membros.");
+    } catch (error) {
+      console.error('Erro ao cancelar reunião:', error);
+      toast.error('Erro ao cancelar reunião');
+    } finally {
+      setIsUpdatingStatus(false);
     }
-  }
+  };
+
+  const handleFinishMeeting = async (meetingId: string) => {
+    if (!confirm('Tem certeza que deseja finalizar esta reunião?')) return;
+    
+    try {
+      setIsUpdatingStatus(true);
+      const response = await fetch(`/api/small-groups/${groupId}/meetings/${meetingId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: 'FINALIZADA'
+        })
+      });
+
+      if (!response.ok) throw new Error('Erro ao finalizar reunião');
+      
+      toast.success('Reunião finalizada com sucesso!');
+      await fetchGroup();
+    } catch (error) {
+      console.error('Erro ao finalizar reunião:', error);
+      toast.error('Erro ao finalizar reunião');
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleOpenAttendance = (meeting: any) => {
+    setSelectedMeeting(meeting);
+    setShowAttendanceModal(true);
+  };
+
+  const handleOpenVisitor = (meetingId: string) => {
+    setSelectedMeetingId(meetingId);
+    setShowVisitorModal(true);
+  };
+
+  const handleOpenNote = (meetingId: string) => {
+    setSelectedMeetingId(meetingId);
+    setShowNoteModal(true);
+  };
 
   // Função para remover líder
   async function handleRemoveLeader(leaderId: string) {
@@ -175,43 +206,113 @@ export default function SmallGroupDetailsPage() {
     }
   }
 
-  // Tornar fetchGroup acessível para atualização
-  async function fetchGroup() {
-    setLoading(true);
-    setError("");
+  // Funções para ações das reuniões
+  const loadMembers = async () => {
     try {
-      const res = await fetch(`/api/small-groups/${groupId}`);
-      if (!res.ok) throw new Error("Erro ao buscar grupo");
-      const data = await res.json();
-      setGroup(data.group);
-      setMeetings(data.group.meetings || []);
+      const response = await fetch(`/api/small-groups/${groupId}/members`);
+      if (!response.ok) throw new Error('Erro ao carregar membros');
+      const data = await response.json();
+      setMembers(data);
+    } catch (error) {
+      console.error('Erro ao carregar membros:', error);
+      toast.error('Erro ao carregar membros do grupo');
+    }
+  };
+
+  // Função para criar nova reunião
+  async function handleAddMeeting() {
+    if (!meetingDate || !meetingTime) {
+      setMeetingError("Data e horário são obrigatórios");
+      return;
+    }
+    
+    setMeetingSubmitting(true);
+    setMeetingError("");
+    setMeetingSuccess(false);
+    
+    try {
+      const res = await fetch(`/api/small-groups/${groupId}/meetings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: `${meetingDate}T${meetingTime}:00`,
+          type: meetingType
+        }),
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Erro ao criar reunião");
+      }
+      
+      setMeetingSuccess(true);
+      setMeetingDate("");
+      setMeetingTime("");
+      // Atualizar lista de reuniões
+      await fetchGroup();
+      
+      // Fechar modal após 1.5 segundos
+      setTimeout(() => {
+        setShowAddMeetingModal(false);
+        setMeetingSuccess(false);
+      }, 1500);
+      
     } catch (e: any) {
-      setError(e.message || "Erro ao buscar grupo");
+      setMeetingError(e.message || "Erro ao criar reunião");
     } finally {
-      setLoading(false);
+      setMeetingSubmitting(false);
+    }
+  }
+  
+  // Função para excluir reunião
+  async function handleDeleteMeeting(meetingId: string) {
+    if (!meetingId) return;
+    
+    setDeletingMeetingId(meetingId);
+    
+    try {
+      const res = await fetch(`/api/small-groups/${groupId}/meetings/${meetingId}`, {
+        method: "DELETE",
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Erro ao excluir reunião");
+      }
+      
+      setFeedback("Reunião excluída com sucesso!");
+      // Atualizar lista de reuniões
+      await fetchGroup();
+      
+    } catch (e: any) {
+      setFeedback(e.message || "Erro ao excluir reunião");
+    } finally {
+      setDeletingMeetingId(null);
+      setConfirmDeleteMeeting(null);
     }
   }
 
-  if (loading) return <div className="p-8 text-center">Carregando...</div>;
-  if (error) return <div className="p-8 text-center text-red-600">{error}</div>;
-  if (!group) return <div className="p-8 text-center text-gray-500">Grupo não encontrado.</div>;
+  if (loading) return <div className="p-8 text-center" style={{ color: 'var(--text-muted)' }}>Carregando...</div>;
+  if (error) return <div className="p-8 text-center" style={{ color: 'var(--color-danger)' }}>{error}</div>;
+  if (!group) return <div className="p-8 text-center" style={{ color: 'var(--text-muted)' }}>Grupo não encontrado.</div>;
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-2xl">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Detalhes do Pequeno Grupo</h1>
-        <button className="bg-gray-200 px-4 py-2 rounded" onClick={() => router.back()}>Voltar</button>
+        <Button variant="outline" onClick={() => router.back()}>Voltar</Button>
       </div>
       <Tab.Group>
         <Tab.List className="flex space-x-2 border-b-2 border-gray-200 mb-8 bg-gray-50 rounded-t-lg p-2 shadow-sm">
           <Tab className={({ selected }) => `px-6 py-2 text-base font-semibold rounded-t-lg transition-colors duration-200 outline-none focus:ring-2 focus:ring-blue-400 ${selected ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Resumo</Tab>
           <Tab className={({ selected }) => `px-6 py-2 text-base font-semibold rounded-t-lg transition-colors duration-200 outline-none focus:ring-2 focus:ring-blue-400 ${selected ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Pessoas</Tab>
           <Tab className={({ selected }) => `px-6 py-2 text-base font-semibold rounded-t-lg transition-colors duration-200 outline-none focus:ring-2 focus:ring-blue-400 ${selected ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Reuniões</Tab>
+          <Tab className={({ selected }) => `px-6 py-2 text-base font-semibold rounded-t-lg transition-colors duration-200 outline-none focus:ring-2 focus:ring-blue-400 ${selected ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Observações</Tab>
         </Tab.List>
         <Tab.Panels>
           {/* Aba Resumo */}
           <Tab.Panel>
-            <div className="bg-white rounded shadow p-6 mb-6 space-y-6">
+            <div className="rounded shadow p-6 mb-6 space-y-6" style={{ backgroundColor: 'var(--bg-primary)' }}>
               <div>
                 <h2 className="text-lg font-semibold mb-2 text-blue-700">Dados do Grupo</h2>
                 <div className="mb-1"><span className="font-semibold">Nome:</span> {group.name}</div>
@@ -219,108 +320,31 @@ export default function SmallGroupDetailsPage() {
                 <div className="mb-1"><span className="font-semibold">Status:</span> {group.status}</div>
                 <div className="mb-1"><span className="font-semibold">Recorrência:</span> {group.frequency ? FREQUENCIAS_LABEL[group.frequency] || group.frequency : '-'}</div>
                 <div className="mb-1"><span className="font-semibold">Dia da Semana:</span> {group.dayOfWeek || '-'}</div>
-                <div className="mb-1"><span className="font-semibold">Horário:</span> {group.time || '-'}</div>
+                <div className="mb-1"><span className="font-semibold">Horário:</span> {group.time || '-'}{group.endTime ? ` às ${group.endTime}` : ''}</div>
                 <div className="mb-1"><span className="font-semibold">Data de Início:</span> {group.startDate ? new Date(group.startDate).toLocaleDateString() : '-'}</div>
                 <div className="mb-1"><span className="font-semibold">Anfitrião:</span> {group.hostName || '-'}</div>
                 <div className="mb-1"><span className="font-semibold">Celular Anfitrião:</span> {group.hostPhone || '-'}</div>
                 <div className="mb-1"><span className="font-semibold">Endereço:</span> {`${group.rua || '-'}, ${group.numero || '-'}${group.complemento ? ', ' + group.complemento : ''}, ${group.bairro || '-'}, ${group.municipio || '-'}, ${group.estado || '-'}, CEP: ${group.cep || '-'}`}</div>
               </div>
               <div className="flex space-x-4 mt-4">
-                <div className="bg-gray-100 rounded p-4 text-center">
-                  <div className="text-2xl font-bold">{group.members?.length || 0}</div>
-                  <div className="text-xs text-gray-600">Membros</div>
+                <div className="rounded p-4 text-center" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+                  <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{group.members?.length || 0}</div>
+                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Membros</div>
                 </div>
-                <div className="bg-gray-100 rounded p-4 text-center">
-                  <div className="text-2xl font-bold">{group.leaders?.length || 0}</div>
-                  <div className="text-xs text-gray-600">Líderes</div>
+                <div className="rounded p-4 text-center" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+                  <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{group.leaders?.length || 0}</div>
+                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Líderes</div>
                 </div>
-                <div className="bg-gray-100 rounded p-4 text-center">
-                  <div className="text-2xl font-bold">{meetings?.length || 0}</div>
-                  <div className="text-xs text-gray-600">Reuniões</div>
+                <div className="rounded p-4 text-center" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+                  <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{meetings?.length || 0}</div>
+                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Reuniões</div>
                 </div>
               </div>
             </div>
           </Tab.Panel>
-          {/* Aba Pessoas com sub-abas */}
+          {/* Aba Pessoas */}
           <Tab.Panel>
-            <Tab.Group>
-              <Tab.List className="flex space-x-2 border-b border-gray-200 mb-4 bg-gray-50 rounded-t p-1 shadow-sm">
-                <Tab className={({ selected }) => `px-4 py-1.5 text-sm font-medium rounded-t transition-colors duration-200 outline-none focus:ring-2 focus:ring-blue-400 ${selected ? 'bg-blue-500 text-white shadow' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Líderes</Tab>
-                <Tab className={({ selected }) => `px-4 py-1.5 text-sm font-medium rounded-t transition-colors duration-200 outline-none focus:ring-2 focus:ring-blue-400 ${selected ? 'bg-blue-500 text-white shadow' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Membros</Tab>
-              </Tab.List>
-              <Tab.Panels>
-                <Tab.Panel>
-                  <div className="bg-white rounded shadow p-4 mb-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h2 className="text-lg font-semibold">Líderes</h2>
-                      <button
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium shadow"
-                        onClick={() => setShowAddLeaderModal(true)}
-                        type="button"
-                      >
-                        + Adicionar Líder
-                      </button>
-                    </div>
-                    {group.leaders?.length ? (
-                      <ul className="divide-y divide-gray-100">
-                        {group.leaders.map((leader: any) => (
-                          <li key={leader.id} className="py-2 flex items-center justify-between">
-                            <div>
-                              <span className="font-medium">{leader.user?.name}</span>
-                              {leader.user?.email && <span className="ml-2 text-gray-500 text-sm">({leader.user.email})</span>}
-                            </div>
-                            <button
-                              className="ml-4 px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 disabled:opacity-50"
-                              disabled={removingLeaderId === leader.userId}
-                              onClick={() => setConfirmRemoveLeader({ id: leader.userId, name: leader.user?.name })}
-                            >
-                              Remover
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <div className="text-gray-500">Nenhum líder cadastrado.</div>
-                    )}
-                  </div>
-                </Tab.Panel>
-                <Tab.Panel>
-                  <div className="bg-white rounded shadow p-4 mb-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h2 className="text-lg font-semibold">Membros</h2>
-                      <button
-                        className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm font-medium shadow"
-                        onClick={() => setShowAddMemberModal(true)}
-                        type="button"
-                      >
-                        + Adicionar Membro
-                      </button>
-                    </div>
-                    {group.members?.length ? (
-                      <ul className="divide-y divide-gray-100">
-                        {group.members.map((m: any) => (
-                          <li key={m.id} className="py-2 flex items-center justify-between">
-                            <div>
-                              <span className="font-medium">{m.member?.name}</span>
-                              {m.member?.email && <span className="ml-2 text-gray-500 text-sm">({m.member.email})</span>}
-                            </div>
-                            <button
-                              className="ml-4 px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 disabled:opacity-50"
-                              disabled={removingMemberId === m.memberId}
-                              onClick={() => setConfirmRemoveMember({ id: m.memberId, name: m.member?.name })}
-                            >
-                              Remover
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <div className="text-gray-500">Nenhum membro cadastrado.</div>
-                    )}
-                  </div>
-                </Tab.Panel>
-              </Tab.Panels>
-            </Tab.Group>
+            <PeopleTab group={group} onRefresh={fetchGroup} />
           </Tab.Panel>
           {/* Aba Reuniões com sub-abas */}
           <Tab.Panel>
@@ -331,24 +355,71 @@ export default function SmallGroupDetailsPage() {
               </Tab.List>
               <Tab.Panels>
                 <Tab.Panel>
-                  <div className="bg-white rounded shadow p-4 mb-4">
+                  <div className="rounded shadow p-4 mb-4" style={{ backgroundColor: 'var(--bg-primary)' }}>
                     <h2 className="text-lg font-semibold mb-2">Próximas Reuniões</h2>
                     {meetings.filter((m: any) => new Date(m.date) >= new Date()).length ? (
                       <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200 bg-white rounded shadow">
-                          <thead className="bg-gray-50">
+                        <table className="min-w-full divide-y rounded shadow" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--color-neutral)' }}>
+                          <thead style={{ backgroundColor: 'var(--bg-secondary)' }}>
                             <tr>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Data</th>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Horário</th>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                              <th className="px-4 py-2 text-left text-xs font-medium uppercase" style={{ color: 'var(--text-secondary)' }}>Data</th>
+                              <th className="px-4 py-2 text-left text-xs font-medium uppercase" style={{ color: 'var(--text-secondary)' }}>Horário</th>
+                              <th className="px-4 py-2 text-left text-xs font-medium uppercase" style={{ color: 'var(--text-secondary)' }}>Status</th>
+                              <th className="px-4 py-2 text-center text-xs font-medium uppercase" style={{ color: 'var(--text-secondary)' }}>Ações</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-gray-100">
-                            {meetings.filter((m: any) => new Date(m.date) >= new Date()).map((meeting: any) => (
-                              <tr key={meeting.id}>
-                                <td className="px-4 py-2">{meeting.date ? new Date(meeting.date).toLocaleDateString() : '-'}</td>
-                                <td className="px-4 py-2">{meeting.date ? new Date(meeting.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
-                                <td className="px-4 py-2">{meeting.status || '-'}</td>
+                          <tbody className="divide-y" style={{ borderColor: 'var(--color-neutral)' }}>
+                            {meetings
+                              .filter((m: any) => new Date(m.date) >= new Date())
+                              .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                              .map((meeting: any) => (
+                              <tr key={meeting.id} className="hover:opacity-80" style={{ backgroundColor: 'var(--bg-primary)' }}>
+                                <td className="px-4 py-2 cursor-pointer" style={{ color: 'var(--text-primary)' }} onClick={() => router.push(`/dashboard/pequenos-grupos/${group.id}/reunioes/${meeting.id}`)}>{meeting.date ? new Date(meeting.date).toLocaleDateString() : '-'}</td>
+                                <td className="px-4 py-2 cursor-pointer" style={{ color: 'var(--text-primary)' }} onClick={() => router.push(`/dashboard/pequenos-grupos/${group.id}/reunioes/${meeting.id}`)}>{meeting.date ? new Date(meeting.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                                <td className="px-4 py-2 cursor-pointer" style={{ color: 'var(--text-primary)' }} onClick={() => router.push(`/dashboard/pequenos-grupos/${group.id}/reunioes/${meeting.id}`)}>{meeting.status || '-'}</td>
+                                <td className="px-4 py-2 text-center">
+                                  <DropdownMenu.Root>
+                                    <DropdownMenu.Trigger asChild>
+                                      <button className="p-1 hover:opacity-80 rounded" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+                                        <MoreVertical className="w-4 h-4" style={{ color: 'var(--text-primary)' }} />
+                                      </button>
+                                    </DropdownMenu.Trigger>
+                                    <DropdownMenu.Content align="end" className="rounded shadow-lg p-1 min-w-[140px] z-50" style={{ backgroundColor: 'var(--bg-primary)' }}>
+                                      <DropdownMenu.Item className="px-3 py-2 text-sm hover:opacity-80 rounded cursor-pointer flex items-center" style={{ color: 'var(--text-primary)' }} onSelect={() => router.push(`/dashboard/pequenos-grupos/${group.id}/reunioes/${meeting.id}`)}>
+                                        <Eye className="w-4 h-4 mr-2" style={{ color: 'var(--text-primary)' }} />
+                                        Ver reunião
+                                      </DropdownMenu.Item>
+                                      {(meeting.status === 'AGENDADA' || meeting.status === 'EM_ANDAMENTO') && (
+                                        <>
+                                          <DropdownMenu.Item className="px-3 py-2 text-sm hover:opacity-80 rounded cursor-pointer flex items-center" style={{ color: 'var(--text-primary)' }} onSelect={() => handleOpenAttendance(meeting)}>
+                                            <Users className="w-4 h-4 mr-2" style={{ color: 'var(--text-primary)' }} />
+                                            Marcar presença
+                                          </DropdownMenu.Item>
+                                          <DropdownMenu.Item className="px-3 py-2 text-sm hover:opacity-80 rounded cursor-pointer flex items-center" style={{ color: 'var(--text-primary)' }} onSelect={() => handleOpenVisitor(meeting.id)}>
+                                            <UserPlus className="w-4 h-4 mr-2" style={{ color: 'var(--text-primary)' }} />
+                                            Adicionar visitante
+                                          </DropdownMenu.Item>
+                                        </>
+                                      )}
+                                      <DropdownMenu.Item className="px-3 py-2 text-sm hover:opacity-80 rounded cursor-pointer flex items-center" style={{ color: 'var(--text-primary)' }} onSelect={() => handleOpenNote(meeting.id)}>
+                                        <FileText className="w-4 h-4 mr-2" style={{ color: 'var(--text-primary)' }} />
+                                        Adicionar nota
+                                      </DropdownMenu.Item>
+                                      {(meeting.status === 'AGENDADA' || meeting.status === 'EM_ANDAMENTO') && (
+                                        <>
+                                          <DropdownMenu.Item className="px-3 py-2 text-sm hover:opacity-80 rounded cursor-pointer flex items-center" style={{ color: 'var(--color-danger)' }} onSelect={() => handleCancelMeeting(meeting.id)}>
+                                            <XCircle className="w-4 h-4 mr-2" style={{ color: 'var(--color-danger)' }} />
+                                            Cancelar reunião
+                                          </DropdownMenu.Item>
+                                          <DropdownMenu.Item className="px-3 py-2 text-sm hover:opacity-80 rounded cursor-pointer flex items-center" style={{ color: 'var(--color-success)' }} onSelect={() => handleFinishMeeting(meeting.id)}>
+                                            <CheckCircle className="w-4 h-4 mr-2" style={{ color: 'var(--color-success)' }} />
+                                            Finalizar reunião
+                                          </DropdownMenu.Item>
+                                        </>
+                                      )}
+                                    </DropdownMenu.Content>
+                                  </DropdownMenu.Root>
+                                </td>
                               </tr>
                             ))}
                           </tbody>
@@ -370,14 +441,37 @@ export default function SmallGroupDetailsPage() {
                               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Data</th>
                               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Horário</th>
                               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                              <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Ações</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-100">
-                            {meetings.filter((m: any) => new Date(m.date) < new Date()).map((meeting: any) => (
-                              <tr key={meeting.id}>
-                                <td className="px-4 py-2">{meeting.date ? new Date(meeting.date).toLocaleDateString() : '-'}</td>
-                                <td className="px-4 py-2">{meeting.date ? new Date(meeting.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
-                                <td className="px-4 py-2">{meeting.status || '-'}</td>
+                            {meetings
+                              .filter((m: any) => new Date(m.date) < new Date())
+                              .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                              .map((meeting: any) => (
+                              <tr key={meeting.id} className="hover:bg-gray-50">
+                                <td className="px-4 py-2 cursor-pointer" onClick={() => router.push(`/dashboard/pequenos-grupos/${group.id}/reunioes/${meeting.id}`)}>{meeting.date ? new Date(meeting.date).toLocaleDateString() : '-'}</td>
+                                <td className="px-4 py-2 cursor-pointer" onClick={() => router.push(`/dashboard/pequenos-grupos/${group.id}/reunioes/${meeting.id}`)}>{meeting.date ? new Date(meeting.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                                <td className="px-4 py-2 cursor-pointer" onClick={() => router.push(`/dashboard/pequenos-grupos/${group.id}/reunioes/${meeting.id}`)}>{meeting.status || '-'}</td>
+                                <td className="px-4 py-2 text-center">
+                                  <DropdownMenu.Root>
+                                    <DropdownMenu.Trigger asChild>
+                                      <button className="p-1 hover:bg-gray-100 rounded">
+                                        <MoreVertical className="w-4 h-4" />
+                                      </button>
+                                    </DropdownMenu.Trigger>
+                                    <DropdownMenu.Content align="end" className="bg-white rounded shadow-lg p-1 min-w-[140px] z-50">
+                                      <DropdownMenu.Item className="px-3 py-2 text-sm hover:bg-gray-100 rounded cursor-pointer flex items-center" onSelect={() => router.push(`/dashboard/pequenos-grupos/${group.id}/reunioes/${meeting.id}`)}>
+                                        <Eye className="w-4 h-4 mr-2" />
+                                        Ver reunião
+                                      </DropdownMenu.Item>
+                                      <DropdownMenu.Item className="px-3 py-2 text-sm hover:bg-gray-100 rounded cursor-pointer flex items-center" onSelect={() => handleOpenNote(meeting.id)}>
+                                        <FileText className="w-4 h-4 mr-2" />
+                                        Adicionar nota
+                                      </DropdownMenu.Item>
+                                    </DropdownMenu.Content>
+                                  </DropdownMenu.Root>
+                                </td>
                               </tr>
                             ))}
                           </tbody>
@@ -391,102 +485,16 @@ export default function SmallGroupDetailsPage() {
               </Tab.Panels>
             </Tab.Group>
           </Tab.Panel>
+          {/* Aba Observações do Grupo */}
+          <Tab.Panel>
+            <GroupObservationsSection groupId={group.id} members={group.members || []} onRefresh={fetchGroup} />
+          </Tab.Panel>
         </Tab.Panels>
       </Tab.Group>
 
-      {/* Modal de seleção múltipla de líderes */}
-      <Dialog open={showAddLeaderModal} onOpenChange={setShowAddLeaderModal}>
-        <DialogContent>
-          <DialogTitle>Adicionar Líder(es) ao Pequeno Grupo</DialogTitle>
-          <input
-            type="text"
-            placeholder="Buscar por nome, e-mail ou telefone..."
-            value={searchLeader}
-            onChange={e => setSearchLeader(e.target.value)}
-            className="border rounded px-3 py-2 w-full mb-3"
-            autoFocus
-          />
-          <div className="max-h-60 overflow-y-auto mb-4">
-            {eligibleLeadersLoading ? (
-              <div className="text-center py-4">Carregando líderes...</div>
-            ) : eligibleLeadersError ? (
-              <div className="text-center py-4 text-red-600">{eligibleLeadersError}</div>
-            ) : eligibleLeaders.length ? (
-              eligibleLeaders.map(l => (
-                <label key={l.id} className="flex items-center gap-2 py-1 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedLeaders.includes(l.id)}
-                    onChange={e => {
-                      if (e.target.checked) setSelectedLeaders(prev => [...prev, l.id]);
-                      else setSelectedLeaders(prev => prev.filter(id => id !== l.id));
-                    }}
-                  />
-                  <span className="font-medium">{l.name}</span>
-                  <span className="text-gray-500 text-xs">{l.email}</span>
-                  <span className="text-gray-400 text-xs">{l.phone}</span>
-                </label>
-              ))
-            ) : (
-              <div className="text-gray-500 text-sm">Nenhum líder encontrado.</div>
-            )}
-          </div>
-          <div className="flex justify-end gap-2">
-            <button className="px-4 py-2 rounded bg-gray-200" onClick={() => setShowAddLeaderModal(false)}>Cancelar</button>
-            <button className="px-4 py-2 rounded bg-blue-600 text-white font-semibold disabled:opacity-50" disabled={selectedLeaders.length === 0 || eligibleLeadersLoading} onClick={handleAddLeaders}>
-              Adicionar {selectedLeaders.length > 0 ? `(${selectedLeaders.length})` : ''}
-            </button>
-          </div>
-          {feedback && <div className={`mt-4 p-3 rounded ${feedback.includes('sucesso') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{feedback}</div>}
-        </DialogContent>
-      </Dialog>
 
-      {/* Modal de seleção múltipla de membros */}
-      <Dialog open={showAddMemberModal} onOpenChange={setShowAddMemberModal}>
-        <DialogContent>
-          <DialogTitle>Adicionar Membro(s) ao Pequeno Grupo</DialogTitle>
-          <input
-            type="text"
-            placeholder="Buscar por nome, e-mail ou telefone..."
-            value={searchMember}
-            onChange={e => setSearchMember(e.target.value)}
-            className="border rounded px-3 py-2 w-full mb-3"
-            autoFocus
-          />
-          <div className="max-h-60 overflow-y-auto mb-4">
-            {eligibleMembersLoading ? (
-              <div className="text-center py-4">Carregando membros...</div>
-            ) : eligibleMembersError ? (
-              <div className="text-center py-4 text-red-600">{eligibleMembersError}</div>
-            ) : eligibleMembers.length ? (
-              eligibleMembers.map(m => (
-                <label key={m.id} className="flex items-center gap-2 py-1 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedMembers.includes(m.id)}
-                    onChange={e => {
-                      if (e.target.checked) setSelectedMembers(prev => [...prev, m.id]);
-                      else setSelectedMembers(prev => prev.filter(id => id !== m.id));
-                    }}
-                  />
-                  <span className="font-medium">{m.name}</span>
-                  <span className="text-gray-500 text-xs">{m.email}</span>
-                  <span className="text-gray-400 text-xs">{m.phone}</span>
-                </label>
-              ))
-            ) : (
-              <div className="text-gray-500 text-sm">Nenhum membro encontrado.</div>
-            )}
-          </div>
-          <div className="flex justify-end gap-2">
-            <button className="px-4 py-2 rounded bg-gray-200" onClick={() => setShowAddMemberModal(false)}>Cancelar</button>
-            <button className="px-4 py-2 rounded bg-green-600 text-white font-semibold disabled:opacity-50" disabled={selectedMembers.length === 0 || eligibleMembersLoading} onClick={handleAddMembers}>
-              Adicionar {selectedMembers.length > 0 ? `(${selectedMembers.length})` : ''}
-            </button>
-          </div>
-          {feedback && <div className={`mt-4 p-3 rounded ${feedback.includes('sucesso') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{feedback}</div>}
-        </DialogContent>
-      </Dialog>
+
+
 
       {/* Modal de confirmação de remoção de líder */}
       {confirmRemoveLeader && (
@@ -518,6 +526,62 @@ export default function SmallGroupDetailsPage() {
             </div>
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* Modal de Presença */}
+      {showAttendanceModal && selectedMeeting && (
+        <AttendanceModal
+          isOpen={showAttendanceModal}
+          onClose={() => {
+            setShowAttendanceModal(false);
+            setSelectedMeeting(null);
+          }}
+          meetingId={selectedMeeting.id}
+          groupId={group?.id || ''}
+          members={group?.members || []}
+          existingAttendances={selectedMeeting.attendances || []}
+          onSuccess={() => {
+            setShowAttendanceModal(false);
+            setSelectedMeeting(null);
+            fetchGroup();
+          }}
+        />
+      )}
+
+      {/* Modal de Visitante */}
+      {showVisitorModal && selectedMeetingId && (
+        <VisitorModal
+          isOpen={showVisitorModal}
+          onClose={() => {
+            setShowVisitorModal(false);
+            setSelectedMeetingId(null);
+          }}
+          meetingId={selectedMeetingId}
+          groupId={group?.id || ''}
+          onSuccess={() => {
+            setShowVisitorModal(false);
+            setSelectedMeetingId(null);
+            fetchGroup();
+          }}
+        />
+      )}
+
+      {/* Modal de Nota */}
+      {showNoteModal && selectedMeetingId && (
+        <NoteModal
+          isOpen={showNoteModal}
+          onClose={() => {
+            setShowNoteModal(false);
+            setSelectedMeetingId(null);
+          }}
+          meetingId={selectedMeetingId}
+          groupId={group?.id || ''}
+          onSuccess={() => {
+            setShowNoteModal(false);
+            setSelectedMeetingId(null);
+            fetchGroup();
+          }}
+        />
       )}
     </div>
   );
