@@ -200,7 +200,7 @@ export default function MinistriesPage() {
                 </tr>
               ))
             ) : ministries.length === 0 ? (
-              <tr><td colSpan={4} className="text-center py-8 text-[var(--color-text-secondary)]">Nenhum ministério encontrado</td></tr>
+              <tr><td colSpan={5} className="text-center py-8 text-[var(--color-text-secondary)]">Nenhum ministério encontrado</td></tr>
             ) : ministries.map((ministry: any) => (
               <tr key={ministry.id}>
                 <td className="px-6 py-4 whitespace-nowrap text-[var(--color-primary)] hover:underline cursor-pointer"
