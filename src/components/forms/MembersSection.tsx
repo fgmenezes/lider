@@ -49,13 +49,7 @@ export default function MembersSection({ members, onRefresh, group }: MembersSec
   const [frequencyData, setFrequencyData] = useState<FrequencyData[]>([]);
   const [loadingFrequency, setLoadingFrequency] = useState(false);
 
-  // Carregar dados de frequência
-  useEffect(() => {
-    if (group?.id) {
-      fetchFrequencyData();
-    }
-  }, [group?.id, fetchFrequencyData]);
-
+  // Definir fetchFrequencyData com useCallback antes do useEffect
   const fetchFrequencyData = useCallback(async () => {
     if (!group?.id) return;
     
@@ -72,6 +66,13 @@ export default function MembersSection({ members, onRefresh, group }: MembersSec
       setLoadingFrequency(false);
     }
   }, [group?.id]);
+
+  // Carregar dados de frequência
+  useEffect(() => {
+    if (group?.id) {
+      fetchFrequencyData();
+    }
+  }, [group?.id, fetchFrequencyData]);
 
   // Função para obter dados de frequência de um membro
   const getMemberFrequencyData = (memberId?: string): FrequencyData | undefined => {
