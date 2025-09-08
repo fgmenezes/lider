@@ -1,12 +1,13 @@
 "use client";
 import React from "react";
 import { useEffect, useState, useRef } from "react";
-import { useSession } from 'next-auth/react';
+import toast from "react-hot-toast";
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Tab } from '@headlessui/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import LeaderCreateModal from "@/components/forms/LeaderCreateModal";
 import { HiOutlineDotsVertical } from 'react-icons/hi';
@@ -277,15 +278,17 @@ export default function LeadersPage() {
           <span className="text-[var(--color-text-primary)]">Itens por página:</span>
           <Select
             value={perPage.toString()}
-            onValueChange={(value) => {
-              setPerPage(Number(value));
+            onChange={(e) => {
+              setPerPage(Number(e.target.value));
               setPage(1);
             }}
+            options={[
+              { value: "10", label: "10" },
+              { value: "20", label: "20" },
+              { value: "50", label: "50" },
+              { value: "100", label: "100" }
+            ]}
           >
-            <option value="10">10</option>
-            <option value="20">20</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
           </Select>
         </div>
         <span className="text-[var(--color-text-primary)]">Total: {(pagination.total !== undefined ? pagination.total : leaders.length)} líderes</span>
@@ -473,11 +476,13 @@ function LeaderEditTabs({ leader, open, onClose, onSave, ministries, session }: 
           Sexo
           <Select
             value={form.sexo || ''}
-            onValueChange={value => setForm((f: any) => ({ ...f, sexo: value }))}
+            onChange={e => setForm((f: any) => ({ ...f, sexo: e.target.value }))}
+            options={[
+              { value: "", label: "Selecione" },
+              { value: "MASCULINO", label: "Masculino" },
+              { value: "FEMININO", label: "Feminino" }
+            ]}
           >
-            <option value="">Selecione</option>
-            <option value="MASCULINO">Masculino</option>
-            <option value="FEMININO">Feminino</option>
           </Select>
         </label>
         <label className="block text-[var(--color-text-primary)]">
@@ -567,11 +572,13 @@ function LeaderEditTabs({ leader, open, onClose, onSave, ministries, session }: 
           Tipo de Líder
           <Select
             value={form.role || ''}
-            onValueChange={value => setForm((f: any) => ({ ...f, role: value }))}
+            onChange={e => setForm((f: any) => ({ ...f, role: e.target.value }))}
+            options={[
+              { value: "", label: "Selecione" },
+              { value: "LEADER", label: "Líder" },
+              { value: "MASTER", label: "Líder Master" }
+            ]}
           >
-            <option value="">Selecione</option>
-            <option value="LEADER">Líder</option>
-            <option value="MASTER">Líder Master</option>
           </Select>
         </label>
       </div>

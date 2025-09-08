@@ -81,14 +81,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* Botão de fechar apenas em mobile/tablet */}
         <button
           onClick={onClose}
-          className="p-2 rounded-md lg:hidden transition-default focus-ring"
-          style={{
-            color: 'var(--color-text-muted)',
-            ':hover': {
-              color: 'var(--color-text-inverse)',
-              backgroundColor: 'var(--color-primary-light)'
-            }
-          }}
+          className="p-2 rounded-md lg:hidden transition-default focus-ring text-[var(--color-text-muted)] hover:text-[var(--color-text-inverse)] hover:bg-[var(--color-primary-light)]"
           aria-label="Fechar menu"
         >
           <X className="h-5 w-5" />
@@ -100,13 +93,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               <li key={link.href}> {/* Item da Lista */}
               <Link 
                 href={link.href} 
-                className="flex items-center px-4 py-2 transition-default hover:bg-opacity-20"
-                style={{
-                  color: 'var(--color-text-inverse)',
-                  ':hover': {
-                    backgroundColor: 'var(--color-primary-light)'
-                  }
-                }}
+                className="flex items-center px-4 py-2 transition-default hover:bg-opacity-20 text-[var(--color-text-inverse)] hover:bg-[var(--color-primary-light)]"
                 onClick={() => {
                   // Fechar sidebar em mobile/tablet ao clicar em um link
                   if (window.innerWidth < 1024) {
@@ -126,14 +113,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Perfil: {role || '---'}</p>
         <button
           onClick={() => signOut({ callbackUrl: '/login' })}
-          className="mt-4 w-full px-4 py-2 rounded text-sm font-medium transition-default focus-ring"
-          style={{
-            backgroundColor: 'var(--color-danger)',
-            color: 'var(--color-text-inverse)',
-            ':hover': {
-              backgroundColor: 'var(--color-danger-dark)'
-            }
-          }}
+          className="mt-4 w-full px-4 py-2 rounded text-sm font-medium transition-default focus-ring bg-[var(--color-danger)] text-[var(--color-text-inverse)] hover:bg-[var(--color-danger-dark)]"
         >
           Sair
         </button>

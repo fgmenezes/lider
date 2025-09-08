@@ -3,7 +3,9 @@
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select } from "@/components/ui/select";
+// Nota: Os componentes SelectContent, SelectItem, SelectTrigger e SelectValue foram removidos da importação
+// pois não estão disponíveis no componente Select atual
 import { Checkbox } from "@/components/ui/checkbox";
 import RadioGroup from "@/components/forms/RadioGroup";
 import { fetchAddressByCep } from "@/lib/utils/viaCep";
@@ -1024,7 +1026,7 @@ export default function SmallGroupsPage() {
                   groups.map((group) => {
                     const canEdit = session?.user?.role === 'ADMIN' || session?.user?.masterMinistryId === group.ministryId;
                     return (
-                      <tr key={group.id} className="border-b" style={{ borderColor: 'var(--color-neutral)', ':hover': { backgroundColor: 'var(--bg-secondary)' } }}>
+                      <tr key={group.id} className="border-b hover:bg-[var(--bg-secondary)]" style={{ borderColor: 'var(--color-neutral)' }}>
                         <td className="px-4 py-2 font-medium">
                           <button
                             className="text-blue-700 hover:underline focus:outline-none"

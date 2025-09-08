@@ -1,62 +1,30 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+// Importe componentes de layout como Sidebar ou Header aqui, se já existirem
 import Sidebar from '@/components/layout/Sidebar';
-import Header from '@/components/layout/Header';
+// import Header from '@/components/layout/Header';
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-
-  // Detectar se é mobile/tablet
-  useEffect(() => {
-    const checkScreenSize = () => {
-      setIsMobile(window.innerWidth < 1024);
-      // Em desktop, sempre manter sidebar aberta
-      if (window.innerWidth >= 1024) {
-        setIsSidebarOpen(true);
-      }
-    };
-
-    checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-    return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
-
-  // Inicializar sidebar como aberta em desktop
-  useEffect(() => {
-    if (!isMobile) {
-      setIsSidebarOpen(true);
-    }
-  }, [isMobile]);
-
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
-
-  const closeSidebar = () => {
-    setIsSidebarOpen(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  
+  const handleCloseSidebar = () => {
+    setSidebarOpen(false);
   };
 
   return (
-    <div 
-      className="flex h-screen"
-      style={{ backgroundColor: 'var(--color-background-secondary)' }}
-    >
-      {/* Sidebar */}
-      <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
+    <div className="flex h-screen bg-gray-100"> {/* Contêiner principal flexbox */}
+      {/* Sidebar com as propriedades necessárias */}
+      <Sidebar isOpen={sidebarOpen} onClose={handleCloseSidebar} />
 
-      <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
-        {/* Header com menu hambúrguer (apenas em mobile/tablet) */}
-        <Header isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+      <div className="flex-1 flex flex-col overflow-hidden"> {/* Contêiner para Header e Conteúdo */}
+        {/* Espaço reservado para o Header */}
+        {/* <Header /> */}
 
-        <main 
-          className="flex-1 overflow-x-hidden overflow-y-auto p-4 lg:p-6"
-          style={{ backgroundColor: 'var(--color-background-muted)' }}
-        >
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-200 p-6"> {/* Área do Conteúdo Principal */}
           {children}
         </main>
       </div>

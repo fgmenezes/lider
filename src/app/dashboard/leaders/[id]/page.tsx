@@ -6,7 +6,8 @@ import { HiOutlineDotsVertical } from 'react-icons/hi';
 import { useSession } from 'next-auth/react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+// Corrigindo a importação do Select
+import { Select } from '@/components/ui/select';
 
 export default function LeaderDetailsPage() {
   const params = useParams();

@@ -21,14 +21,7 @@ export default function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
         <div className="flex items-center space-x-3">
           <button
             onClick={toggleSidebar}
-            className="p-2 rounded-md transition-default focus-ring"
-            style={{
-              color: 'var(--color-text-secondary)',
-              ':hover': {
-                color: 'var(--color-text-primary)',
-                backgroundColor: 'var(--color-neutral-light)'
-              }
-            }}
+            className="p-2 rounded-md transition-default focus-ring text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-neutral-light)]"
             aria-label={isSidebarOpen ? 'Fechar menu' : 'Abrir menu'}
           >
             {isSidebarOpen ? (

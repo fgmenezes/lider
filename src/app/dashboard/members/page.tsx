@@ -8,7 +8,34 @@ import { useSession } from 'next-auth/react';
 import { Tab } from '@headlessui/react';
 import React from 'react';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select } from '@/components/ui/select';
+
+// Componentes personalizados para substituir os que não existem no módulo select
+const CustomSelect = ({ children, ...props }: any) => {
+  return <Select {...props}>{children}</Select>;
+};
+
+const CustomSelectTrigger = ({ children, ...props }: any) => {
+  return <div className="select-trigger" {...props}>{children}</div>;
+};
+
+const CustomSelectValue = ({ children, ...props }: any) => {
+  return <span className="select-value" {...props}>{children}</span>;
+};
+
+const CustomSelectContent = ({ children, ...props }: any) => {
+  return <div className="select-content" {...props}>{children}</div>;
+};
+
+const CustomSelectItem = ({ children, value, ...props }: any) => {
+  return <option value={value} {...props}>{children}</option>;
+};
+
+// Aliases para manter compatibilidade com o código existente
+const SelectTrigger = CustomSelectTrigger;
+const SelectValue = CustomSelectValue;
+const SelectContent = CustomSelectContent;
+const SelectItem = CustomSelectItem;
 import { Checkbox } from '@/components/ui/checkbox';
 import { HiOutlineDotsVertical } from 'react-icons/hi';
 
@@ -112,13 +139,10 @@ function MemberFormStep1({ form, setForm, onCancel }: { form: any, setForm: (dat
       <div className="flex justify-end gap-2 mt-6">
         <button 
           type="button" 
-          className="px-4 py-2 rounded transition-default focus-ring" 
+          className="px-4 py-2 rounded transition-default focus-ring hover:bg-[var(--color-neutral-dark)]" 
           style={{
             backgroundColor: 'var(--color-neutral)',
-            color: 'var(--color-text-primary)',
-            ':hover': {
-              backgroundColor: 'var(--color-neutral-dark)'
-            }
+            color: 'var(--color-text-primary)'
           }}
           onClick={onCancel}
         >
@@ -1486,12 +1510,7 @@ function MemberActionsMenu({ member, onEdit, onDelete, onToggleStatus, onView }:
         onKeyDown={handleKeyDown}
         aria-haspopup="true"
         aria-expanded={open}
-        className="p-2 rounded-full focus-ring transition-default"
-        style={{
-          ':hover': {
-            backgroundColor: 'var(--color-neutral-light)'
-          }
-        }}
+        className="p-2 rounded-full focus-ring transition-default hover:bg-[var(--color-neutral-light)]"
         tabIndex={0}
         title="Ações"
       >
@@ -1508,16 +1527,7 @@ function MemberActionsMenu({ member, onEdit, onDelete, onToggleStatus, onView }:
         >
           <button
             ref={optionRefs[0]}
-            className="px-4 py-2 text-left focus-ring transition-default"
-            style={{
-              color: 'var(--color-text-primary)',
-              ':hover': {
-                backgroundColor: 'var(--color-neutral-light)'
-              },
-              ':focus': {
-                backgroundColor: 'var(--color-neutral-light)'
-              }
-            }}
+            className="px-4 py-2 text-left focus-ring transition-default hover:bg-[var(--color-neutral-light)] focus:bg-[var(--color-neutral-light)] text-[var(--color-text-primary)]"
             onClick={() => { setOpen(false); onView(); }}
             onKeyDown={handleKeyDown}
             tabIndex={0}
@@ -1525,16 +1535,7 @@ function MemberActionsMenu({ member, onEdit, onDelete, onToggleStatus, onView }:
           >Ver detalhes</button>
           <button
             ref={optionRefs[1]}
-            className="px-4 py-2 text-left focus-ring transition-default"
-            style={{
-              color: 'var(--color-text-primary)',
-              ':hover': {
-                backgroundColor: 'var(--color-neutral-light)'
-              },
-              ':focus': {
-                backgroundColor: 'var(--color-neutral-light)'
-              }
-            }}
+            className="px-4 py-2 text-left focus-ring transition-default hover:bg-[var(--color-neutral-light)] focus:bg-[var(--color-neutral-light)] text-[var(--color-text-primary)]"
             onClick={() => { setOpen(false); onEdit(); }}
             onKeyDown={handleKeyDown}
             tabIndex={0}
@@ -1542,16 +1543,7 @@ function MemberActionsMenu({ member, onEdit, onDelete, onToggleStatus, onView }:
           >Editar</button>
           <button
             ref={optionRefs[2]}
-            className="px-4 py-2 text-left focus-ring transition-default"
-            style={{
-              color: 'var(--color-danger)',
-              ':hover': {
-                backgroundColor: 'var(--color-neutral-light)'
-              },
-              ':focus': {
-                backgroundColor: 'var(--color-neutral-light)'
-              }
-            }}
+            className="px-4 py-2 text-left focus-ring transition-default hover:bg-[var(--color-neutral-light)] focus:bg-[var(--color-neutral-light)] text-[var(--color-danger)]"
             onClick={() => { setOpen(false); onDelete(); }}
             onKeyDown={handleKeyDown}
             tabIndex={0}
@@ -1559,16 +1551,7 @@ function MemberActionsMenu({ member, onEdit, onDelete, onToggleStatus, onView }:
           >Excluir</button>
           <button
             ref={optionRefs[3]}
-            className="px-4 py-2 text-left focus-ring transition-default"
-            style={{
-              color: 'var(--color-text-primary)',
-              ':hover': {
-                backgroundColor: 'var(--color-neutral-light)'
-              },
-              ':focus': {
-                backgroundColor: 'var(--color-neutral-light)'
-              }
-            }}
+            className="px-4 py-2 text-left focus-ring transition-default hover:bg-[var(--color-neutral-light)] focus:bg-[var(--color-neutral-light)] text-[var(--color-text-primary)]"
             onClick={() => { setOpen(false); onToggleStatus(); }}
             onKeyDown={handleKeyDown}
             tabIndex={0}

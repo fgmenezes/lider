@@ -449,10 +449,9 @@ export default function MinistryFinancePage({ params }: { params: { id: string }
                 {filteredFinances.map((lanc) => (
                   <tr 
                     key={lanc.id} 
-                    className="border-b hover:bg-gray-50" 
+                    className="border-b hover:bg-[var(--bg-secondary)]" 
                     style={{ 
-                      borderBottomColor: 'var(--color-neutral)',
-                      '&:hover': { backgroundColor: 'var(--bg-secondary)' }
+                      borderBottomColor: 'var(--color-neutral)'
                     }}
                   >
                     <td className="px-4 py-2 font-semibold" style={{ color: 'var(--text-primary)' }}>{lanc.title}</td>

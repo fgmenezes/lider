@@ -3,7 +3,9 @@ import React, { useReducer, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "../ui/dialog";
 import { Input } from "../ui/input";
 import RadioGroup from "./RadioGroup";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Select } from "../ui/select";
+// Nota: Os componentes SelectContent, SelectItem, SelectTrigger e SelectValue foram removidos da importação
+// pois não estão disponíveis no componente Select atual
 import { useState } from "react";
 import { fetchAddressByCep } from "../../lib/utils/viaCep";
 

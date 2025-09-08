@@ -7,7 +7,7 @@ import { HiOutlineDotsVertical } from 'react-icons/hi';
 import * as React from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select } from '@/components/ui/select';
 
 interface Ministry {
   id: string;
@@ -56,6 +56,45 @@ function ActionsMenu({ ministry, onEdit, onDelete, onToggleStatus, onView }: { m
     </div>
   );
 }
+
+// Componentes personalizados para substituir os componentes do select que não existem
+const CustomSelect = ({ value, onValueChange, children, className }) => {
+  const options = React.Children.toArray(children)
+    .filter(child => React.isValidElement(child) && child.type === CustomSelectItem)
+    .map(child => {
+      const item = child as React.ReactElement;
+      return { value: item.props.value, label: item.props.children };
+    });
+
+  return (
+    <Select
+      value={value}
+      onChange={(e) => onValueChange(e.target.value)}
+      options={options}
+      className={className}
+    />
+  );
+};
+
+const CustomSelectTrigger = ({ className, children }) => {
+  return <div className={className}>{children}</div>;
+};
+
+const CustomSelectValue = () => null;
+
+const CustomSelectContent = ({ children }) => {
+  return <>{children}</>;
+};
+
+const CustomSelectItem = ({ value, children }) => {
+  return null; // Este componente é apenas para estrutura, o rendering é feito pelo Select nativo
+};
+
+// Aliases para manter compatibilidade com o código existente
+const SelectTrigger = CustomSelectTrigger;
+const SelectValue = CustomSelectValue;
+const SelectContent = CustomSelectContent;
+const SelectItem = CustomSelectItem;
 
 export default function MinistriesPage() {
   const [ministries, setMinistries] = useState<Ministry[]>([]);
@@ -222,6 +261,7 @@ export default function MinistriesPage() {
                 </td>
               </tr>
             ))
+            }
           </tbody>
         </table>
       </div>
@@ -229,17 +269,12 @@ export default function MinistriesPage() {
       <div className="flex justify-between items-center mt-4">
         <div className="flex items-center gap-2">
           <span className="text-[var(--color-text-primary)]">Itens por página:</span>
-          <Select value={perPage.toString()} onValueChange={(value) => { setPerPage(Number(value)); setPage(1); }}>
-            <SelectTrigger className="w-20">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="10">10</SelectItem>
-              <SelectItem value="20">20</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-              <SelectItem value="100">100</SelectItem>
-            </SelectContent>
-          </Select>
+          <CustomSelect value={perPage.toString()} onValueChange={(value) => { setPerPage(Number(value)); setPage(1); }} className="w-20">
+            <CustomSelectItem value="10">10</CustomSelectItem>
+            <CustomSelectItem value="20">20</CustomSelectItem>
+            <CustomSelectItem value="50">50</CustomSelectItem>
+            <CustomSelectItem value="100">100</CustomSelectItem>
+          </CustomSelect>
         </div>
         <span className="text-[var(--color-text-primary)]">Total: {pagination.total || 0} ministérios</span>
         <div className="flex items-center gap-2">
