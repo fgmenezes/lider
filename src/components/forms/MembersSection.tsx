@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Search, Filter, Users, Phone, Mail, Calendar, TrendingUp, AlertCircle, CheckCircle, Clock, XCircle, Edit, History, BarChart3 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import EditMemberStatusModal from "./EditMemberStatusModal";
@@ -54,9 +54,9 @@ export default function MembersSection({ members, onRefresh, group }: MembersSec
     if (group?.id) {
       fetchFrequencyData();
     }
-  }, [group?.id]);
+  }, [group?.id, fetchFrequencyData]);
 
-  const fetchFrequencyData = async () => {
+  const fetchFrequencyData = useCallback(async () => {
     if (!group?.id) return;
     
     setLoadingFrequency(true);
@@ -71,7 +71,7 @@ export default function MembersSection({ members, onRefresh, group }: MembersSec
     } finally {
       setLoadingFrequency(false);
     }
-  };
+  }, [group?.id]);
 
   // Função para obter dados de frequência de um membro
   const getMemberFrequencyData = (memberId?: string): FrequencyData | undefined => {

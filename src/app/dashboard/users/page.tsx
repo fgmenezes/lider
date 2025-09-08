@@ -89,7 +89,7 @@ function UserFormStep1({ form, setForm, onCancel }: { form: any, setForm: (data:
         setForm((prev: any) => ({ ...prev, idade }));
       }
     }
-  }, [form.dataNascimento]);
+  }, [form.dataNascimento, form.idade, setForm]);
 
   return (
     <div className="space-y-4">

@@ -78,7 +78,7 @@ export default function EditMemberStatusModal({
     }
 
     setWarnings(newWarnings);
-  }, [selectedStatus, effectiveDate, reason]);
+  }, [selectedStatus, effectiveDate, reason, hasPermission]);
 
   const handleSubmit = async () => {
     if (!effectiveDate) {

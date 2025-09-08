@@ -81,7 +81,7 @@ function MemberFormStep1({ form, setForm, onCancel }: { form: any, setForm: (dat
     if (idade !== form.idade) {
       setForm((prev: any) => ({ ...prev, idade }));
     }
-  }, [form.dataNascimento, setForm]);
+  }, [form.dataNascimento, form.idade, setForm]);
 
   return (
     <div className="space-y-4">

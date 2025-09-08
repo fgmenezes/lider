@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -91,13 +91,8 @@ export default function MeetingDetailsPage() {
   });
   const [isSavingConfig, setIsSavingConfig] = useState(false);
 
-  // Hooks de carregamento de dados
-  useEffect(() => {
-    loadMeetingData();
-    loadMembers();
-  }, [meetingId, groupId]);
-
-  const loadMeetingData = async () => {
+  // Definição das funções de carregamento com useCallback
+  const loadMeetingData = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/small-groups/${groupId}/meetings/${meetingId}`);
@@ -138,9 +133,9 @@ export default function MeetingDetailsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [groupId, meetingId]);
 
-  const loadMembers = async () => {
+  const loadMembers = useCallback(async () => {
     try {
       const response = await fetch(`/api/small-groups/${groupId}/members`);
       if (!response.ok) throw new Error('Erro ao carregar membros');
@@ -150,7 +145,13 @@ export default function MeetingDetailsPage() {
       console.error('Erro ao carregar membros:', error);
       toast.error('Erro ao carregar membros do grupo');
     }
-  };
+  }, [groupId]);
+  
+  // Hooks de carregamento de dados
+  useEffect(() => {
+    loadMeetingData();
+    loadMembers();
+  }, [meetingId, groupId, loadMeetingData, loadMembers]);
 
   // Funções para gerenciar notas
   const handleAddNote = async () => {
