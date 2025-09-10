@@ -93,11 +93,29 @@ export async function POST(req: Request) {
     const group = await prisma.smallGroup.create({ data: filteredData as any });
 
     // Lógica para criar reuniões futuras
-    const meetingsToCreate: Array<{ smallGroupId: string; date: Date; type: string }> = [];
+    const meetingsToCreate: Array<{ 
+      smallGroupId: string; 
+      date: Date; 
+      type: string;
+      startTime?: string;
+      endTime?: string;
+      location?: string;
+    }> = [];
     const frequency = filteredData.frequency as string | undefined;
     const dayOfWeek = filteredData.dayOfWeek as string | undefined;
     const time = filteredData.time as string | undefined;
+    const endTime = filteredData.endTime as string | undefined;
     const startDate = filteredData.startDate as string | undefined;
+    
+    // Monta o endereço do grupo para usar como local padrão
+    const groupAddress = [
+      filteredData.rua,
+      filteredData.numero,
+      filteredData.complemento
+    ].filter(Boolean).join(', ') + 
+    (filteredData.bairro || filteredData.municipio || filteredData.estado ? 
+      ', ' + [filteredData.bairro, filteredData.municipio, filteredData.estado].filter(Boolean).join(', ') 
+      : '');
     if (frequency && dayOfWeek && time && startDate) {
       // Recorrente: criar reuniões para os próximos 3 meses
       const freqMap: Record<string, number> = {
@@ -133,6 +151,9 @@ export async function POST(req: Request) {
           smallGroupId: group.id,
           date: new Date(meetingDate),
           type: 'PG',
+          startTime: time,
+          endTime: endTime,
+          location: groupAddress || undefined,
         });
         // Próxima reunião
         meetingDate = new Date(meetingDate);
@@ -147,6 +168,9 @@ export async function POST(req: Request) {
         smallGroupId: group.id,
         date,
         type: 'PG',
+        startTime: time,
+        endTime: endTime,
+        location: groupAddress || undefined,
       });
     }
     if (meetingsToCreate.length > 0) {

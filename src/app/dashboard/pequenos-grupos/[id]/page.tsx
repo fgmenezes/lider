@@ -375,7 +375,7 @@ export default function SmallGroupDetailsPage() {
                               .map((meeting: any) => (
                               <tr key={meeting.id} className="hover:opacity-80" style={{ backgroundColor: 'var(--bg-primary)' }}>
                                 <td className="px-4 py-2 cursor-pointer" style={{ color: 'var(--text-primary)' }} onClick={() => router.push(`/dashboard/pequenos-grupos/${group.id}/reunioes/${meeting.id}`)}>{meeting.date ? new Date(meeting.date).toLocaleDateString() : '-'}</td>
-                                <td className="px-4 py-2 cursor-pointer" style={{ color: 'var(--text-primary)' }} onClick={() => router.push(`/dashboard/pequenos-grupos/${group.id}/reunioes/${meeting.id}`)}>{meeting.date ? new Date(meeting.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                                <td className="px-4 py-2 cursor-pointer" style={{ color: 'var(--text-primary)' }} onClick={() => router.push(`/dashboard/pequenos-grupos/${group.id}/reunioes/${meeting.id}`)}>{meeting.date ? new Date(meeting.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' }) : '-'}</td>
                                 <td className="px-4 py-2 cursor-pointer" style={{ color: 'var(--text-primary)' }} onClick={() => router.push(`/dashboard/pequenos-grupos/${group.id}/reunioes/${meeting.id}`)}>{meeting.status || '-'}</td>
                                 <td className="px-4 py-2 text-center">
                                   <DropdownMenu.Root>
@@ -451,7 +451,7 @@ export default function SmallGroupDetailsPage() {
                               .map((meeting: any) => (
                               <tr key={meeting.id} className="hover:bg-gray-50">
                                 <td className="px-4 py-2 cursor-pointer" onClick={() => router.push(`/dashboard/pequenos-grupos/${group.id}/reunioes/${meeting.id}`)}>{meeting.date ? new Date(meeting.date).toLocaleDateString() : '-'}</td>
-                                <td className="px-4 py-2 cursor-pointer" onClick={() => router.push(`/dashboard/pequenos-grupos/${group.id}/reunioes/${meeting.id}`)}>{meeting.date ? new Date(meeting.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                                <td className="px-4 py-2 cursor-pointer" onClick={() => router.push(`/dashboard/pequenos-grupos/${group.id}/reunioes/${meeting.id}`)}>{meeting.date ? new Date(meeting.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' }) : '-'}</td>
                                 <td className="px-4 py-2 cursor-pointer" onClick={() => router.push(`/dashboard/pequenos-grupos/${group.id}/reunioes/${meeting.id}`)}>{meeting.status || '-'}</td>
                                 <td className="px-4 py-2 text-center">
                                   <DropdownMenu.Root>

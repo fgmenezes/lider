@@ -4,33 +4,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Select } from '@/components/ui/select';
-
-// Componentes personalizados para substituir os que não existem no módulo select
-const CustomSelect = ({ children, ...props }: any) => {
-  return <Select {...props}>{children}</Select>;
-};
-
-const CustomSelectTrigger = ({ children, ...props }: any) => {
-  return <div className="select-trigger" {...props}>{children}</div>;
-};
-
-const CustomSelectValue = ({ children, ...props }: any) => {
-  return <span className="select-value" {...props}>{children}</span>;
-};
-
-const CustomSelectContent = ({ children, ...props }: any) => {
-  return <div className="select-content" {...props}>{children}</div>;
-};
-
-const CustomSelectItem = ({ children, value, ...props }: any) => {
-  return <option value={value} {...props}>{children}</option>;
-};
-
-// Aliases para manter compatibilidade com o código existente
-const SelectTrigger = CustomSelectTrigger;
-const SelectValue = CustomSelectValue;
-const SelectContent = CustomSelectContent;
-const SelectItem = CustomSelectItem;
 import { Card } from '@/components/ui/card';
 import { HiOutlineUser } from 'react-icons/hi';
 import { FiEdit2, FiTrash2 } from 'react-icons/fi';

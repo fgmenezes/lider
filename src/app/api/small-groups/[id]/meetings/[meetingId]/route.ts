@@ -22,7 +22,17 @@ export async function GET(
       where: { id: meetingId },
       include: {
         smallGroup: {
-          include: {
+          select: {
+            id: true,
+            name: true,
+            rua: true,
+            numero: true,
+            complemento: true,
+            bairro: true,
+            municipio: true,
+            estado: true,
+            cep: true,
+            ministryId: true,
             members: {
               include: {
                 member: {
@@ -112,33 +122,32 @@ export async function GET(
 
     // Calcular status automático da reunião
     const now = new Date();
-    const meetingDate = new Date(meeting.date);
-    const meetingEndTime = meeting.endTime ? new Date(meeting.endTime) : null;
+    const meetingDate = new Date(meeting.date + 'T' + (meeting.startTime || '00:00:00'));
     let automaticStatus = meeting.status;
 
     // Se a reunião não foi cancelada manualmente, calcular status automático
     if (meeting.status !== 'CANCELADA') {
-      if (meetingEndTime && now > meetingEndTime) {
-        // Se passou do horário de término, está finalizada
-        automaticStatus = 'FINALIZADA';
-      } else if (now >= meetingDate && (!meetingEndTime || now <= meetingEndTime)) {
-        // Se está entre o horário de início e fim, está em andamento
-        automaticStatus = 'EM_ANDAMENTO';
-      } else if (now < meetingDate) {
-        // Se ainda não chegou o horário, está agendada
-        automaticStatus = 'AGENDADA';
+      const hasAttendances = meeting.attendances.length > 0;
+      
+      // Criar data de término baseada no horário de término ou 2 horas após o início
+      let meetingEndTime;
+      if (meeting.endTime) {
+        meetingEndTime = new Date(meeting.date + 'T' + meeting.endTime);
       } else {
-        // Caso especial: reunião iniciou mas não tem horário de término definido
-        // Verificar se há presenças registradas para determinar se está em andamento ou finalizada
-        const hasAttendances = meeting.attendances.length > 0;
-        if (hasAttendances) {
-          // Se há presenças e já passou mais de 3 horas do início, considerar finalizada
-          const threeHoursAfterStart = new Date(meetingDate.getTime() + 3 * 60 * 60 * 1000);
-          automaticStatus = now > threeHoursAfterStart ? 'FINALIZADA' : 'EM_ANDAMENTO';
-        } else {
-          // Se não há presenças e já passou do horário, manter como agendada
-          automaticStatus = 'AGENDADA';
-        }
+        // Se não há horário de término, assumir 2 horas após o início
+        meetingEndTime = new Date(meetingDate.getTime() + 2 * 60 * 60 * 1000);
+      }
+      
+      // Lógica de status baseada na data/hora atual
+      if (now < meetingDate) {
+        // Reunião ainda não começou
+        automaticStatus = 'AGENDADA';
+      } else if (now >= meetingDate && now <= meetingEndTime) {
+        // Reunião está no horário de acontecer
+        automaticStatus = hasAttendances ? 'EM_ANDAMENTO' : 'AGENDADA';
+      } else {
+        // Reunião já passou do horário
+        automaticStatus = hasAttendances ? 'FINALIZADA' : 'AGENDADA';
       }
     }
 
@@ -151,15 +160,7 @@ export async function GET(
       meeting.status = automaticStatus;
     }
 
-    // Formatar dados para o frontend (usando horário local do Brasil)
-    const formatLocalTime = (date: Date) => {
-      return date.toLocaleTimeString('pt-BR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'America/Sao_Paulo'
-      });
-    };
-
+    // Formatar dados para o frontend
     const formatLocalDate = (date: Date) => {
       // Usar UTC para evitar problemas de timezone
       const year = date.getUTCFullYear();
@@ -170,9 +171,10 @@ export async function GET(
 
     const formattedMeeting = {
       ...meeting,
-      startTime: formatLocalTime(meeting.date),
+      // startTime e endTime já são strings no banco, não precisam conversão
+      startTime: meeting.startTime || null,
       date: formatLocalDate(meeting.date),
-      endTime: meeting.endTime ? formatLocalTime(meeting.endTime) : null
+      endTime: meeting.endTime || null
     };
 
     return NextResponse.json({ meeting: formattedMeeting });

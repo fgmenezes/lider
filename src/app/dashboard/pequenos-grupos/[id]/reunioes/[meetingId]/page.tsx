@@ -6,10 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tab } from '@headlessui/react';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Users, UserPlus, FileText, Settings, Calendar, MapPin, Clock, XCircle, CheckCircle, BookOpen } from 'lucide-react';
+import { ArrowLeft, Users, UserPlus, FileText, Settings, Calendar, MapPin, Clock, XCircle, CheckCircle, BookOpen, Download, Trash2, Upload } from 'lucide-react';
 import AttendanceModal from '@/components/forms/AttendanceModal';
 import VisitorModal from '@/components/forms/VisitorModal';
 import NoteModal from '@/components/forms/NoteModal';
+import MarcarBibliaModal from '@/components/forms/MarcarBibliaModal';
+import MaterialApoioModal from '@/components/forms/MaterialApoioModal';
 
 // Interfaces
 interface MeetingDetails {
@@ -49,6 +51,24 @@ interface MeetingDetails {
       name: string;
     };
   }>;
+  marcarBiblia: Array<{
+    id: string;
+    memberId: string;
+    member: {
+      id: string;
+      name: string;
+    };
+  }>;
+  materialApoio: Array<{
+    id: string;
+    nome: string;
+    descricao?: string;
+    arquivoUrl: string;
+    createdAt: string;
+    usuario: {
+      name: string;
+    };
+  }>;
 }
 
 interface Member {
@@ -78,6 +98,8 @@ export default function MeetingDetailsPage() {
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const [showVisitorModal, setShowVisitorModal] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
+  const [showMarcarBibliaModal, setShowMarcarBibliaModal] = useState(false);
+  const [showMaterialApoioModal, setShowMaterialApoioModal] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   // Estados para edição de configurações
@@ -98,32 +120,6 @@ export default function MeetingDetailsPage() {
       const response = await fetch(`/api/small-groups/${groupId}/meetings/${meetingId}`);
       if (!response.ok) throw new Error('Erro ao carregar dados da reunião');
       const data = await response.json();
-      
-      // Logs para investigação dos problemas
-      console.log('=== DADOS DA REUNIÃO RECEBIDOS DA API ===');
-      console.log('Data completa:', JSON.stringify(data, null, 2));
-      console.log('Meeting object:', data.meeting);
-      console.log('Date field:', data.meeting?.date);
-      console.log('StartTime field:', data.meeting?.startTime);
-      console.log('EndTime field:', data.meeting?.endTime);
-      console.log('Location field:', data.meeting?.location);
-      console.log('Theme field:', data.meeting?.theme);
-      console.log('SmallGroup name:', data.meeting?.smallGroup?.name);
-      
-      // Teste de formatação de data
-      if (data.meeting?.date) {
-        console.log('=== TESTE DE FORMATAÇÃO DE DATA ===');
-        console.log('Data original:', data.meeting.date);
-        console.log('Data como Date object:', new Date(data.meeting.date));
-        console.log('Data formatada (toLocaleDateString):', new Date(data.meeting.date).toLocaleDateString('pt-BR'));
-        console.log('Data formatada (formatDate):', formatDate(data.meeting.date));
-        
-        // Verificar timezone
-        const dateObj = new Date(data.meeting.date);
-        console.log('UTC Date:', dateObj.toISOString());
-        console.log('Local Date:', dateObj.toString());
-        console.log('Timezone offset:', dateObj.getTimezoneOffset());
-      }
       
       setMeeting(data.meeting);
     } catch (error) {
@@ -318,6 +314,50 @@ export default function MeetingDetailsPage() {
     loadMeetingData(); // Recarregar dados para atualizar notas
   };
 
+  const handleMarcarBibliaSuccess = () => {
+    setShowMarcarBibliaModal(false);
+    loadMeetingData(); // Recarregar dados para atualizar marcações
+  };
+
+  const handleMaterialApoioSuccess = () => {
+    setShowMaterialApoioModal(false);
+    loadMeetingData(); // Recarregar dados para atualizar materiais
+  };
+
+  const handleDownloadMaterial = async (materialId: string, fileName: string) => {
+    try {
+      const response = await fetch(`/api/material-apoio/${materialId}/download`);
+      if (!response.ok) throw new Error('Erro ao gerar link de download');
+      
+      const data = await response.json();
+      
+      // Abrir o link de download em nova aba
+      window.open(data.downloadUrl, '_blank');
+      toast.success('Download iniciado!');
+    } catch (error) {
+      console.error('Erro ao fazer download:', error);
+      toast.error('Erro ao fazer download do arquivo');
+    }
+  };
+
+  const handleDeleteMaterial = async (materialId: string, materialName: string) => {
+    if (!confirm(`Tem certeza que deseja excluir o material "${materialName}"?`)) return;
+    
+    try {
+      const response = await fetch(`/api/material-apoio/${materialId}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) throw new Error('Erro ao excluir material');
+      
+      toast.success('Material excluído com sucesso!');
+      loadMeetingData();
+    } catch (error) {
+      console.error('Erro ao excluir material:', error);
+      toast.error('Erro ao excluir material');
+    }
+  };
+
   // Funções utilitárias
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -358,6 +398,20 @@ export default function MeetingDetailsPage() {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const formatGroupAddress = (group: any) => {
+    if (!group?.rua) return null;
+    
+    const parts = [];
+    parts.push(group.rua);
+    if (group.numero) parts.push(group.numero);
+    if (group.complemento) parts.push(group.complemento);
+    
+    const address = parts.join(', ');
+    const city = [group.bairro, group.municipio, group.estado].filter(Boolean).join(', ');
+    
+    return city ? `${address}, ${city}` : address;
   };
 
   // Cálculos de indicadores
@@ -401,6 +455,23 @@ export default function MeetingDetailsPage() {
         onClose={() => setShowNoteModal(false)}
         onSuccess={handleNoteSuccess}
         groupId={groupId}
+        meetingId={meetingId}
+      />
+
+      <MarcarBibliaModal
+        isOpen={showMarcarBibliaModal}
+        onClose={() => setShowMarcarBibliaModal(false)}
+        onSuccess={handleMarcarBibliaSuccess}
+        groupId={groupId}
+        meetingId={meetingId}
+        members={members}
+        existingMarcacoes={meeting?.marcarBiblia || []}
+      />
+
+      <MaterialApoioModal
+        isOpen={showMaterialApoioModal}
+        onClose={() => setShowMaterialApoioModal(false)}
+        onSuccess={handleMaterialApoioSuccess}
         meetingId={meetingId}
       />
     </div>
@@ -480,6 +551,16 @@ export default function MeetingDetailsPage() {
           <Tab className={({ selected }) => 
             `flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-md transition-all duration-200 outline-none ${
               selected 
+                ? 'bg-white text-indigo-600 shadow-sm' 
+                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+            }`
+          }>
+            <BookOpen className="w-4 h-4" />
+            Material de Apoio
+          </Tab>
+          <Tab className={({ selected }) => 
+            `flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-md transition-all duration-200 outline-none ${
+              selected 
                 ? 'bg-white text-orange-600 shadow-sm' 
                 : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
             }`
@@ -537,15 +618,13 @@ export default function MeetingDetailsPage() {
                      <p className="text-gray-900">{formatTime(meeting.startTime)}</p>
                    </div>
                    
-                   {meeting.endTime && (
-                     <div>
-                       <label className="text-sm font-medium text-gray-700 mb-1 block flex items-center gap-1">
-                         <Clock className="w-4 h-4" />
-                         Horário de Término
-                       </label>
-                       <p className="text-gray-900">{formatTime(meeting.endTime)}</p>
-                     </div>
-                   )}
+                   <div>
+                     <label className="text-sm font-medium text-gray-700 mb-1 block flex items-center gap-1">
+                       <Clock className="w-4 h-4" />
+                       Horário de Término
+                     </label>
+                     <p className="text-gray-900">{meeting.endTime ? formatTime(meeting.endTime) : 'Não definido'}</p>
+                   </div>
                  </div>
 
                  {/* Local */}
@@ -554,7 +633,9 @@ export default function MeetingDetailsPage() {
                      <MapPin className="w-4 h-4" />
                      Local
                    </label>
-                   <p className="text-gray-900">{meeting.location || 'Local não definido'}</p>
+                   <p className="text-gray-900">
+                     {meeting.location || formatGroupAddress(meeting.smallGroup) || 'Local não definido'}
+                   </p>
                  </div>
                </CardContent>
              </Card>
@@ -635,7 +716,7 @@ export default function MeetingDetailsPage() {
                       <Button 
                         variant="outline" 
                         className="h-auto p-4 flex flex-col items-center gap-2 hover:bg-orange-50 hover:border-orange-300"
-                        onClick={() => toast.success('Funcionalidade de marcar bíblia será implementada')}
+                        onClick={() => setShowMarcarBibliaModal(true)}
                       >
                         <BookOpen className="w-6 h-6 text-orange-600" />
                         <div className="text-center">
@@ -741,9 +822,22 @@ export default function MeetingDetailsPage() {
                      <CardHeader>
                        <CardTitle className="flex items-center justify-between">
                          <span>Lista de Membros</span>
-                         <span className="text-sm text-gray-500">
-                           {presentMembers} de {totalMembers} presentes ({attendanceRate}%)
-                         </span>
+                         <div className="flex items-center gap-3">
+                           <span className="text-sm text-gray-500">
+                             {presentMembers} de {totalMembers} presentes ({attendanceRate}%)
+                           </span>
+                           {(meeting.status === 'AGENDADA' || meeting.status === 'EM_ANDAMENTO') && (
+                             <Button 
+                               size="sm" 
+                               variant="outline"
+                               onClick={() => setShowAttendanceModal(true)}
+                               className="flex items-center gap-2"
+                             >
+                               <Users className="w-4 h-4" />
+                               Editar Presença
+                             </Button>
+                           )}
+                         </div>
                        </CardTitle>
                      </CardHeader>
                      <CardContent>
@@ -755,8 +849,16 @@ export default function MeetingDetailsPage() {
                                  <div className={`w-3 h-3 rounded-full ${
                                    attendance.present ? 'bg-green-500' : 'bg-gray-300'
                                  }`}></div>
-                                 <div>
-                                   <p className="font-medium text-gray-900">{attendance.member.name}</p>
+                                 <div className="flex-1">
+                                   <div className="flex items-center gap-2">
+                                     <p className="font-medium text-gray-900">{attendance.member.name}</p>
+                                     {meeting.marcarBiblia?.some(biblia => biblia.memberId === attendance.member.id) && (
+                                       <div className="flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium">
+                                         <BookOpen className="w-3 h-3" />
+                                         <span>Bíblia</span>
+                                       </div>
+                                     )}
+                                   </div>
                                    <p className="text-sm text-gray-500">{attendance.member.email}</p>
                                  </div>
                                </div>
@@ -769,17 +871,6 @@ export default function MeetingDetailsPage() {
                                  }`}>
                                    {attendance.present ? 'Presente' : 'Ausente'}
                                  </span>
-                                 
-                                 <Button 
-                                   size="sm" 
-                                   variant="outline"
-                                   onClick={() => {
-                                     // TODO: Implementar toggle de presença
-                                     toast.success(`Presença de ${attendance.member.name} será alterada`);
-                                   }}
-                                 >
-                                   {attendance.present ? 'Marcar Ausente' : 'Marcar Presente'}
-                                 </Button>
                                </div>
                              </div>
                            ))}
@@ -929,6 +1020,83 @@ export default function MeetingDetailsPage() {
                        <p className="text-sm">Clique em &quot;Nova Nota&quot; para adicionar observações</p>
                      </div>
                    )
+                 )}
+               </CardContent>
+             </Card>
+           </Tab.Panel>
+
+           {/* Aba Material de Apoio */}
+           <Tab.Panel className="space-y-6">
+             <Card>
+               <CardHeader>
+                 <CardTitle className="flex items-center justify-between">
+                   <span>Material de Apoio</span>
+                   <Button 
+                     size="sm" 
+                     onClick={() => setShowMaterialApoioModal(true)}
+                     className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                   >
+                     <Upload className="w-4 h-4 mr-2" />
+                     Adicionar Material
+                   </Button>
+                 </CardTitle>
+               </CardHeader>
+               <CardContent className="space-y-4">
+                 {/* Lista de materiais de apoio */}
+                 {meeting.materialApoio && meeting.materialApoio.length > 0 ? (
+                   <div className="space-y-4">
+                     {meeting.materialApoio.map((material) => (
+                       <div key={material.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                         <div className="flex items-center justify-between">
+                           <div className="flex-1">
+                             <div className="flex items-center gap-3 mb-2">
+                               <BookOpen className="w-5 h-5 text-indigo-600" />
+                               <h4 className="font-medium text-gray-900">{material.nome}</h4>
+                             </div>
+                             {material.descricao && (
+                               <p className="text-sm text-gray-600 mb-2">{material.descricao}</p>
+                             )}
+                             <div className="flex items-center gap-4 text-xs text-gray-500">
+                               <span>Adicionado por {material.usuario.name}</span>
+                               <span>{formatDate(material.createdAt)}</span>
+                             </div>
+                           </div>
+                           <div className="flex items-center gap-2">
+                             <Button 
+                               size="sm" 
+                               variant="outline"
+                               onClick={() => window.open(material.arquivoUrl, '_blank')}
+                               className="text-indigo-600 border-indigo-300 hover:bg-indigo-50"
+                             >
+                               <Download className="w-4 h-4 mr-1" />
+                               Baixar
+                             </Button>
+                             <Button 
+                               size="sm" 
+                               variant="outline"
+                               className="text-red-600 border-red-300 hover:bg-red-50"
+                               onClick={() => toast.error('Funcionalidade de exclusão será implementada')}
+                             >
+                               <Trash2 className="w-4 h-4" />
+                             </Button>
+                           </div>
+                         </div>
+                       </div>
+                     ))}
+                   </div>
+                 ) : (
+                   <div className="text-center text-gray-500 py-12">
+                     <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                     <p className="text-lg font-medium mb-2">Nenhum material de apoio</p>
+                     <p className="text-sm mb-4">Adicione materiais como estudos, slides ou documentos para esta reunião</p>
+                     <Button 
+                       onClick={() => setShowMaterialApoioModal(true)}
+                       className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                     >
+                       <Upload className="w-4 h-4 mr-2" />
+                       Adicionar Primeiro Material
+                     </Button>
+                   </div>
                  )}
                </CardContent>
              </Card>
@@ -1136,6 +1304,23 @@ export default function MeetingDetailsPage() {
         onClose={() => setShowNoteModal(false)}
         onSuccess={handleNoteSuccess}
         groupId={groupId}
+        meetingId={meetingId}
+      />
+
+      <MarcarBibliaModal
+        isOpen={showMarcarBibliaModal}
+        onClose={() => setShowMarcarBibliaModal(false)}
+        onSuccess={handleMarcarBibliaSuccess}
+        groupId={groupId}
+        meetingId={meetingId}
+        members={members}
+        existingMarcacoes={meeting?.marcarBiblia || []}
+      />
+
+      <MaterialApoioModal
+        isOpen={showMaterialApoioModal}
+        onClose={() => setShowMaterialApoioModal(false)}
+        onSuccess={handleMaterialApoioSuccess}
         meetingId={meetingId}
       />
     </div>

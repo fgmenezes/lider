@@ -48,6 +48,7 @@ model Ministry {
   status         String            @default("ATIVO")
   meetingNotes   SmallGroupMeetingNote[]
   visitors       SmallGroupVisitor[]
+  materialApoio  MaterialApoio[]
 }
 
 model User {
@@ -82,6 +83,7 @@ model User {
   finances       Finance[]
   smallGroupLeaderships SmallGroupLeader[]
   smallGroupNotes SmallGroupMeetingNote[]
+  materialApoio  MaterialApoio[]
   @@unique([id, masterMinistryId])
 }
 
@@ -172,6 +174,7 @@ model Member {
   smallGroupMemberships SmallGroupMember[] @relation("MemberToSmallGroupMember")
   smallGroupAttendances SmallGroupAttendance[] @relation("MemberToSmallGroupAttendance")
   invitedVisitors SmallGroupVisitor[]
+  marcarBiblia MarcarBiblia[]
 }
 
 model MemberIrmao {
@@ -223,6 +226,8 @@ model SmallGroup {
   attendanceWindowBefore Int @default(60) // Minutos antes do início da reunião
   attendanceWindowAfter  Int @default(1440) // Minutos após o término da reunião (24h)
   meetingNotes   SmallGroupMeetingNote[]
+  marcarBiblia   MarcarBiblia[]
+  materialApoio  MaterialApoio[]
 }
 
 model SmallGroupLeader {
@@ -267,7 +272,8 @@ model SmallGroupMeeting {
   smallGroup    SmallGroup @relation(fields: [smallGroupId], references: [id], onDelete: Cascade)
   smallGroupId  String
   date          DateTime
-  endTime       DateTime? // Horário de término da reunião
+  startTime     String?  // Horário de início da reunião
+  endTime       String?  // Horário de término da reunião
   location      String?
   type          String   // Ex: 'PG', 'ENCONTRAO', 'RETIRO'
   theme         String?
@@ -277,15 +283,17 @@ model SmallGroupMeeting {
   attendances   SmallGroupAttendance[]
   visitors      SmallGroupVisitor[]
   prayerRequests SmallGroupPrayerRequest[]
+  marcarBiblia  MarcarBiblia[]
+  materialApoio MaterialApoio[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
 
 model SmallGroupVisitor {
   id            String   @id @default(cuid())
-  meeting       SmallGroupMeeting @relation(fields: [meetingId], references: [id])
+  meeting       SmallGroupMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
   meetingId     String
-  smallGroup    SmallGroup @relation(fields: [smallGroupId], references: [id])
+  smallGroup    SmallGroup @relation(fields: [smallGroupId], references: [id], onDelete: Cascade)
   smallGroupId  String
   ministry      Ministry @relation(fields: [ministryId], references: [id])
   ministryId    String
@@ -315,7 +323,7 @@ model SmallGroupVisitor {
 
 model SmallGroupPrayerRequest {
   id            String   @id @default(cuid())
-  meeting       SmallGroupMeeting @relation(fields: [meetingId], references: [id])
+  meeting       SmallGroupMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
   meetingId     String
   requesterName String?
   request       String
@@ -327,9 +335,9 @@ model SmallGroupMeetingNote {
   id           String            @id @default(cuid())
   title        String
   content      String
-  meeting      SmallGroupMeeting @relation(fields: [meetingId], references: [id])
+  meeting      SmallGroupMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
   meetingId    String
-  smallGroup   SmallGroup        @relation(fields: [smallGroupId], references: [id])
+  smallGroup   SmallGroup        @relation(fields: [smallGroupId], references: [id], onDelete: Cascade)
   smallGroupId String
   ministry     Ministry          @relation(fields: [ministryId], references: [id])
   ministryId   String
@@ -385,6 +393,37 @@ model MemberObservacao {
   categoria  String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+model MarcarBiblia {
+  id             String        @id @default(cuid())
+  member         Member        @relation(fields: [memberId], references: [id])
+  memberId       String
+  meeting        SmallGroupMeeting @relation(fields: [meetingId], references: [id])
+  meetingId      String
+  smallGroup     SmallGroup    @relation(fields: [smallGroupId], references: [id])
+  smallGroupId   String
+  broughtBible   Boolean
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([meetingId, memberId])
+}
+
+model MaterialApoio {
+  id             String       @id @default(cuid())
+  nome           String
+  arquivoUrl     String
+  usuario        User         @relation(fields: [usuarioId], references: [id])
+  usuarioId      String
+  ministry       Ministry?    @relation(fields: [ministerioId], references: [id])
+  ministerioId   String?
+  smallGroup     SmallGroup?  @relation(fields: [smallGroupId], references: [id])
+  smallGroupId   String?
+  meeting        SmallGroupMeeting @relation(fields: [meetingId], references: [id])
+  meetingId      String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 }
 
 enum Role {
