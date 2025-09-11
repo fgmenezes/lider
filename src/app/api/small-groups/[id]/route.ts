@@ -63,12 +63,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     let newStatus = meeting.status;
     
     // Lógica para determinar o status correto
-    if (now > meetingEndTime || hasAttendances) {
-      newStatus = 'FINALIZADA';
-    } else if (now >= meetingDate && now <= meetingEndTime) {
-      newStatus = 'EM_ANDAMENTO';
-    } else if (now < meetingDate) {
+    if (now < meetingDate) {
+      // Reunião ainda não começou
       newStatus = 'AGENDADA';
+    } else if (now >= meetingDate && now <= meetingEndTime) {
+      // Reunião está no horário de acontecer
+      newStatus = hasAttendances ? 'EM_ANDAMENTO' : 'AGENDADA';
+    } else {
+      // Reunião já passou do horário
+      newStatus = hasAttendances ? 'FINALIZADA' : 'AGENDADA';
     }
     
     // Se o status mudou, atualizar no banco

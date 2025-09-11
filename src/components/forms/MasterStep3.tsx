@@ -75,7 +75,7 @@ export default function MasterStep3({ masterForm, setMasterForm, onBack, onNext 
           value={masterForm.cep || ''}
           onChange={e => setMasterForm((f: any) => ({ ...f, cep: e.target.value }))}
           onBlur={handleCepBlur}
-          className={`mt-1 block w-full border rounded-md shadow-sm p-2 ${cepError ? 'border-red-500' : 'border-gray-300'}`}
+          className={`mt-1 block w-full border rounded-md shadow-sm p-2 ${cepError ? 'border-red-500' : 'border-[var(--color-border)]'}`}
           placeholder="00000-000"
           required
           ref={cepRef}
@@ -100,7 +100,7 @@ export default function MasterStep3({ masterForm, setMasterForm, onBack, onNext 
             type="text"
             value={masterForm.numero || ''}
             onChange={e => setMasterForm((f: any) => ({ ...f, numero: e.target.value }))}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+            className="mt-1 block w-full border border-[var(--color-border)] rounded-md shadow-sm p-2"
             required
             ref={numeroRef}
           />
@@ -111,7 +111,7 @@ export default function MasterStep3({ masterForm, setMasterForm, onBack, onNext 
             type="text"
             value={masterForm.complemento || ''}
             onChange={e => setMasterForm((f: any) => ({ ...f, complemento: e.target.value }))}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+            className="mt-1 block w-full border border-[var(--color-border)] rounded-md shadow-sm p-2"
           />
         </div>
       </div>
@@ -132,7 +132,7 @@ export default function MasterStep3({ masterForm, setMasterForm, onBack, onNext 
             type="text"
             value={masterForm.municipio || ''}
             onChange={e => setMasterForm((f: any) => ({ ...f, municipio: e.target.value }))}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+            className="mt-1 block w-full border border-[var(--color-border)] rounded-md shadow-sm p-2"
             required
           />
         </div>
@@ -142,13 +142,13 @@ export default function MasterStep3({ masterForm, setMasterForm, onBack, onNext 
             type="text"
             value={masterForm.estado || ''}
             onChange={e => setMasterForm((f: any) => ({ ...f, estado: e.target.value }))}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+            className="mt-1 block w-full border border-[var(--color-border)] rounded-md shadow-sm p-2"
             required
           />
         </div>
       </div>
       <div className="flex justify-between gap-2 mt-6">
-        <button type="button" className="px-4 py-2 bg-gray-200 text-gray-700 rounded" onClick={onBack}>Voltar</button>
+        <button type="button" className="px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded" onClick={onBack}>Voltar</button>
         <button 
           type="button" 
           className="px-4 py-2 bg-blue-600 text-white rounded" 
@@ -160,4 +160,4 @@ export default function MasterStep3({ masterForm, setMasterForm, onBack, onNext 
       </div>
     </div>
   );
-} 
+}

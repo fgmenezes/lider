@@ -32,7 +32,7 @@ export default function MasterStep4({ masterForm, setMasterForm, onBack, onFinis
           type="text"
           value={masterForm.email || ''}
           readOnly
-          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-gray-100 cursor-not-allowed"
+          className="mt-1 block w-full border border-[var(--color-border)] rounded-md shadow-sm p-2 bg-[var(--bg-secondary)] cursor-not-allowed"
         />
         <p className="text-xs text-gray-500 mt-1">O email será usado como nome de usuário para login</p>
       </div>
@@ -42,7 +42,7 @@ export default function MasterStep4({ masterForm, setMasterForm, onBack, onFinis
           type="password"
           value={masterForm.password || ''}
           onChange={e => setMasterForm((f: any) => ({ ...f, password: e.target.value }))}
-          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+          className="mt-1 block w-full border border-[var(--color-border)] rounded-md shadow-sm p-2"
           minLength={6}
           required
           ref={passwordRef}
@@ -54,7 +54,7 @@ export default function MasterStep4({ masterForm, setMasterForm, onBack, onFinis
           type="password"
           value={masterForm.confirmPassword || ''}
           onChange={e => setMasterForm((f: any) => ({ ...f, confirmPassword: e.target.value }))}
-          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+          className="mt-1 block w-full border border-[var(--color-border)] rounded-md shadow-sm p-2"
           minLength={6}
           required
         />
@@ -63,7 +63,7 @@ export default function MasterStep4({ masterForm, setMasterForm, onBack, onFinis
         )}
       </div>
       <div className="flex justify-between gap-2 mt-6">
-        <button type="button" className="px-4 py-2 bg-gray-200 text-gray-700 rounded" onClick={onBack}>Voltar</button>
+        <button type="button" className="px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded" onClick={onBack}>Voltar</button>
         <button 
           type="button" 
           className="px-4 py-2 bg-blue-600 text-white rounded" 
@@ -75,4 +75,4 @@ export default function MasterStep4({ masterForm, setMasterForm, onBack, onFinis
       </div>
     </div>
   );
-} 
+}

@@ -11,31 +11,19 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ label, required = false, error, helperText, className = '', register, ...props }, ref) => {
-    // Log para depuração
-    if (register) {
-      console.log('[Input] register:', register);
-      if (register.ref) {
-        console.log('[Input] register.ref:', register.ref);
-      }
-    }
-    if (ref) {
-      console.log('[Input] forwardRef:', ref);
-    }
-
-    // Espalhar register por último para garantir que o ref do RHF não seja sobrescrito
     return (
       <div className="relative">
         <label htmlFor={props.id} className="block text-sm font-medium text-gray-700 mb-1">
           {label} {required && <span className="text-red-500">*</span>}
         </label>
         <input
-          ref={ref}
           {...props}
-          {...(register ? Object.fromEntries(Object.entries(register).filter(([k]) => k !== 'ref')) : {})}
+          {...register}
+          ref={register?.ref || ref}
           className={
             `mt-1 block w-full border rounded-md shadow-sm p-3
             focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-            ${error ? 'border-red-500' : 'border-gray-300'}
+            ${error ? 'border-red-500' : 'border-[var(--color-border)]'}
             ${className}`
           }
         />
@@ -48,4 +36,4 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
 Input.displayName = "Input";
 
-export default Input; 
+export default Input;

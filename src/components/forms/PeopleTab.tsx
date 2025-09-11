@@ -76,12 +76,12 @@ export default function PeopleTab({ group, onRefresh }: PeopleTabProps) {
 
       {/* Sistema de abas para Líderes e Membros */}
       <Tab.Group>
-        <Tab.List className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+        <Tab.List className="flex space-x-1 bg-[var(--bg-secondary)] p-1 rounded-lg">
           <Tab className={({ selected }) => 
             `flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-md transition-all duration-200 outline-none ${
               selected 
                 ? 'bg-white text-blue-600 shadow-sm' 
-                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
             }`
           }>
             <UserCheck className="w-4 h-4" />
@@ -91,7 +91,7 @@ export default function PeopleTab({ group, onRefresh }: PeopleTabProps) {
             `flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-md transition-all duration-200 outline-none ${
               selected 
                 ? 'bg-white text-green-600 shadow-sm' 
-                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
             }`
           }>
             <Users className="w-4 h-4" />

@@ -32,14 +32,14 @@ export default function MasterStep2({ masterForm, setMasterForm, onBack, onNext 
           type="tel"
           value={masterForm.phone || ''}
           onChange={e => setMasterForm((f: any) => ({ ...f, phone: e.target.value }))}
-          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+          className="mt-1 block w-full border border-[var(--color-border)] rounded-md shadow-sm p-2"
           placeholder="(99) 99999-9999"
           required
           ref={phoneRef}
         />
       </div>
       <div className="flex justify-between gap-2 mt-6">
-        <button type="button" className="px-4 py-2 bg-gray-200 text-gray-700 rounded" onClick={onBack}>Voltar</button>
+        <button type="button" className="px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded" onClick={onBack}>Voltar</button>
         <button 
           type="button" 
           className="px-4 py-2 bg-blue-600 text-white rounded" 
@@ -51,4 +51,4 @@ export default function MasterStep2({ masterForm, setMasterForm, onBack, onNext 
       </div>
     </div>
   );
-} 
+}

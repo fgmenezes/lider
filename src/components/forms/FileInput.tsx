@@ -42,7 +42,7 @@ const FileInput: React.FC<FileInputProps> = ({
           file:text-sm file:font-semibold
           file:bg-blue-50 file:text-blue-700
           hover:file:bg-blue-100
-          ${error ? 'border-red-500' : 'border-gray-300'}
+          ${error ? 'border-red-500' : 'border-[var(--color-border)]'}
           ${className || ''}` // Adiciona classes customizadas
         }
         {...rest}
@@ -54,4 +54,4 @@ const FileInput: React.FC<FileInputProps> = ({
   );
 };
 
-export default FileInput; 
+export default FileInput;

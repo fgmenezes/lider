@@ -21,7 +21,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
           className={`
             mt-1 block w-full border rounded-md shadow-sm p-3 pt-5 
             focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-            ${error ? 'border-red-500' : 'border-gray-300'}
+            ${error ? 'border-[var(--color-danger)]' : 'border-[var(--color-border)]'}
             ${className}
           `}
           onFocus={(e) => {
@@ -44,15 +44,15 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
           className={`
             absolute left-3 transition-all duration-200 pointer-events-none
             ${hasValue || isFocused 
-              ? 'text-xs text-blue-600 -top-1 bg-white px-1' 
-              : 'text-sm text-gray-500 top-3'
+              ? 'text-xs text-[var(--color-primary)] -top-1 bg-[var(--bg-primary)] px-1' 
+              : 'text-sm text-[var(--text-muted)] top-3'
             }
           `}
         >
           {label} {required && <span className="text-red-500">*</span>}
         </label>
         {error && <div className="text-xs text-red-500 mt-1">{error}</div>}
-        {helperText && !error && <div className="text-xs text-gray-500 mt-1">{helperText}</div>}
+        {helperText && !error && <div className="text-xs text-[var(--text-muted)] mt-1">{helperText}</div>}
       </div>
     );
   }
@@ -60,4 +60,4 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
 
 Select.displayName = 'Select';
 
-export default Select; 
+export default Select;

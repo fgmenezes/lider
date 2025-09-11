@@ -41,6 +41,18 @@
   --bg-secondary: #f9fafb;
   --bg-muted: #f3f4f6;
   
+  /* === VARIÁVEIS COMPATÍVEIS COM O CÓDIGO EXISTENTE === */
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-inverse: var(--text-white);
+  --color-background: var(--bg-primary);
+  --color-background-secondary: var(--bg-secondary);
+  --color-border: #e5e7eb;
+  --color-danger-bg: var(--color-danger-light);
+  --color-success-dark: #166534;
+  --color-neutral-light: var(--color-neutral-light);
+  
   /* === TIPOGRAFIA === */
   --font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-weight-normal: 400;
@@ -74,16 +86,8 @@
   --transition-slow: 300ms ease-in-out;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text-primary: #f9fafb;
-    --text-secondary: #d1d5db;
-    --text-muted: #9ca3af;
-    --bg-primary: #111827;
-    --bg-secondary: #1f2937;
-    --bg-muted: #374151;
-  }
-}
+/* Modo escuro removido - sistema usa apenas modo claro por padrão */
+/* Para implementar modo escuro, adicione uma classe .dark no html ou body */
 
 body {
   font-family: var(--font-family);

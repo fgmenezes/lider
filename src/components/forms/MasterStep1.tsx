@@ -54,7 +54,7 @@ export default function MasterStep1({ masterForm, setMasterForm, onBack, onNext 
           type="text"
           value={masterForm.nome || ''}
           onChange={e => setMasterForm((f: any) => ({ ...f, nome: e.target.value }))}
-          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+          className="mt-1 block w-full border border-[var(--color-border)] rounded-md shadow-sm p-2"
           required
           ref={nomeRef}
         />
@@ -65,7 +65,7 @@ export default function MasterStep1({ masterForm, setMasterForm, onBack, onNext 
           type="email"
           value={masterForm.email || ''}
           onChange={e => setMasterForm((f: any) => ({ ...f, email: e.target.value }))}
-          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+          className="mt-1 block w-full border border-[var(--color-border)] rounded-md shadow-sm p-2"
           required
         />
       </div>
@@ -76,7 +76,7 @@ export default function MasterStep1({ masterForm, setMasterForm, onBack, onNext 
             type="date"
             value={masterForm.dataNascimento}
             onChange={(e) => handleDataNascimentoChange(e.target.value)}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+            className="mt-1 block w-full border border-[var(--color-border)] rounded-md shadow-sm p-2"
             required
           />
         </div>
@@ -86,7 +86,7 @@ export default function MasterStep1({ masterForm, setMasterForm, onBack, onNext 
             type="text"
             value={masterForm.dataNascimento ? calculateAge(masterForm.dataNascimento) : ''}
             readOnly
-            className="mt-1 block w-full border border-gray-200 bg-gray-100 rounded-md p-2"
+            className="mt-1 block w-full border border-[var(--color-border)] bg-[var(--bg-secondary)] rounded-md p-2"
           />
         </div>
       </div>
@@ -95,7 +95,7 @@ export default function MasterStep1({ masterForm, setMasterForm, onBack, onNext 
         <select
           value={masterForm.sexo || ''}
           onChange={e => setMasterForm((f: any) => ({ ...f, sexo: e.target.value }))}
-          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+          className="mt-1 block w-full border border-[var(--color-border)] rounded-md shadow-sm p-2"
           required
         >
           <option value="">Selecione</option>
@@ -108,7 +108,7 @@ export default function MasterStep1({ masterForm, setMasterForm, onBack, onNext 
         <select
           value={masterForm.estadoCivil || ''}
           onChange={e => setMasterForm((f: any) => ({ ...f, estadoCivil: e.target.value }))}
-          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+          className="mt-1 block w-full border border-[var(--color-border)] rounded-md shadow-sm p-2"
           required
         >
           <option value="">Selecione</option>
@@ -119,7 +119,7 @@ export default function MasterStep1({ masterForm, setMasterForm, onBack, onNext 
         </select>
       </div>
       <div className="flex justify-between gap-2 mt-6">
-        <button type="button" className="px-4 py-2 bg-gray-200 text-gray-700 rounded" onClick={onBack}>Voltar</button>
+        <button type="button" className="px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded" onClick={onBack}>Voltar</button>
         <button 
           type="button" 
           className="px-4 py-2 bg-blue-600 text-white rounded" 
@@ -131,4 +131,4 @@ export default function MasterStep1({ masterForm, setMasterForm, onBack, onNext 
       </div>
     </div>
   );
-} 
+}

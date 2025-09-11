@@ -74,7 +74,7 @@ export default function LeadersSection({ leaders, onRefresh }: LeadersSectionPro
       case 'AUXILIAR':
         return <UserCheck className="w-4 h-4 text-green-600" />;
       default:
-        return <UserCheck className="w-4 h-4 text-gray-600" />;
+        return <UserCheck className="w-4 h-4 text-[var(--text-secondary)]" />;
     }
   };
 
@@ -101,29 +101,29 @@ export default function LeadersSection({ leaders, onRefresh }: LeadersSectionPro
   return (
     <div className="bg-white rounded-lg shadow">
       {/* Cabeçalho com busca e filtros */}
-      <div className="p-6 border-b border-gray-200">
+      <div className="p-6 border-b border-[var(--color-border)]">
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Líderes do Grupo</h3>
+            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Líderes do Grupo</h3>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)] w-4 h-4" />
               <input
                 type="text"
                 placeholder="Buscar líderes por nome, email ou telefone..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
               />
             </div>
           </div>
           
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)] w-4 h-4" />
               <select
                 value={filterRole}
                 onChange={(e) => setFilterRole(e.target.value)}
-                className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
+                className="pl-10 pr-8 py-2 border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent appearance-none bg-[var(--bg-primary)]"
               >
                 <option value="all">Todos os roles</option>
                 <option value="LIDER_PRINCIPAL">Líder Principal</option>
@@ -139,11 +139,11 @@ export default function LeadersSection({ leaders, onRefresh }: LeadersSectionPro
       <div className="p-6">
         {filteredLeaders.length === 0 ? (
           <div className="text-center py-8">
-            <UserCheck className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <UserCheck className="mx-auto h-12 w-12 text-[var(--text-muted)] mb-4" />
+            <h3 className="text-lg font-medium text-[var(--text-primary)] mb-2">
               {searchTerm || filterRole !== "all" ? "Nenhum líder encontrado" : "Nenhum líder cadastrado"}
             </h3>
-            <p className="text-gray-500">
+            <p className="text-[var(--text-muted)]">
               {searchTerm || filterRole !== "all" 
                 ? "Tente ajustar os filtros de busca" 
                 : "Adicione líderes para começar a gerenciar o grupo"
@@ -155,7 +155,7 @@ export default function LeadersSection({ leaders, onRefresh }: LeadersSectionPro
             {filteredLeaders.map((leader) => (
               <div
                 key={leader.id}
-                className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                className="border border-[var(--color-border)] rounded-lg p-4 hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
@@ -170,7 +170,7 @@ export default function LeadersSection({ leaders, onRefresh }: LeadersSectionPro
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className="text-lg font-semibold text-gray-900 truncate">
+                          <h4 className="text-lg font-semibold text-[var(--text-primary)] truncate">
                             {leader.user?.name || 'Nome não informado'}
                           </h4>
                           {getRoleIcon(leader.role)}
@@ -179,7 +179,7 @@ export default function LeadersSection({ leaders, onRefresh }: LeadersSectionPro
                           </span>
                         </div>
                         
-                        <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                        <div className="flex flex-wrap gap-4 text-sm text-[var(--text-secondary)]">
                           {leader.user?.email && (
                             <div className="flex items-center gap-1">
                               <Mail className="w-4 h-4" />
@@ -240,17 +240,17 @@ export default function LeadersSection({ leaders, onRefresh }: LeadersSectionPro
           <DialogContent>
             <DialogTitle>Remover Líder</DialogTitle>
             <div className="mb-4">
-              <p className="text-gray-600">
+              <p className="text-[var(--text-secondary)]">
                 Tem certeza que deseja remover <span className="font-semibold">{showRemoveConfirm.name}</span> como líder deste pequeno grupo?
               </p>
-              <p className="text-sm text-gray-500 mt-2">
+              <p className="text-sm text-[var(--text-muted)] mt-2">
                 Esta ação não pode ser desfeita e removerá todas as permissões de liderança.
               </p>
             </div>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowRemoveConfirm(null)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="px-4 py-2 text-[var(--text-primary)] bg-[var(--bg-secondary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors"
               >
                 Cancelar
               </button>

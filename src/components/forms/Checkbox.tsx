@@ -24,7 +24,7 @@ const Checkbox: React.FC<CheckboxProps> = ({
           type="checkbox"
           {...(typeof register === 'function' ? register(name) : {})}
           className={
-            `h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500
+            `h-4 w-4 text-blue-600 border-[var(--color-border)] rounded focus:ring-blue-500
             ${error ? 'border-red-500' : ''}
             ${className || ''}`
           }
@@ -41,4 +41,4 @@ const Checkbox: React.FC<CheckboxProps> = ({
   );
 };
 
-export default Checkbox; 
+export default Checkbox;

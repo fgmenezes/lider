@@ -18,7 +18,7 @@ const Textarea: React.FC<TextareaProps> = ({
 }) => {
   return (
     <div className="space-y-1">
-      <label htmlFor={name} className="block text-sm font-medium text-gray-700">
+      <label htmlFor={name} className="block text-sm font-medium text-[var(--text-primary)]">
         {label}
       </label>
       <textarea
@@ -26,16 +26,16 @@ const Textarea: React.FC<TextareaProps> = ({
         {...register(name)} // Integração com React Hook Form
         className={
           `w-full px-3 py-2 mt-1 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none sm:text-sm
-          ${error ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'}
+          ${error ? 'border-[var(--color-danger)] focus:ring-[var(--color-danger)] focus:border-[var(--color-danger)]' : 'border-[var(--color-border)] focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]'}
           ${className || ''}` // Adiciona classes customizadas
         }
         {...rest}
       />
       {error && (
-        <p className="mt-1 text-sm text-red-600">{error.message}</p>
+        <p className="mt-1 text-sm text-[var(--color-danger)]">{error.message}</p>
       )}
     </div>
   );
 };
 
-export default Textarea; 
+export default Textarea;

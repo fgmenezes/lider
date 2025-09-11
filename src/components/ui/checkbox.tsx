@@ -21,7 +21,7 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
             className={cn(
               "h-4 w-4 rounded border transition-default focus-ring",
               "checked:bg-primary checked:border-primary",
-              error ? "border-red-500" : "border-gray-300",
+              error ? "border-[var(--color-danger)]" : "border-[var(--color-border)]",
               className
             )}
             style={{

@@ -1027,7 +1027,7 @@ export default function SmallGroupsPage() {
                     const canEdit = session?.user?.role === 'ADMIN' || session?.user?.masterMinistryId === group.ministryId;
                     return (
                       <tr key={group.id} className="border-b hover:bg-[var(--bg-secondary)]" style={{ borderColor: 'var(--color-neutral)' }}>
-                        <td className="px-4 py-2 font-medium">
+                        <td className="px-4 py-2 font-medium" style={{ color: 'var(--color-text-primary)' }}>
                           <button
                             className="text-blue-700 hover:underline focus:outline-none"
                             onClick={() => router.push(`/dashboard/pequenos-grupos/${group.id}`)}
@@ -1037,12 +1037,12 @@ export default function SmallGroupsPage() {
                             {group.name}
                           </button>
                         </td>
-                        <td className="px-4 py-2">{group.dayOfWeek || '-'}</td>
-                        <td className="px-4 py-2">{group.frequency ? FREQUENCIAS_LABEL[group.frequency] || group.frequency : '-'}</td>
-                        <td className="px-4 py-2">{getNextMeetingDate(group)}</td>
-                        <td className="px-4 py-2">{group.time || '-'}</td>
-                        <td className="px-4 py-2 text-center">{group.leaders?.length || 0}</td>
-                        <td className="px-4 py-2 text-center">{group.members?.length || 0}</td>
+                        <td className="px-4 py-2" style={{ color: 'var(--color-text-primary)' }}>{group.dayOfWeek || '-'}</td>
+                        <td className="px-4 py-2" style={{ color: 'var(--color-text-primary)' }}>{group.frequency ? FREQUENCIAS_LABEL[group.frequency] || group.frequency : '-'}</td>
+                        <td className="px-4 py-2" style={{ color: 'var(--color-text-primary)' }}>{getNextMeetingDate(group)}</td>
+                        <td className="px-4 py-2" style={{ color: 'var(--color-text-primary)' }}>{group.time || '-'}</td>
+                        <td className="px-4 py-2 text-center" style={{ color: 'var(--color-text-primary)' }}>{group.leaders?.length || 0}</td>
+                        <td className="px-4 py-2 text-center" style={{ color: 'var(--color-text-primary)' }}>{group.members?.length || 0}</td>
                         <td className="px-4 py-2 text-center"><StatusBadge status={group.status} /></td>
                         <td className="px-4 py-2 text-center">
                           <ActionsMenu
