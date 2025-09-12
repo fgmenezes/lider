@@ -1,13 +1,20 @@
 import { Client } from "minio";
 
 // Cria o cliente MinIO usando variáveis de ambiente
+// Configuração dinâmica baseada no endpoint
+const endpoint = process.env.MINIO_ENDPOINT?.replace('https://', '').replace('http://', '') || 'localhost';
+const port = process.env.MINIO_ENDPOINT?.includes('https://') ? 443 : 9000;
+const useSSL = process.env.MINIO_ENDPOINT?.includes('https://') || false;
+
 const minioClient = new Client({
-  endPoint: process.env.MINIO_ENDPOINT,
-  port: 443, // Porta HTTPS padrão para S3
-  useSSL: true, // Usar HTTPS por padrão
+  endPoint: endpoint,
+  port: port,
+  useSSL: useSSL,
   accessKey: process.env.MINIO_ACCESS_KEY,
   secretKey: process.env.MINIO_SECRET_KEY,
 });
+
+console.log('MinIO configurado:', { endPoint: endpoint, port, useSSL });
 
 /**
  * Upload de um arquivo para o bucket

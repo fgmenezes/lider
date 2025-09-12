@@ -116,28 +116,30 @@ export async function POST(
     }
 
     const meetingId = params.id;
-    const body = await req.json();
-    const { nome, fileSize, fileType } = body;
+    const formData = await req.formData();
+    const nome = formData.get('nome') as string;
+    const descricao = formData.get('descricao') as string;
+    const arquivo = formData.get('arquivo') as File;
 
-    if (!nome || !fileSize || !fileType) {
+    if (!nome || !arquivo) {
       return NextResponse.json(
-        { error: 'Nome, tamanho e tipo do arquivo são obrigatórios' },
+        { error: 'Nome e arquivo são obrigatórios' },
         { status: 400 }
       );
     }
 
     // Validar tipo de arquivo (apenas PDF)
-    if (fileType !== 'application/pdf') {
+    if (arquivo.type !== 'application/pdf') {
       return NextResponse.json(
         { error: 'Apenas arquivos PDF são permitidos' },
         { status: 400 }
       );
     }
 
-    // Validar tamanho (máximo 5MB)
-    if (fileSize > 5 * 1024 * 1024) {
+    // Validar tamanho (máximo 10MB para compatibilidade com o modal)
+    if (arquivo.size > 10 * 1024 * 1024) {
       return NextResponse.json(
-        { error: 'Arquivo muito grande. Máximo 5MB permitido' },
+        { error: 'Arquivo muito grande. Máximo 10MB permitido' },
         { status: 400 }
       );
     }
@@ -190,11 +192,19 @@ export async function POST(
         await minioClient.makeBucket(BUCKET_NAME);
       }
 
-      // Gerar presigned URL para upload (válido por 10 minutos)
-      const presignedUrl = await minioClient.presignedPutObject(
+      // Converter arquivo para buffer
+      const arrayBuffer = await arquivo.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      // Fazer upload direto do arquivo
+      await minioClient.putObject(
         BUCKET_NAME,
         objectPath,
-        10 * 60 // 10 minutos
+        buffer,
+        arquivo.size,
+        {
+          'Content-Type': arquivo.type
+        }
       );
 
       // Salvar metadados no banco
@@ -211,8 +221,7 @@ export async function POST(
 
       return NextResponse.json({
         materialId: material.id,
-        uploadUrl: presignedUrl,
-        message: 'URL de upload gerada com sucesso'
+        message: 'Material de apoio enviado com sucesso'
       });
 
     } catch (minioError) {

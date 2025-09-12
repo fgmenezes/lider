@@ -15,9 +15,6 @@ const nextConfig = {
     minimumCacheTTL: 60,
   },
   
-  // Configurações de output para deploy
-  output: 'standalone',
-  
   // Configurações de compressão
   compress: true,
   

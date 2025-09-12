@@ -186,16 +186,46 @@ export async function POST(req: Request) {
 // DELETE: Exclui um pequeno grupo e todos os dados relacionados (cascata)
 export async function DELETE(req: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    }
+
     const url = new URL(req.url);
     const id = url.pathname.split('/').pop();
     if (!id) {
       return NextResponse.json({ error: 'ID do grupo não informado.' }, { status: 400 });
     }
+
+    // Buscar o grupo para verificar permissões
+    const group = await prisma.smallGroup.findUnique({
+      where: { id },
+      include: {
+        leaders: { include: { user: true } },
+        ministry: true
+      }
+    });
+
+    if (!group) {
+      return NextResponse.json({ error: 'Grupo não encontrado' }, { status: 404 });
+    }
+
+    // Verificar permissões (apenas MASTER do ministério ou ADMIN podem excluir)
+    const user = session.user;
+    const isAdmin = user.role === 'ADMIN';
+    const isMaster = user.role === 'MASTER' && user.masterMinistryId === group.ministryId;
+    
+    if (!isAdmin && !isMaster) {
+      return NextResponse.json({ 
+        error: 'Sem permissão para excluir este grupo. Apenas administradores e coordenadores do ministério podem excluir grupos.' 
+      }, { status: 403 });
+    }
+
     // Exclui o grupo e todos os dados relacionados (cascata)
     await prisma.smallGroup.delete({ where: { id } });
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, message: 'Grupo excluído com sucesso' });
   } catch (error: any) {
     console.error('[SmallGroup] Erro ao excluir grupo:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Erro interno do servidor' }, { status: 500 });
   }
 }
