@@ -413,6 +413,7 @@ model MarcarBiblia {
 model MaterialApoio {
   id             String       @id @default(cuid())
   nome           String
+  descricao      String?      @db.Text // Descrição opcional do material
   arquivoUrl     String
   usuario        User         @relation(fields: [usuarioId], references: [id])
   usuarioId      String

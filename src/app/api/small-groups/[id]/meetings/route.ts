@@ -4,6 +4,101 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { Role } from '@prisma/client';
 
+// GET - Listar reuniões do grupo
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    }
+
+    const { id: groupId } = params;
+    const user = session.user;
+
+    // Buscar o grupo para verificar permissões
+    const group = await prisma.smallGroup.findUnique({
+      where: { id: groupId },
+      include: {
+        leaders: {
+          include: {
+            user: {
+              select: {
+                id: true,
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!group) {
+      return NextResponse.json({ error: 'Grupo não encontrado' }, { status: 404 });
+    }
+
+    // Verificar permissões
+    const hasPermission = 
+      user.role === Role.ADMIN ||
+      (user.role === Role.MASTER && user.masterMinistryId === group.ministryId) ||
+      (user.role === Role.LEADER && (
+        user.ministryId === group.ministryId ||
+        group.leaders.some(leader => leader.user.id === user.id)
+      ));
+
+    if (!hasPermission) {
+      return NextResponse.json({ error: 'Sem permissão para acessar este grupo' }, { status: 403 });
+    }
+
+    // Buscar reuniões do grupo
+    const meetings = await prisma.smallGroupMeeting.findMany({
+      where: {
+        smallGroupId: groupId
+      },
+      include: {
+        attendances: {
+          include: {
+            member: {
+              select: {
+                id: true,
+                name: true,
+              }
+            }
+          }
+        },
+        visitors: {
+          select: {
+            id: true,
+            name: true,
+          }
+        },
+        notes: {
+          include: {
+            author: {
+              select: {
+                id: true,
+                name: true,
+              }
+            }
+          }
+        }
+      },
+      orderBy: {
+        date: 'desc'
+      }
+    });
+
+    return NextResponse.json(meetings);
+  } catch (error) {
+    console.error('Erro ao buscar reuniões:', error);
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    );
+  }
+}
+
 // POST - Criar nova reunião
 export async function POST(
   request: NextRequest,

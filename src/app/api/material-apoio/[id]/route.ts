@@ -2,18 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { Client } from 'minio';
+import minioClient from '@/lib/minio';
 
-// Configuração do MinIO
-const minioClient = new Client({
-  endPoint: process.env.MINIO_ENDPOINT?.replace('https://', '').replace('http://', '') || 'localhost',
-  port: process.env.MINIO_ENDPOINT?.includes('https://') ? 443 : 9000,
-  useSSL: process.env.MINIO_ENDPOINT?.includes('https://') || false,
-  accessKey: process.env.MINIO_ACCESS_KEY || '',
-  secretKey: process.env.MINIO_SECRET_KEY || ''
-});
-
-const BUCKET_NAME = process.env.MINIO_BUCKET || 'material-apoio';
+const BUCKET_NAME = 'sistemalider';
 
 // DELETE: Remove arquivo de material de apoio
 export async function DELETE(
@@ -64,11 +55,52 @@ export async function DELETE(
     }
 
     try {
-      // Deletar arquivo do MinIO
-      await minioClient.removeObject(BUCKET_NAME, material.arquivoUrl);
+      // Extrair o caminho do arquivo da URL completa
+      // URL formato: https://endpoint/bucket/path/to/file
+      const url = new URL(material.arquivoUrl);
+      const pathParts = url.pathname.split('/').filter(part => part.length > 0);
+      
+      // Encontrar o índice do bucket na URL
+      const bucketIndex = pathParts.findIndex(part => part === BUCKET_NAME);
+      
+      if (bucketIndex !== -1 && bucketIndex < pathParts.length - 1) {
+        // Pegar o caminho do arquivo após o nome do bucket
+        const objectPath = pathParts.slice(bucketIndex + 1).join('/');
+        
+        console.log('Removendo arquivo do MinIO:', {
+          bucket: BUCKET_NAME,
+          objectPath: objectPath,
+          originalUrl: material.arquivoUrl
+        });
+        
+        // Verificar se o objeto existe antes de tentar remover
+        try {
+          await minioClient.statObject(BUCKET_NAME, objectPath);
+          console.log('Objeto encontrado, procedendo com a remoção');
+        } catch (statError) {
+          console.warn('Objeto não encontrado no MinIO:', objectPath);
+          // Continuar mesmo se o objeto não existir
+        }
+        
+        // Remover o objeto do MinIO
+        await minioClient.removeObject(BUCKET_NAME, objectPath);
+        console.log('Arquivo removido do MinIO com sucesso:', objectPath);
+        
+      } else {
+        console.warn('Não foi possível extrair o caminho do arquivo da URL:', {
+          url: material.arquivoUrl,
+          pathParts: pathParts,
+          bucketName: BUCKET_NAME
+        });
+      }
     } catch (minioError) {
-      console.error('Erro ao deletar arquivo do MinIO:', minioError);
+      console.error('Erro ao deletar arquivo do MinIO:', {
+        error: minioError.message || minioError,
+        url: material.arquivoUrl,
+        bucket: BUCKET_NAME
+      });
       // Continuar com a deleção do registro mesmo se houver erro no MinIO
+      // para evitar registros órfãos no banco de dados
     }
 
     // Deletar registro do banco

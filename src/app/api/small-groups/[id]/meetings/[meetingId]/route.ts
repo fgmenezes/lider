@@ -94,6 +94,19 @@ export async function GET(
           orderBy: {
             createdAt: 'desc'
           }
+        },
+        materialApoio: {
+          include: {
+            usuario: {
+              select: {
+                id: true,
+                name: true,
+              }
+            }
+          },
+          orderBy: {
+            createdAt: 'desc'
+          }
         }
       }
     });

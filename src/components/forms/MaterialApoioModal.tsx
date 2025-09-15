@@ -24,6 +24,7 @@ export default function MaterialApoioModal({
   const [descricao, setDescricao] = useState('');
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,14 +33,28 @@ export default function MaterialApoioModal({
 
     // Validar tipo de arquivo (apenas PDF)
     if (file.type !== 'application/pdf') {
-      toast.error('Apenas arquivos PDF são permitidos');
+      toast.error('⚠️ Apenas arquivos PDF são permitidos', {
+        duration: 4000,
+        style: {
+          background: '#F59E0B',
+          color: '#fff',
+          fontWeight: '500'
+        }
+      });
       return;
     }
 
     // Validar tamanho (máximo 10MB)
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
-      toast.error('O arquivo deve ter no máximo 10MB');
+      toast.error('⚠️ O arquivo deve ter no máximo 10MB', {
+        duration: 4000,
+        style: {
+          background: '#F59E0B',
+          color: '#fff',
+          fontWeight: '500'
+        }
+      });
       return;
     }
 
@@ -61,39 +76,111 @@ export default function MaterialApoioModal({
 
   const handleSave = async () => {
     if (!nome.trim()) {
-      toast.error('Digite um nome para o material');
+      toast.error('⚠️ Digite um nome para o material', {
+        duration: 3000,
+        style: {
+          background: '#F59E0B',
+          color: '#fff',
+          fontWeight: '500'
+        }
+      });
       return;
     }
 
     if (!arquivo) {
-      toast.error('Selecione um arquivo PDF');
+      toast.error('⚠️ Selecione um arquivo PDF', {
+        duration: 3000,
+        style: {
+          background: '#F59E0B',
+          color: '#fff',
+          fontWeight: '500'
+        }
+      });
       return;
     }
 
     try {
       setIsLoading(true);
+      setUploadProgress(0);
 
       const formData = new FormData();
       formData.append('nome', nome.trim());
       formData.append('descricao', descricao.trim());
       formData.append('arquivo', arquivo);
 
-      const response = await fetch(`/api/reunioes/${meetingId}/material-apoio`, {
-        method: 'POST',
-        body: formData
-      });
+      // Usar XMLHttpRequest para monitorar progresso apenas para arquivos grandes (>1MB)
+      if (arquivo.size > 1024 * 1024) {
+        await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          
+          xhr.upload.addEventListener('progress', (event) => {
+            if (event.lengthComputable) {
+              const progress = Math.round((event.loaded / event.total) * 100);
+              setUploadProgress(progress);
+            }
+          });
+          
+          xhr.addEventListener('load', () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve(xhr.response);
+            } else {
+              try {
+                const error = JSON.parse(xhr.responseText);
+                reject(new Error(error.error || 'Erro ao fazer upload do material'));
+              } catch {
+                reject(new Error('Erro ao fazer upload do material'));
+              }
+            }
+          });
+          
+          xhr.addEventListener('error', () => {
+            reject(new Error('Erro de conexão durante o upload'));
+          });
+          
+          xhr.open('POST', `/api/reunioes/${meetingId}/material-apoio`);
+          xhr.send(formData);
+        });
+      } else {
+        // Para arquivos pequenos, usar fetch normal
+        const response = await fetch(`/api/reunioes/${meetingId}/material-apoio`, {
+          method: 'POST',
+          body: formData
+        });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Erro ao fazer upload do material');
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Erro ao fazer upload do material');
+        }
       }
 
-      toast.success('Material de apoio adicionado com sucesso!');
+      toast.success('📎 Material de apoio adicionado com sucesso!', {
+        duration: 4000,
+        style: {
+          background: '#10B981',
+          color: '#fff',
+          fontWeight: '500'
+        },
+        iconTheme: {
+          primary: '#fff',
+          secondary: '#10B981'
+        }
+      });
       onSuccess();
       handleClose();
     } catch (error) {
       console.error('Erro ao salvar material:', error);
-      toast.error(error instanceof Error ? error.message : 'Erro ao salvar material');
+      toast.error(`❌ ${error instanceof Error ? error.message : 'Erro ao salvar material'}`, {
+        duration: 4000,
+        style: {
+          background: '#EF4444',
+          color: '#fff',
+          fontWeight: '500'
+        },
+        iconTheme: {
+          primary: '#fff',
+          secondary: '#EF4444'
+        }
+      });
     } finally {
       setIsLoading(false);
     }
@@ -104,6 +191,7 @@ export default function MaterialApoioModal({
       setNome('');
       setDescricao('');
       setArquivo(null);
+      setUploadProgress(0);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -135,7 +223,7 @@ export default function MaterialApoioModal({
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 text-center">
+          <div className="flex min-h-full items-center justify-center p-2 sm:p-4 text-center">
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-300"
@@ -145,7 +233,7 @@ export default function MaterialApoioModal({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-lg transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+              <Dialog.Panel className="w-full max-w-lg transform overflow-hidden rounded-2xl bg-white p-4 sm:p-6 text-left align-middle shadow-xl transition-all">
                 <div className="flex items-center justify-between mb-4">
                   <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900 flex items-center gap-2">
                     <FileText className="w-5 h-5 text-blue-600" />
@@ -206,23 +294,24 @@ export default function MaterialApoioModal({
                     {!arquivo ? (
                       <div
                         onClick={() => fileInputRef.current?.click()}
-                        className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-gray-400 transition-colors"
+                        className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 text-center cursor-pointer hover:border-gray-400 transition-colors"
                       >
-                        <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                        <Upload className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 text-gray-400" />
                         <p className="text-sm text-gray-600 mb-1">
-                          Clique para selecionar um arquivo PDF
+                          <span className="sm:hidden">Toque para selecionar PDF</span>
+                          <span className="hidden sm:inline">Clique para selecionar um arquivo PDF</span>
                         </p>
                         <p className="text-xs text-gray-500">
                           Máximo 10MB
                         </p>
                       </div>
                     ) : (
-                      <div className="border border-gray-300 rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <FileText className="w-8 h-8 text-red-500" />
-                            <div>
-                              <p className="font-medium text-gray-900">{arquivo.name}</p>
+                      <div className="border border-gray-300 rounded-lg p-3 sm:p-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <FileText className="w-6 h-6 sm:w-8 sm:h-8 text-red-500 flex-shrink-0" />
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-gray-900 truncate">{arquivo.name}</p>
                               <p className="text-sm text-gray-500">{formatFileSize(arquivo.size)}</p>
                             </div>
                           </div>
@@ -231,8 +320,10 @@ export default function MaterialApoioModal({
                             size="sm"
                             onClick={handleRemoveFile}
                             disabled={isLoading}
+                            className="min-h-[36px] justify-center flex-shrink-0"
                           >
-                            <X className="w-4 h-4" />
+                            <X className="w-4 h-4 mr-1 sm:mr-0" />
+                            <span className="sm:hidden">Remover</span>
                           </Button>
                         </div>
                       </div>
@@ -247,6 +338,25 @@ export default function MaterialApoioModal({
                     />
                   </div>
 
+                  {/* Barra de progresso para uploads grandes */}
+                  {isLoading && arquivo && arquivo.size > 1024 * 1024 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Progresso do upload</span>
+                        <span className="font-medium text-blue-600">{uploadProgress}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                          style={{ width: `${uploadProgress}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-xs text-gray-500 text-center">
+                        Enviando arquivo grande... Por favor, aguarde.
+                      </p>
+                    </div>
+                  )}
+
                   {/* Aviso sobre tipos de arquivo */}
                   <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
                     <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
@@ -256,25 +366,39 @@ export default function MaterialApoioModal({
                         <li>Apenas arquivos PDF são aceitos</li>
                         <li>Tamanho máximo: 10MB</li>
                         <li>O material ficará disponível para todos os membros do grupo</li>
+                        <li>Arquivos maiores que 1MB mostrarão progresso do upload</li>
                       </ul>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-3 mt-6">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 mt-6">
                   <Button
                     variant="outline"
                     onClick={handleClose}
                     disabled={isLoading}
+                    className="min-h-[44px] sm:min-h-[36px] justify-center"
                   >
                     Cancelar
                   </Button>
                   <Button
                     onClick={handleSave}
                     disabled={isLoading || !nome.trim() || !arquivo}
-                    className="bg-blue-600 hover:bg-blue-700"
+                    className="bg-blue-600 hover:bg-blue-700 min-h-[44px] sm:min-h-[36px] justify-center"
                   >
-                    {isLoading ? 'Enviando...' : 'Adicionar Material'}
+                    {isLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                        <span className="sm:hidden">Enviando Material...</span>
+                        <span className="hidden sm:inline">Enviando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4 mr-2" />
+                        <span className="sm:hidden">Adicionar Material</span>
+                        <span className="hidden sm:inline">Adicionar Material</span>
+                      </>
+                    )}
                   </Button>
                 </div>
               </Dialog.Panel>

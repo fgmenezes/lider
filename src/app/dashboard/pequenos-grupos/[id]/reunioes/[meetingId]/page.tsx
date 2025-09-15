@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tab } from '@headlessui/react';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Users, UserPlus, FileText, Settings, Calendar, MapPin, Clock, XCircle, CheckCircle, BookOpen, Download, Trash2, Upload } from 'lucide-react';
+import { ArrowLeft, Users, UserPlus, FileText, Settings, Calendar, MapPin, Clock, XCircle, CheckCircle, BookOpen, Download, Trash2, Upload, Eye } from 'lucide-react';
 import AttendanceModal from '@/components/forms/AttendanceModal';
 import VisitorModal from '@/components/forms/VisitorModal';
 import NoteModal from '@/components/forms/NoteModal';
@@ -89,10 +89,14 @@ export default function MeetingDetailsPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('geral');
+  const [selectedTabIndex, setSelectedTabIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [deletingMaterialId, setDeletingMaterialId] = useState<string | null>(null);
+  const [uploadingMaterial, setUploadingMaterial] = useState(false);
   const [newNote, setNewNote] = useState('');
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [isSavingNote, setIsSavingNote] = useState(false);
+  const [visibleMaterials, setVisibleMaterials] = useState(5);
 
   // Estados dos modais
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
@@ -148,6 +152,20 @@ export default function MeetingDetailsPage() {
     loadMeetingData();
     loadMembers();
   }, [meetingId, groupId, loadMeetingData, loadMembers]);
+
+  // Carregar aba salva do localStorage
+  useEffect(() => {
+    const savedTabIndex = localStorage.getItem(`meeting-tab-${meetingId}`);
+    if (savedTabIndex !== null) {
+      setSelectedTabIndex(parseInt(savedTabIndex, 10));
+    }
+  }, [meetingId]);
+
+  // Salvar aba ativa no localStorage
+  const handleTabChange = (index: number) => {
+    setSelectedTabIndex(index);
+    localStorage.setItem(`meeting-tab-${meetingId}`, index.toString());
+  };
 
   // Funções para gerenciar notas
   const handleAddNote = async () => {
@@ -344,17 +362,50 @@ export default function MeetingDetailsPage() {
     if (!confirm(`Tem certeza que deseja excluir o material "${materialName}"?`)) return;
     
     try {
+      setDeletingMaterialId(materialId);
+      
       const response = await fetch(`/api/material-apoio/${materialId}`, {
         method: 'DELETE'
       });
       
       if (!response.ok) throw new Error('Erro ao excluir material');
       
-      toast.success('Material excluído com sucesso!');
-      loadMeetingData();
+      // Atualizar a lista localmente removendo o item excluído
+      if (meeting) {
+        setMeeting({
+          ...meeting,
+          materialApoio: meeting.materialApoio.filter(material => material.id !== materialId)
+        });
+      }
+      
+      toast.success('✅ Material excluído com sucesso!', {
+        duration: 4000,
+        style: {
+          background: '#10B981',
+          color: '#fff',
+          fontWeight: '500'
+        },
+        iconTheme: {
+          primary: '#fff',
+          secondary: '#10B981'
+        }
+      });
     } catch (error) {
       console.error('Erro ao excluir material:', error);
-      toast.error('Erro ao excluir material');
+      toast.error('❌ Erro ao excluir material', {
+        duration: 4000,
+        style: {
+          background: '#EF4444',
+          color: '#fff',
+          fontWeight: '500'
+        },
+        iconTheme: {
+          primary: '#fff',
+          secondary: '#EF4444'
+        }
+      });
+    } finally {
+      setDeletingMaterialId(null);
     }
   };
 
@@ -516,7 +567,7 @@ export default function MeetingDetailsPage() {
       </div>
 
       {/* Sistema de Abas */}
-      <Tab.Group>
+      <Tab.Group selectedIndex={selectedTabIndex} onChange={handleTabChange}>
         <Tab.List className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
           <Tab className={({ selected }) => 
             `flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-md transition-all duration-200 outline-none ${
@@ -874,6 +925,19 @@ export default function MeetingDetailsPage() {
                                </div>
                              </div>
                            ))}
+                     
+                     {/* Botão Carregar Mais */}
+                     {meeting.materialApoio.length > visibleMaterials && (
+                       <div className="text-center pt-4">
+                         <Button
+                           variant="outline"
+                           onClick={() => setVisibleMaterials(prev => prev + 5)}
+                           className="text-indigo-600 border-indigo-300 hover:bg-indigo-50"
+                         >
+                           Carregar Mais ({meeting.materialApoio.length - visibleMaterials} restantes)
+                         </Button>
+                       </div>
+                     )}
                          </div>
                        ) : (
                          <div className="text-center text-gray-500 py-8">
@@ -1045,39 +1109,61 @@ export default function MeetingDetailsPage() {
                  {/* Lista de materiais de apoio */}
                  {meeting.materialApoio && meeting.materialApoio.length > 0 ? (
                    <div className="space-y-4">
-                     {meeting.materialApoio.map((material) => (
+                     {meeting.materialApoio.slice(0, visibleMaterials).map((material) => (
                        <div key={material.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                         <div className="flex items-center justify-between">
-                           <div className="flex-1">
+                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                           <div className="flex-1 min-w-0">
                              <div className="flex items-center gap-3 mb-2">
-                               <BookOpen className="w-5 h-5 text-indigo-600" />
-                               <h4 className="font-medium text-gray-900">{material.nome}</h4>
+                               <BookOpen className="w-5 h-5 text-indigo-600 flex-shrink-0" />
+                               <h4 className="font-medium text-gray-900 truncate">{material.nome}</h4>
                              </div>
                              {material.descricao && (
-                               <p className="text-sm text-gray-600 mb-2">{material.descricao}</p>
+                               <p className="text-sm text-gray-600 mb-2 line-clamp-2">{material.descricao}</p>
                              )}
-                             <div className="flex items-center gap-4 text-xs text-gray-500">
-                               <span>Adicionado por {material.usuario.name}</span>
-                               <span>{formatDate(material.createdAt)}</span>
+                             <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                               <span className="truncate">Adicionado por {material.usuario.name}</span>
+                               <span className="hidden sm:inline">•</span>
+                               <span className="whitespace-nowrap">{formatDate(material.createdAt)}</span>
                              </div>
                            </div>
-                           <div className="flex items-center gap-2">
+                           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2">
                              <Button 
                                size="sm" 
                                variant="outline"
-                               onClick={() => window.open(material.arquivoUrl, '_blank')}
-                               className="text-indigo-600 border-indigo-300 hover:bg-indigo-50"
+                               onClick={() => window.open(`/api/reunioes/${meetingId}/material-apoio/${material.id}/preview`, '_blank')}
+                               className="text-green-600 border-green-300 hover:bg-green-50 min-h-[44px] sm:min-h-[36px] justify-center"
+                               aria-label={`Visualizar material ${material.nome}`}
                              >
-                               <Download className="w-4 h-4 mr-1" />
-                               Baixar
+                               <Eye className="w-4 h-4 mr-2 sm:mr-1" />
+                               <span className="sm:hidden">Visualizar PDF</span>
+                               <span className="hidden sm:inline">Visualizar</span>
                              </Button>
                              <Button 
                                size="sm" 
                                variant="outline"
-                               className="text-red-600 border-red-300 hover:bg-red-50"
-                               onClick={() => toast.error('Funcionalidade de exclusão será implementada')}
+                               onClick={() => window.open(`/api/reunioes/${meetingId}/material-apoio/${material.id}/download`, '_blank')}
+                               className="text-indigo-600 border-indigo-300 hover:bg-indigo-50 min-h-[44px] sm:min-h-[36px] justify-center"
+                               aria-label={`Baixar material ${material.nome}`}
                              >
-                               <Trash2 className="w-4 h-4" />
+                               <Download className="w-4 h-4 mr-2 sm:mr-1" />
+                               <span className="sm:hidden">Baixar Material</span>
+                               <span className="hidden sm:inline">Baixar</span>
+                             </Button>
+                             <Button 
+                               size="sm" 
+                               variant="outline"
+                               className="text-red-600 border-red-300 hover:bg-red-50 min-h-[44px] sm:min-h-[36px] justify-center"
+                               onClick={() => handleDeleteMaterial(material.id, material.nome)}
+                               disabled={deletingMaterialId === material.id}
+                               aria-label={`Excluir material ${material.nome}`}
+                             >
+                               {deletingMaterialId === material.id ? (
+                                 <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin mr-2" />
+                               ) : (
+                                 <Trash2 className="w-4 h-4 mr-2 sm:mr-0" />
+                               )}
+                               <span className="sm:hidden">{deletingMaterialId === material.id ? 'Excluindo Material...' : 'Excluir Material'}</span>
+                               <span className="hidden sm:inline">{deletingMaterialId === material.id ? 'Excluindo...' : 'Excluir'}</span>
                              </Button>
                            </div>
                          </div>
