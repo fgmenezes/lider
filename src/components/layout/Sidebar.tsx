@@ -1,10 +1,23 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { signOut } from 'next-auth/react';
-import { X } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { 
+  X, 
+  LayoutDashboard, 
+  Users, 
+  DollarSign, 
+  Calendar, 
+  Bot, 
+  Settings, 
+  Building2, 
+  Crown,
+  LogOut,
+  User
+} from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -13,8 +26,26 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { data: session } = useSession();
+  const pathname = usePathname();
   const role = session?.user?.role;
   const name = session?.user?.name;
+  const sidebarRef = useRef<HTMLElement>(null);
+  const firstFocusableElementRef = useRef<HTMLAnchorElement>(null);
+  
+  // Gerenciamento de foco para acessibilidade
+  useEffect(() => {
+    if (isOpen && typeof window !== 'undefined' && window.innerWidth < 1280) {
+      // Quando o sidebar abre em mobile/tablet, foca no primeiro elemento
+      const timer = setTimeout(() => {
+        if (firstFocusableElementRef.current) {
+          firstFocusableElementRef.current.focus();
+        }
+      }, 100); // Pequeno delay para garantir que a animação termine
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+  
   // Nome do ministério: para ADMIN e MASTER vem de masterMinistry.name ou ministryName, para LEADER só ministryName
   let ministryName = '---';
   if (session?.user?.role === 'ADMIN' || session?.user?.role === 'MASTER') {
@@ -23,18 +54,18 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     ministryName = session?.user?.ministryName || '---';
   }
 
-  // Definição dos links dos módulos
+  // Definição dos links dos módulos com ícones
   const ministryId = session?.user?.masterMinistryId || session?.user?.ministryId;
   const moduleLinks = [
-    { href: '/dashboard', label: 'Dashboard' },
-    { href: '/dashboard/members', label: 'Membros' },
-    { href: '/dashboard/pequenos-grupos', label: 'Pequenos Grupos' },
-    ...(ministryId ? [{ href: `/dashboard/ministries/${ministryId}/finance`, label: 'Financeiro', showFor: ['ADMIN', 'MASTER', 'LEADER'] }] : []),
-    { href: '/dashboard/events', label: 'Eventos' },
-    { href: '/dashboard/assistant', label: 'Assistente' },
-    { href: '/dashboard/users', label: 'Gerenciamento de Usuários', adminOnly: true },
-    { href: '/dashboard/ministries', label: 'Gerenciamento de Ministérios', adminOnly: true },
-    { href: '/dashboard/leaders', label: 'Líderes', onlyAdminOrMaster: true },
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/dashboard/members', label: 'Membros', icon: Users },
+    { href: '/dashboard/pequenos-grupos', label: 'Pequenos Grupos', icon: Users },
+    ...(ministryId ? [{ href: `/dashboard/ministries/${ministryId}/finance`, label: 'Financeiro', icon: DollarSign, showFor: ['ADMIN', 'MASTER', 'LEADER'] }] : []),
+    { href: '/dashboard/events', label: 'Eventos', icon: Calendar },
+    { href: '/dashboard/assistant', label: 'Assistente', icon: Bot },
+    { href: '/dashboard/users', label: 'Gerenciamento de Usuários', icon: Settings, adminOnly: true },
+    { href: '/dashboard/ministries', label: 'Gerenciamento de Ministérios', icon: Building2, adminOnly: true },
+    { href: '/dashboard/leaders', label: 'Líderes', icon: Crown, onlyAdminOrMaster: true },
   ];
 
   // Filtrar links conforme o papel do usuário
@@ -55,70 +86,120 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     return false;
   });
 
+  // Função para verificar se o link está ativo
+  const isActiveLink = (href: string) => {
+    if (href === '/dashboard') {
+      return pathname === '/dashboard';
+    }
+    return pathname.startsWith(href);
+  };
+
+  // Função para obter as iniciais do nome
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   return (
     <>
       {/* Overlay para mobile/tablet */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden transition-opacity duration-300"
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 xl:hidden transition-opacity duration-300"
           onClick={onClose}
           aria-hidden="true"
         />
       )}
       
       {/* Sidebar */}
-      <div className={`
-        fixed lg:static inset-y-0 left-0 z-50 lg:z-auto
-        flex flex-col w-64 transition-default lg:transform-none
-        ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}
-      style={{
-        backgroundColor: 'var(--color-primary)',
-        color: 'var(--color-text-inverse)'
-      }}>
-      <div className="flex items-center justify-between h-16 px-4" style={{ backgroundColor: 'var(--color-primary-dark)' }}> {/* Área do Logo/Título */}
-        <span className="text-title">Sistema Lider</span>
-        {/* Botão de fechar apenas em mobile/tablet */}
-        <button
-          onClick={onClose}
-          className="p-2 rounded-md lg:hidden transition-default focus-ring text-[var(--color-text-muted)] hover:text-[var(--color-text-inverse)] hover:bg-[var(--color-primary-light)]"
-          aria-label="Fechar menu"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
-      <nav className="flex-1 overflow-y-auto"> {/* Área de Navegação Rolável */}
-        <ul className="space-y-2 py-4"> {/* Lista de Links */}
-          {filteredLinks.map((link) => (
-              <li key={link.href}> {/* Item da Lista */}
-              <Link 
-                href={link.href} 
-                className="flex items-center px-4 py-2 transition-default hover:bg-opacity-20 text-[var(--color-text-inverse)] hover:bg-[var(--color-primary-light)]"
-                onClick={() => {
-                  // Fechar sidebar em mobile/tablet ao clicar em um link
-                  if (window.innerWidth < 1024) {
-                    onClose();
+      <aside 
+        ref={sidebarRef}
+        className={`
+          fixed xl:static inset-y-0 left-0 z-50 xl:z-auto
+          flex flex-col w-72 transition-all duration-300 ease-in-out
+          ${isOpen ? 'translate-x-0' : '-translate-x-full xl:translate-x-0'}
+          shadow-xl xl:shadow-none
+        `}
+        style={{
+          backgroundColor: 'var(--color-primary)',
+          color: 'var(--color-text-inverse)'
+        }}
+        role="navigation"
+        aria-label="Menu principal de navegação"
+        aria-hidden={!isOpen && typeof window !== 'undefined' && window.innerWidth < 1280 ? 'true' : 'false'}
+        id="sidebar-navigation"
+      >
+        
+        {/* Header do Sidebar */}
+        <div className="flex items-center justify-between h-20 px-6 border-b border-white/10" 
+             style={{ backgroundColor: 'var(--color-primary-dark)' }}>
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-semibold">
+              {name ? getInitials(name) : <User size={20} />}
+            </div>
+            <div>
+              <p className="text-white font-medium text-sm">{name || 'Usuário'}</p>
+              <p className="text-white/70 text-xs">{ministryName}</p>
+            </div>
+          </div>
+          
+          {/* Botão de fechar (apenas mobile/tablet) */}
+          <button
+            onClick={onClose}
+            className="xl:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
+            aria-label="Fechar menu de navegação"
+          >
+            <X size={20} className="text-white" />
+          </button>
+        </div>
+
+        {/* Lista de navegação */}
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+          {filteredLinks.map((link, index) => {
+            const Icon = link.icon;
+            const isActive = isActiveLink(link.href);
+            
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                ref={link.href === '/dashboard' ? firstFocusableElementRef : undefined}
+                className={`
+                  flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200
+                  ${isActive 
+                    ? 'bg-white/20 text-white shadow-lg' 
+                    : 'text-white/80 hover:bg-white/10 hover:text-white'
                   }
-                }}
+                `}
+                onClick={() => {
+                   // Fechar sidebar em mobile/tablet ao clicar em um link
+                   if (typeof window !== 'undefined' && window.innerWidth < 1280) {
+                     onClose();
+                   }
+                 }}
               >
-                  {link.label}
-                </Link>
-              </li>
-          ))}
-        </ul>
-      </nav>
-      <div className="p-4" style={{ backgroundColor: 'var(--color-primary-dark)' }}> {/* Área Inferior (Ex: User Info, Logout) */}
-        <p className="text-xs mb-1" style={{ color: 'var(--color-text-muted)' }}>Ministério: {ministryName}</p>
-        <p className="text-sm" style={{ color: 'var(--color-text-inverse)' }}>Usuário: {name || '---'}</p>
-        <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Perfil: {role || '---'}</p>
-        <button
-          onClick={() => signOut({ callbackUrl: '/login' })}
-          className="mt-4 w-full px-4 py-2 rounded text-sm font-medium transition-default focus-ring bg-[var(--color-danger)] text-[var(--color-text-inverse)] hover:bg-[var(--color-danger-dark)]"
-        >
-          Sair
-        </button>
-      </div>
-      </div>
+                <Icon size={20} />
+                <span className="font-medium">{link.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Footer do Sidebar */}
+        <div className="p-4 border-t border-white/10">
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="flex items-center space-x-3 w-full px-4 py-3 rounded-lg text-white/80 hover:bg-white/10 hover:text-white transition-all duration-200"
+          >
+            <LogOut size={20} />
+            <span className="font-medium">Sair</span>
+          </button>
+        </div>
+      </aside>
     </>
   );
 }

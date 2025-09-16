@@ -80,8 +80,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       // Reunião está no horário de acontecer
       newStatus = hasAttendances ? 'EM_ANDAMENTO' : 'AGENDADA';
     } else {
-      // Reunião já passou do horário
-      newStatus = hasAttendances ? 'FINALIZADA' : 'AGENDADA';
+      // Reunião já passou do horário - SEMPRE finalizar
+      newStatus = 'FINALIZADA';
     }
     
     // Se o status mudou, atualizar no banco

@@ -159,8 +159,8 @@ export async function GET(
         // Reunião está no horário de acontecer
         automaticStatus = hasAttendances ? 'EM_ANDAMENTO' : 'AGENDADA';
       } else {
-        // Reunião já passou do horário
-        automaticStatus = hasAttendances ? 'FINALIZADA' : 'AGENDADA';
+        // Reunião já passou do horário - SEMPRE finalizar
+        automaticStatus = 'FINALIZADA';
       }
     }
 
