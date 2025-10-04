@@ -8,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Users, DollarSign, Calendar, Users2, MessageSquare, Gift, TrendingUp, TrendingDown, PiggyBank, UserPlus, UserCheck, Bell, AlertTriangle, ArrowUp, ArrowDown, Activity, Eye, MoreHorizontal, CalendarDays, Settings, User } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Users, DollarSign, Calendar, Users2, MessageSquare, Gift, TrendingUp, TrendingDown, PiggyBank, UserPlus, UserCheck, Bell, AlertTriangle, ArrowUp, ArrowDown, MoreHorizontal, CalendarDays, Settings, User } from 'lucide-react';
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -19,15 +20,10 @@ export default function DashboardPage() {
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(true);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
-  const [recentActivities, setRecentActivities] = useState<any[]>([]);
-  const [isLoadingActivities, setIsLoadingActivities] = useState(true);
   const [financialTrend, setFinancialTrend] = useState<any>({});
   const [birthdayMembers, setBirthdayMembers] = useState<any[]>([]);
   const [selectedNotification, setSelectedNotification] = useState<any>(null);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
-  
-  // Estado para atividades recentes
-  const [activities, setActivities] = useState<any[]>([]);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -79,20 +75,6 @@ export default function DashboardPage() {
       }
     };
 
-    const fetchRecentActivities = async () => {
-      try {
-        const response = await fetch('/api/dashboard/activities?limit=10');
-        if (response.ok) {
-          const data = await response.json();
-          setRecentActivities(data.activities || []);
-        }
-      } catch (error) {
-        console.error('Erro ao buscar atividades recentes:', error);
-      } finally {
-        setIsLoadingActivities(false);
-      }
-    };
-
     const fetchFinancialTrend = async () => {
       try {
         const response = await fetch('/api/dashboard/financial-trend');
@@ -116,27 +98,12 @@ export default function DashboardPage() {
         console.error('Erro ao buscar aniversariantes:', error);
       }
     };
-    
-    // Função para buscar atividades
-    const fetchActivities = async () => {
-      try {
-        const response = await fetch('/api/dashboard/activities');
-        if (response.ok) {
-          const data = await response.json();
-          setActivities(data.activities || []);
-        }
-      } catch (error) {
-        console.error('Erro ao buscar atividades:', error);
-      }
-    };
 
     fetchUserPermissions();
     fetchMetrics();
     fetchNotifications();
-    fetchRecentActivities();
     fetchFinancialTrend();
     fetchBirthdayMembers();
-    fetchActivities();
   }, [session, status, router]);
 
   if (status === 'loading' || isLoadingPermissions || isLoadingMetrics) {
@@ -207,6 +174,8 @@ export default function DashboardPage() {
       permission.name === card.featureName && permission.level !== 'NONE'
     )
   );
+
+
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -423,61 +392,60 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          {/* Seção Atividades Recentes (apenas para ADMIN e MASTER) */}
-          {isAdminOrMaster && (
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold" style={{ color: 'var(--color-text-primary)' }}>Atividades Recentes</h2>
-                <Link href="/dashboard/activities">
-                  <Button variant="outline" size="sm">
-                    <Eye className="h-4 w-4 mr-2" />
-                    Mostrar mais
-                  </Button>
-                </Link>
-              </div>
-              <Card>
-                <CardContent className="pt-6">
-                  {isLoadingActivities ? (
-                    <p style={{ color: 'var(--color-text-secondary)' }}>Carregando atividades...</p>
-                  ) : recentActivities.length > 0 ? (
-                    <div className="space-y-3">
-                      {recentActivities.map((activity, index) => (
-                        <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                          <Activity className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">{activity.description}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {activity.user} • {new Date(activity.createdAt).toLocaleString('pt-BR')}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p style={{ color: 'var(--color-text-secondary)' }}>Nenhuma atividade recente para exibir.</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
+
 
           {/* Acesso Rápido */}
           <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>Acesso Rápido</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {availableCards.map((card) => (
-              <Link href={card.href} key={card.title}>
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-lg font-medium">{card.title}</CardTitle>
-                    {card.icon}
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">{card.description}</p>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
+          {isLoadingPermissions ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <Card className="animate-pulse">
+                <CardHeader>
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-3 bg-gray-200 rounded w-full"></div>
+                </CardContent>
+              </Card>
+              <Card className="animate-pulse">
+                <CardHeader>
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-3 bg-gray-200 rounded w-full"></div>
+                </CardContent>
+              </Card>
+              <Card className="animate-pulse">
+                <CardHeader>
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-3 bg-gray-200 rounded w-full"></div>
+                </CardContent>
+              </Card>
+            </div>
+          ) : availableCards.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {availableCards.map((card) => (
+                <Link href={card.href} key={card.title}>
+                  <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <CardTitle className="text-lg font-medium">{card.title}</CardTitle>
+                      {card.icon}
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground">{card.description}</p>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="text-center py-8">
+                <p className="text-muted-foreground">Nenhum acesso rápido disponível para suas permissões.</p>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Coluna Lateral de Notificações */}
@@ -531,22 +499,90 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Mini Gráfico Financeiro (Placeholder) */}
+          {/* Gráfico de Evolução Financeira Melhorado */}
           {financialTrend.monthlyData && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg font-medium">Evolução Financeira</CardTitle>
+                <CardTitle className="text-lg font-medium flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-blue-600" />
+                  Evolução Financeira
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  {financialTrend.monthlyData.slice(-6).map((month: any, index: number) => (
-                    <div key={index} className="flex items-center justify-between text-sm">
-                      <span>{month.month}</span>
-                      <span className={month.balance >= 0 ? 'text-green-600' : 'text-red-600'}>
-                        {month.balance >= 0 ? '+' : ''}{month.balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                      </span>
-                    </div>
-                  ))}
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={financialTrend.monthlyData.slice(-6).map((month: any) => ({
+                        month: month.month,
+                        balance: month.balance,
+                        income: month.income || 0,
+                        expense: Math.abs(month.expense || 0)
+                      }))}
+                      margin={{
+                        top: 20,
+                        right: 30,
+                        left: 20,
+                        bottom: 5,
+                      }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" />
+                      <XAxis 
+                        dataKey="month" 
+                        tick={{ fontSize: 12 }}
+                        stroke="#6b7280"
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 12 }}
+                        stroke="#6b7280"
+                        tickFormatter={(value) => `R$ ${value.toLocaleString('pt-BR')}`}
+                      />
+                      <Tooltip 
+                        formatter={(value: any, name: string) => [
+                          `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+                          name === 'balance' ? 'Saldo' : name === 'income' ? 'Entradas' : 'Saídas'
+                        ]}
+                        labelFormatter={(label) => `Mês: ${label}`}
+                        contentStyle={{
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                        }}
+                      />
+                      <Bar 
+                        dataKey="income" 
+                        fill="#10b981" 
+                        name="Entradas"
+                        radius={[2, 2, 0, 0]}
+                      />
+                      <Bar 
+                        dataKey="expense" 
+                        fill="#ef4444" 
+                        name="Saídas"
+                        radius={[2, 2, 0, 0]}
+                      />
+                      <Bar 
+                        dataKey="balance" 
+                        fill="#3b82f6" 
+                        name="Saldo"
+                        radius={[2, 2, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="mt-4 flex justify-center gap-6 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-500 rounded"></div>
+                    <span>Entradas</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-red-500 rounded"></div>
+                    <span>Saídas</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                    <span>Saldo</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
