@@ -701,4 +701,9 @@ model Atividade {
   createdAt   DateTime  @default(now())
   ip          String?
   userAgent   String?   @db.Text
+
+  // Índices para melhorar performance das consultas
+  @@index([tipo, createdAt])
+  @@index([usuarioId, createdAt])
+  @@index([ministryId, createdAt])
 }

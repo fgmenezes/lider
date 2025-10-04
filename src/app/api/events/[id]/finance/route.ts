@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { CreateEventFinanceSchema } from '@/lib/events/validations';
+import { logActivity, ACTIVITY_TYPES, ACTIVITY_ACTIONS } from '@/lib/activity-logger';
 
 interface RouteParams {
   params: { id: string };
@@ -145,6 +146,22 @@ export async function POST(
         createdBy: session.user.id
       }
     });
+
+    // Log da atividade de criação de transação financeira do evento
+    await logActivity({
+      tipo: ACTIVITY_TYPES.FINANCE,
+      acao: ACTIVITY_ACTIONS.CREATE,
+      descricao: `Criou uma transação financeira no evento: ${data.description}`,
+      detalhes: JSON.stringify({
+        eventoId: params.id,
+        tipo: data.type,
+        valor: data.amount,
+        descricao: data.description
+      }),
+      entidadeId: finance.id,
+      usuarioId: session.user.id,
+      ministryId: event.ministryId
+    }, request);
 
     return NextResponse.json(finance, { status: 201 });
   } catch (error) {

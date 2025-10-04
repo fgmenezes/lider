@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { logActivity, ACTIVITY_TYPES, ACTIVITY_ACTIONS } from '@/lib/activity-logger';
 
 // Utilitário para verificar permissões (simplificado)
 async function checkPermission(user: any, ministryId: string, method: string) {
@@ -59,6 +60,23 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       responsavelId: user.id,
     },
   });
+
+  // Log da atividade de criação de transação financeira
+  await logActivity({
+    tipo: ACTIVITY_TYPES.FINANCE,
+    acao: ACTIVITY_ACTIONS.CREATE,
+    descricao: `Criou uma transação financeira: ${data.title}`,
+    detalhes: JSON.stringify({
+      tipo: data.type,
+      valor: data.amount,
+      categoria: data.category,
+      descricao: data.description
+    }),
+    entidadeId: finance.id,
+    usuarioId: user.id,
+    ministryId: ministryId
+  }, req);
+
   return NextResponse.json(finance, { status: 201 });
 }
 
@@ -70,6 +88,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
   }
   const data = await req.json();
+  
+  // Buscar dados anteriores para o log
+  const oldFinance = await prisma.finance.findUnique({
+    where: { id: data.id, ministryId }
+  });
+
   const finance = await prisma.finance.update({
     where: { id: data.id, ministryId },
     data: {
@@ -81,6 +105,33 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       category: data.category,
     },
   });
+
+  // Log da atividade de atualização de transação financeira
+  if (user && oldFinance) {
+    await logActivity({
+      tipo: ACTIVITY_TYPES.FINANCE,
+      acao: ACTIVITY_ACTIONS.UPDATE,
+      descricao: `Atualizou uma transação financeira: ${data.title}`,
+      detalhes: JSON.stringify({
+        anterior: {
+          titulo: oldFinance.title,
+          tipo: oldFinance.type,
+          valor: oldFinance.amount,
+          categoria: oldFinance.category
+        },
+        novo: {
+          titulo: data.title,
+          tipo: data.type,
+          valor: data.amount,
+          categoria: data.category
+        }
+      }),
+      entidadeId: finance.id,
+      usuarioId: user.id,
+      ministryId: ministryId
+    }, req);
+  }
+
   return NextResponse.json(finance);
 }
 
@@ -92,6 +143,32 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
   }
   const { id } = await req.json();
+  
+  // Buscar dados da transação antes de excluir para o log
+  const financeToDelete = await prisma.finance.findUnique({
+    where: { id, ministryId }
+  });
+
   await prisma.finance.delete({ where: { id, ministryId } });
+
+  // Log da atividade de exclusão de transação financeira
+  if (user && financeToDelete) {
+    await logActivity({
+      tipo: ACTIVITY_TYPES.FINANCE,
+      acao: ACTIVITY_ACTIONS.DELETE,
+      descricao: `Excluiu uma transação financeira: ${financeToDelete.title}`,
+      detalhes: JSON.stringify({
+        titulo: financeToDelete.title,
+        tipo: financeToDelete.type,
+        valor: financeToDelete.amount,
+        categoria: financeToDelete.category,
+        descricao: financeToDelete.description
+      }),
+      entidadeId: id,
+      usuarioId: user.id,
+      ministryId: ministryId
+    }, req);
+  }
+
   return NextResponse.json({ success: true });
-} 
+}

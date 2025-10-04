@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { CreateEventFinanceSchema } from '@/lib/events/validations';
+import { logActivity, ACTIVITY_TYPES, ACTIVITY_ACTIONS } from '@/lib/activity-logger';
 
 interface RouteParams {
   params: { id: string; financeId: string };
@@ -75,6 +76,29 @@ export async function PUT(
         date: data.date
       }
     });
+
+    // Log da atividade de atualização de transação financeira do evento
+    await logActivity({
+      tipo: ACTIVITY_TYPES.FINANCE,
+      acao: ACTIVITY_ACTIONS.UPDATE,
+      descricao: `Atualizou uma transação financeira no evento: ${data.description}`,
+      detalhes: JSON.stringify({
+        eventoId: params.id,
+        anterior: {
+          tipo: finance.type,
+          valor: finance.amount,
+          descricao: finance.description
+        },
+        novo: {
+          tipo: data.type,
+          valor: data.amount,
+          descricao: data.description
+        }
+      }),
+      entidadeId: params.financeId,
+      usuarioId: session.user.id,
+      ministryId: finance.event.ministryId
+    }, request);
 
     return NextResponse.json(updatedFinance);
   } catch (error) {
@@ -149,6 +173,22 @@ export async function DELETE(
     await prisma.eventFinance.delete({
       where: { id: params.financeId }
     });
+
+    // Log da atividade de exclusão de transação financeira do evento
+    await logActivity({
+      tipo: ACTIVITY_TYPES.FINANCE,
+      acao: ACTIVITY_ACTIONS.DELETE,
+      descricao: `Excluiu uma transação financeira no evento: ${finance.description}`,
+      detalhes: JSON.stringify({
+        eventoId: params.id,
+        tipo: finance.type,
+        valor: finance.amount,
+        descricao: finance.description
+      }),
+      entidadeId: params.financeId,
+      usuarioId: session.user.id,
+      ministryId: finance.event.ministryId
+    }, request);
 
     return NextResponse.json({ message: 'Entrada financeira deletada com sucesso' });
   } catch (error) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { 
@@ -29,6 +29,9 @@ export default function ActivitiesPage() {
   const [filterType, setFilterType] = useState('all');
   const [filterAction, setFilterAction] = useState('all');
   const [dateRange, setDateRange] = useState('30'); // Filtro por período: 7, 15, 30, 90 dias
+  const [focusedActivityIndex, setFocusedActivityIndex] = useState(-1);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const activitiesListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -73,6 +76,56 @@ export default function ActivitiesPage() {
     }
   }, [searchTerm, filterType, filterAction, dateRange, session]);
 
+  // Navegação por teclado
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target === searchInputRef.current) return; // Não interferir na busca
+      
+      if (activities.length === 0) return;
+
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          setFocusedActivityIndex(prev => 
+            prev < activities.length - 1 ? prev + 1 : prev
+          );
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setFocusedActivityIndex(prev => prev > 0 ? prev - 1 : prev);
+          break;
+        case 'Home':
+          e.preventDefault();
+          setFocusedActivityIndex(0);
+          break;
+        case 'End':
+          e.preventDefault();
+          setFocusedActivityIndex(activities.length - 1);
+          break;
+        case 'Escape':
+          setFocusedActivityIndex(-1);
+          break;
+        case '/':
+          e.preventDefault();
+          searchInputRef.current?.focus();
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [activities.length]);
+
+  // Scroll automático para item focado
+  useEffect(() => {
+    if (focusedActivityIndex >= 0 && activitiesListRef.current) {
+      const focusedElement = activitiesListRef.current.children[focusedActivityIndex] as HTMLElement;
+      if (focusedElement) {
+        focusedElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }, [focusedActivityIndex]);
+
   const getActivityIcon = (tipo: string) => {
     switch (tipo?.toUpperCase()) {
       case 'MEMBRO':
@@ -113,14 +166,17 @@ export default function ActivitiesPage() {
   const displayActivities = activities;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" role="main" aria-label="Página de histórico de atividades">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h1 className="text-2xl font-bold tracking-tight">Histórico de Atividades</h1>
+        <h1 className="text-2xl font-bold tracking-tight" id="page-title">
+          Histórico de Atividades
+        </h1>
         
-        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto" role="search" aria-labelledby="search-controls">
           <div className="relative flex-1 sm:w-64">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" aria-hidden="true" />
             <Input
+              ref={searchInputRef}
               placeholder="Buscar por usuário, descrição, tipo, ação ou ministério..."
               className="pl-9"
               value={searchTerm}
@@ -130,21 +186,27 @@ export default function ActivitiesPage() {
                   fetchActivities(searchTerm);
                 }
               }}
+              aria-label="Campo de busca de atividades"
+              aria-describedby="search-help"
             />
+            <div id="search-help" className="sr-only">
+              Digite para buscar atividades por usuário, descrição, tipo, ação ou ministério. Pressione Enter para buscar ou / para focar neste campo.
+            </div>
             <Button 
               variant="outline" 
               size="sm" 
               className="ml-2" 
               onClick={() => fetchActivities(searchTerm, filterType, filterAction, dateRange)}
+              aria-label="Executar busca"
             >
               Buscar
             </Button>
           </div>
           
-          <div className="flex flex-wrap gap-2">
-            <Select value={filterType} onValueChange={setFilterType}>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Filtros de atividades">
+            <Select value={filterType} onValueChange={setFilterType} aria-label="Filtrar por tipo">
               <SelectTrigger className="w-[130px]">
-                <Filter className="h-4 w-4 mr-2" />
+                <Filter className="h-4 w-4 mr-2" aria-hidden="true" />
                 <SelectValue placeholder="Tipo" />
               </SelectTrigger>
               <SelectContent>
@@ -158,9 +220,9 @@ export default function ActivitiesPage() {
               </SelectContent>
             </Select>
             
-            <Select value={filterAction} onValueChange={setFilterAction}>
+            <Select value={filterAction} onValueChange={setFilterAction} aria-label="Filtrar por ação">
               <SelectTrigger className="w-[130px]">
-                <Filter className="h-4 w-4 mr-2" />
+                <Filter className="h-4 w-4 mr-2" aria-hidden="true" />
                 <SelectValue placeholder="Ação" />
               </SelectTrigger>
               <SelectContent>
@@ -173,9 +235,9 @@ export default function ActivitiesPage() {
               </SelectContent>
             </Select>
             
-            <Select value={dateRange} onValueChange={setDateRange}>
+            <Select value={dateRange} onValueChange={setDateRange} aria-label="Filtrar por período">
               <SelectTrigger className="w-[130px]">
-                <CalendarDays className="h-4 w-4 mr-2" />
+                <CalendarDays className="h-4 w-4 mr-2" aria-hidden="true" />
                 <SelectValue placeholder="Período" />
               </SelectTrigger>
               <SelectContent>
@@ -195,18 +257,43 @@ export default function ActivitiesPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Histórico de Atividades</CardTitle>
+          <CardTitle id="activities-title">Histórico de Atividades</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex justify-center items-center h-40">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            <div className="flex justify-center items-center h-40" role="status" aria-live="polite">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" aria-hidden="true"></div>
+              <span className="sr-only">Carregando atividades...</span>
             </div>
           ) : displayActivities.length > 0 ? (
-             <div className="space-y-4">
+             <div 
+               className="space-y-4" 
+               ref={activitiesListRef}
+               role="list" 
+               aria-labelledby="activities-title"
+               aria-live="polite"
+               aria-describedby="keyboard-help"
+             >
+               <div id="keyboard-help" className="sr-only">
+                 Use as setas para cima e para baixo para navegar pelas atividades. Pressione Home para ir ao início, End para ir ao final, ou Escape para sair da navegação.
+               </div>
                {displayActivities.map((activity, index) => (
-                <div key={index} className="flex items-start space-x-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                  <div className={`rounded-full p-2 ${activity.tipo === 'MEMBRO' ? 'bg-blue-100' : activity.tipo === 'GRUPO' ? 'bg-green-100' : activity.tipo === 'EVENTO' ? 'bg-purple-100' : 'bg-gray-100'}`}>
+                <div 
+                  key={index} 
+                  className={`flex items-start space-x-4 p-4 border rounded-lg transition-colors ${
+                    focusedActivityIndex === index 
+                      ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-500 ring-opacity-50' 
+                      : 'hover:bg-gray-50'
+                  }`}
+                  role="listitem"
+                  tabIndex={focusedActivityIndex === index ? 0 : -1}
+                  aria-label={`Atividade ${index + 1} de ${displayActivities.length}: ${activity.descricao || 'Atividade sem descrição'} por ${activity.usuarioNome || 'Sistema'}`}
+                  aria-describedby={`activity-details-${index}`}
+                >
+                  <div 
+                    className={`rounded-full p-2 ${activity.tipo === 'MEMBRO' ? 'bg-blue-100' : activity.tipo === 'GRUPO' ? 'bg-green-100' : activity.tipo === 'EVENTO' ? 'bg-purple-100' : 'bg-gray-100'}`}
+                    aria-hidden="true"
+                  >
                     {getActivityIcon(activity.tipo)}
                   </div>
                   
@@ -218,7 +305,7 @@ export default function ActivitiesPage() {
                           <p className="text-sm text-gray-700 font-medium">
                             {activity.usuarioNome || 'Sistema'}
                           </p>
-                          <span className="text-gray-400 text-xs">•</span>
+                          <span className="text-gray-400 text-xs" aria-hidden="true">•</span>
                           <p className="text-xs text-gray-500">
                             {activity.createdAt ? new Date(activity.createdAt).toLocaleString('pt-BR', {
                               day: '2-digit',
@@ -231,32 +318,39 @@ export default function ActivitiesPage() {
                         </div>
                       </div>
                       
-                      <div className="flex flex-wrap gap-2">
-                        <Badge variant="secondary" className="capitalize">
+                      <div className="flex flex-wrap gap-2" role="group" aria-label="Categorias da atividade">
+                        <Badge variant="secondary" className="capitalize" aria-label={`Tipo: ${activity.tipo?.toLowerCase() || 'desconhecido'}`}>
                           {activity.tipo?.toLowerCase() || 'desconhecido'}
                         </Badge>
-                        <Badge className={`${getActionColor(activity.acao)} border-0`}>
+                        <Badge className={`${getActionColor(activity.acao)} border-0`} aria-label={`Ação: ${activity.acao?.toLowerCase() || 'desconhecido'}`}>
                           {activity.acao?.toLowerCase() || 'desconhecido'}
                         </Badge>
                       </div>
                     </div>
                     
-                    <div className="mt-2 text-sm text-gray-500">
-                      {new Date(activity.createdAt).toLocaleDateString('pt-BR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+                    <div id={`activity-details-${index}`} className="mt-2 text-sm text-gray-500 sr-only">
+                      Detalhes da atividade: Tipo {activity.tipo || 'desconhecido'}, Ação {activity.acao || 'desconhecido'}, 
+                      realizada por {activity.usuarioNome || 'Sistema'} em {
+                        activity.createdAt ? new Date(activity.createdAt).toLocaleDateString('pt-BR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        }) : 'data desconhecida'
+                      }
                     </div>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center p-8 text-center border border-dashed border-gray-300 rounded-lg bg-gray-50">
-              <div className="p-3 mb-4 rounded-full bg-gray-100">
+            <div 
+              className="flex flex-col items-center justify-center p-8 text-center border border-dashed border-gray-300 rounded-lg bg-gray-50"
+              role="status"
+              aria-live="polite"
+            >
+              <div className="p-3 mb-4 rounded-full bg-gray-100" aria-hidden="true">
                 <Calendar className="h-6 w-6 text-gray-400" />
               </div>
               <h3 className="text-lg font-medium text-gray-900">Nenhuma atividade registrada</h3>
