@@ -3,7 +3,7 @@ import React, { useReducer, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "../ui/dialog";
 import { Input } from "../ui/input";
 import RadioGroup from "./RadioGroup";
-import { Select } from "../ui/select";
+import Select from "./Select";
 // Nota: Os componentes SelectContent, SelectItem, SelectTrigger e SelectValue foram removidos da importação
 // pois não estão disponíveis no componente Select atual
 import { useState } from "react";
@@ -360,7 +360,6 @@ export default function LeaderCreateModal({ open, onClose, ministryId }: LeaderC
       handleClose();
       
       // TODO: Atualizar lista de líderes ou mostrar mensagem de sucesso
-      console.log('Líder criado com sucesso:', result);
       
     } catch (error: any) {
       console.error('Erro ao criar líder:', error);

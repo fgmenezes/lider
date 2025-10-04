@@ -56,41 +56,64 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const meetingsToUpdate = [];
   
   for (const meeting of group.meetings) {
-    // Criar data de início da reunião com horário
-    const meetingDate = new Date(meeting.date + 'T' + (meeting.startTime || '00:00:00'));
-    
-    // Criar data de término baseada no horário de término ou 2 horas após o início
-    let meetingEndTime;
-    if (meeting.endTime) {
-      meetingEndTime = new Date(meeting.date + 'T' + meeting.endTime);
-    } else {
-      // Se não há horário de término, assumir 2 horas após o início
-      meetingEndTime = new Date(meetingDate.getTime() + 2 * 60 * 60 * 1000);
-    }
-    
-    const hasAttendances = meeting.attendances && meeting.attendances.length > 0;
-    
-    let newStatus = meeting.status;
-    
-    // Lógica para determinar o status correto
-    if (now < meetingDate) {
-      // Reunião ainda não começou
-      newStatus = 'AGENDADA';
-    } else if (now >= meetingDate && now <= meetingEndTime) {
-      // Reunião está no horário de acontecer
-      newStatus = hasAttendances ? 'EM_ANDAMENTO' : 'AGENDADA';
-    } else {
-      // Reunião já passou do horário - SEMPRE finalizar
-      newStatus = 'FINALIZADA';
-    }
-    
-    // Se o status mudou, atualizar no banco
-    if (newStatus !== meeting.status) {
-      meetingsToUpdate.push({
-        id: meeting.id,
-        status: newStatus
-      });
-      meeting.status = newStatus; // Atualizar no objeto retornado
+    try {
+      // Extrair apenas a data (sem horário) do campo date
+      let meetingDate;
+      if (meeting.date instanceof Date) {
+        // Se já é um objeto Date, usar apenas a parte da data
+        meetingDate = new Date(meeting.date.getFullYear(), meeting.date.getMonth(), meeting.date.getDate());
+      } else {
+        // Se é string, converter
+        meetingDate = new Date(meeting.date);
+        meetingDate = new Date(meetingDate.getFullYear(), meetingDate.getMonth(), meetingDate.getDate());
+      }
+
+      // Adicionar horário de início se disponível
+      if (meeting.startTime) {
+        const [hours, minutes] = meeting.startTime.split(':');
+        meetingDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      } else {
+        // Se não tem horário, assumir 00:00
+        meetingDate.setHours(0, 0, 0, 0);
+      }
+
+      // Calcular horário de término
+      let meetingEndTime = new Date(meetingDate);
+      if (meeting.endTime) {
+        const [hours, minutes] = meeting.endTime.split(':');
+        meetingEndTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      } else {
+        // Se não tem horário de fim, assumir 2 horas após o início
+        meetingEndTime.setHours(meetingEndTime.getHours() + 2);
+      }
+      
+      const hasAttendances = meeting.attendances && meeting.attendances.length > 0;
+      
+      let newStatus = meeting.status;
+      
+      // Lógica para determinar o status correto
+      if (now < meetingDate) {
+        // Reunião ainda não começou
+        newStatus = 'AGENDADA';
+      } else if (now >= meetingDate && now <= meetingEndTime) {
+        // Reunião está no horário de acontecer
+        newStatus = hasAttendances ? 'EM_ANDAMENTO' : 'AGENDADA';
+      } else {
+        // Reunião já passou do horário - SEMPRE finalizar
+        newStatus = 'FINALIZADA';
+      }
+      
+      // Se o status mudou, atualizar no banco
+      if (newStatus !== meeting.status) {
+        meetingsToUpdate.push({
+          id: meeting.id,
+          status: newStatus
+        });
+        meeting.status = newStatus; // Atualizar no objeto retornado
+      }
+    } catch (error) {
+      console.error(`Erro ao processar reunião ${meeting.id}:`, error);
+      // Continuar processando outras reuniões mesmo se uma falhar
     }
   }
   
@@ -148,6 +171,22 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
     // Exclui o grupo e todos os dados relacionados (cascata)
     await prisma.smallGroup.delete({ where: { id } });
+
+    // Registrar atividade de exclusão
+    await prisma.atividade.create({
+      data: {
+        tipo: 'PEQUENO_GRUPO',
+        acao: 'EXCLUIR',
+        descricao: `Pequeno grupo excluído: ${group.name}`,
+        detalhes: `Ministério: ${group.ministry.name}`,
+        entidadeId: id,
+        usuarioId: session.user.id,
+        ministryId: group.ministryId,
+        ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
+        userAgent: req.headers.get('user-agent') || 'unknown',
+      }
+    });
+
     return NextResponse.json({ success: true, message: 'Grupo excluído com sucesso' });
   } catch (error: any) {
     console.error('[SmallGroup] Erro ao excluir grupo:', error);

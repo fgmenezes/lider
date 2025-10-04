@@ -16,7 +16,8 @@ import {
   Building2, 
   Crown,
   LogOut,
-  User
+  User,
+  Activity
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -62,6 +63,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     { href: '/dashboard/pequenos-grupos', label: 'Pequenos Grupos', icon: Users },
     ...(ministryId ? [{ href: `/dashboard/ministries/${ministryId}/finance`, label: 'Financeiro', icon: DollarSign, showFor: ['ADMIN', 'MASTER', 'LEADER'] }] : []),
     { href: '/dashboard/events', label: 'Eventos', icon: Calendar },
+    { href: '/dashboard/activities', label: 'Atividades', icon: Activity, onlyAdminOrMaster: true },
     { href: '/dashboard/assistant', label: 'Assistente', icon: Bot },
     { href: '/dashboard/users', label: 'Gerenciamento de Usuários', icon: Settings, adminOnly: true },
     { href: '/dashboard/ministries', label: 'Gerenciamento de Ministérios', icon: Building2, adminOnly: true },
@@ -138,12 +140,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="flex items-center justify-between h-20 px-6 border-b border-white/10" 
              style={{ backgroundColor: 'var(--color-primary-dark)' }}>
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-semibold">
-              {name ? getInitials(name) : <User size={20} />}
+            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white font-semibold text-sm">
+              SL
             </div>
             <div>
-              <p className="text-white font-medium text-sm">{name || 'Usuário'}</p>
-              <p className="text-white/70 text-xs">{ministryName}</p>
+              <p className="text-white font-medium text-sm">Sistema Líder</p>
             </div>
           </div>
           
@@ -189,8 +190,44 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           })}
         </nav>
 
-        {/* Footer do Sidebar */}
-        <div className="p-4 border-t border-white/10">
+        {/* Footer do Sidebar - Informações do usuário e botão sair */}
+        <div className="p-4 border-t border-white/10 space-y-3">
+          {/* Informações do usuário */}
+          <div className="flex items-center space-x-3 px-4 py-3 rounded-lg bg-white/5">
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-semibold">
+              {name ? getInitials(name) : <User size={20} />}
+            </div>
+            <div className="flex-1 min-w-0">
+              <Link 
+                href={`/dashboard/users/${session?.user?.id}`}
+                className="text-white font-medium text-sm hover:text-white/80 transition-colors text-left w-full truncate block"
+                title={name || 'Usuário'}
+                onClick={() => {
+                  // Fechar sidebar em mobile/tablet ao clicar
+                  if (typeof window !== 'undefined' && window.innerWidth < 1280) {
+                    onClose();
+                  }
+                }}
+              >
+                {name || 'Usuário'}
+              </Link>
+              <Link 
+                href={`/dashboard/ministries/${ministryId}`}
+                className="text-white/70 text-xs hover:text-white/50 transition-colors text-left w-full truncate block"
+                title={ministryName}
+                onClick={() => {
+                  // Fechar sidebar em mobile/tablet ao clicar
+                  if (typeof window !== 'undefined' && window.innerWidth < 1280) {
+                    onClose();
+                  }
+                }}
+              >
+                {ministryName}
+              </Link>
+            </div>
+          </div>
+          
+          {/* Botão sair */}
           <button
             onClick={() => signOut({ callbackUrl: '/login' })}
             className="flex items-center space-x-3 w-full px-4 py-3 rounded-lg text-white/80 hover:bg-white/10 hover:text-white transition-all duration-200"

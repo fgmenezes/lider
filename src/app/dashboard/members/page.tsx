@@ -8,7 +8,7 @@ import { useSession } from 'next-auth/react';
 import { Tab } from '@headlessui/react';
 import React from 'react';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
+import Select from '@/components/forms/Select';
 
 // Componentes personalizados para substituir os que não existem no módulo select
 const CustomSelect = ({ children, ...props }: any) => {
@@ -52,7 +52,7 @@ if (typeof window !== 'undefined') {
 
 interface Member {
   id: string;
-  name: string;
+  name?: string;
   email?: string;
   phone?: string;
   ministry?: { id: string; name: string; church?: { name: string } };
@@ -389,7 +389,60 @@ function MemberFormStep4({ form, setForm, onCancel }: { form: any, setForm: (dat
   );
 }
 
-function MemberFormStep5({ onBack, onNext, initialData = {}, ministryId, editingMemberId, onCancel }: { onBack: (data?: any) => void, onNext: (data?: any) => void, initialData?: any, ministryId?: string, editingMemberId?: string, onCancel: () => void }) {
+function MemberFormStep5({ form, setForm, onCancel }: { form: any, setForm: (data: any) => void, onCancel: () => void }) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-lg font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>Dados Ministeriais</h3>
+        <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+          Informe os dados ministeriais do membro.
+        </p>
+      </div>
+      
+      <div className="space-y-4">
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="batizado"
+            checked={form.batizado || false}
+            onChange={(e) => setForm((prev: any) => ({ ...prev, batizado: e.target.checked }))}
+          />
+          <label htmlFor="batizado" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            Batizado
+          </label>
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium mb-1">Data de Ingresso</label>
+          <input
+            type="date"
+            value={form.dataIngresso || ''}
+            onChange={e => setForm((prev: any) => ({ ...prev, dataIngresso: e.target.value }))}
+            className="mt-1 block w-full border border-gray-300 rounded p-2"
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium mb-1">Status</label>
+          <select
+            value={form.status || 'ATIVO'}
+            onChange={(e) => setForm((prev: any) => ({ ...prev, status: e.target.value }))}
+            className="mt-1 block w-full border border-gray-300 rounded p-2"
+          >
+            <option value="ATIVO">ATIVO</option>
+            <option value="INATIVO">INATIVO</option>
+            <option value="TRANSFERIDO">TRANSFERIDO</option>
+          </select>
+        </div>
+      </div>
+      
+      <div className="flex justify-end gap-2 mt-6">
+        <button type="button" className="px-4 py-2 bg-gray-200 text-gray-700 rounded" onClick={onCancel}>Cancelar</button>
+      </div>
+    </div>
+  );
+}
+
+function MemberFormStep6({ onBack, onNext, initialData = {}, ministryId, editingMemberId, onCancel }: { onBack: (data?: any) => void, onNext: (data?: any) => void, initialData?: any, ministryId?: string, editingMemberId?: string, onCancel: () => void }) {
   const [temIrmaos, setTemIrmaos] = useState(initialData.temIrmaos || false);
   const [irmaos, setIrmaos] = useState<{ id: string; name: string; phone?: string }[]>(initialData.irmaosMinisterio || []);
   const [temPrimos, setTemPrimos] = useState(initialData.temPrimos || false);
@@ -578,54 +631,6 @@ function MemberFormStep5({ onBack, onNext, initialData = {}, ministryId, editing
   );
 }
 
-// Nova etapa após Vínculos
-function MemberFormStepMinisterial({ form, setForm, onBack, onNext, onCancel }: { form: any, setForm: (data: any) => void, onBack: () => void, onNext: () => void, onCancel: () => void }) {
-  // Função para mascarar a data no padrão brasileiro
-  function maskDate(value: string) {
-    return value
-      .replace(/\D/g, '')
-      .replace(/(\d{2})(\d)/, '$1/$2')
-      .replace(/(\d{2})\/(\d{2})(\d)/, '$1/$2/$3')
-      .replace(/(\d{10})\d+?$/, '$1');
-  }
-
-  return (
-    <div className="space-y-6">
-      <h3 className="text-lg font-bold mb-4 text-blue-700">Dados Ministeriais</h3>
-      <div className="flex items-center gap-4">
-        <label className="flex items-center gap-2 text-base font-medium">
-          É batizado?
-          <input
-            type="checkbox"
-            checked={!!form.batizado}
-            onChange={e => setForm((prev: any) => ({ ...prev, batizado: e.target.checked }))}
-            className="ml-2 w-5 h-5 accent-blue-600"
-          />
-        </label>
-        <span className="text-sm ml-2">{form.batizado ? 'Sim' : 'Não'}</span>
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Data de Ingresso</label>
-        <input
-          type="text"
-          value={form.dataIngresso || ''}
-          onChange={e => setForm((prev: any) => ({ ...prev, dataIngresso: maskDate(e.target.value) }))}
-          maxLength={10}
-          placeholder="dd/mm/aaaa"
-          required
-          inputMode="numeric"
-          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-        />
-      </div>
-      <div className="flex justify-between mt-6">
-        <button onClick={onBack} className="px-4 py-2 bg-gray-200 text-gray-700 rounded">Voltar</button>
-        <button onClick={onNext} className="px-4 py-2 bg-blue-600 text-white rounded">Avançar</button>
-        <button onClick={onCancel} className="px-4 py-2 bg-gray-200 text-gray-700 rounded">Cancelar</button>
-      </div>
-    </div>
-  );
-}
-
 function MemberFormResumo({ form, onBack, onCreate, onCancel, loading = false }: { form: any, onBack: () => void, onCreate: () => void, onCancel: () => void, loading?: boolean }) {
   return (
     <div className="space-y-6">
@@ -636,7 +641,7 @@ function MemberFormResumo({ form, onBack, onCreate, onCancel, loading = false }:
         <div className="mb-1"><span className="font-semibold">Nome:</span> {form.name}</div>
         <div className="mb-1"><span className="font-semibold">Data de Nascimento:</span> {form.dataNascimento}</div>
         <div className="mb-1"><span className="font-semibold">Idade:</span> {form.idade || '-'}</div>
-        <div className="mb-1"><span className="font-semibold">Sexo:</span> {form.sexo || '-'}</div>
+        <div className="mb-1"><span className="font-semibold">Sexo:</span> {form.sexo === 'M' ? 'Masculino' : form.sexo === 'F' ? 'Feminino' : form.sexo || '-'}</div>
         <div className="mb-1"><span className="font-semibold">Estado Civil:</span> {form.estadoCivil || '-'}</div>
       </div>
       {/* Contato */}
@@ -775,6 +780,8 @@ export default function MembersPage() {
   const [ministries, setMinistries] = useState<{ id: string; name: string }[]>([]);
   const [form, setForm] = useState({
     name: '',
+    status: 'ATIVO',
+    ministryId: '',
     dataNascimento: '',
     idade: '',
     sexo: '',
@@ -788,15 +795,11 @@ export default function MembersPage() {
     bairro: '',
     municipio: '',
     estado: '',
-    ministryId: '',
-    responsaveis: [] as { nome: string; celular: string; tipo: string }[],
-    temIrmaos: false,
-    irmaosMinisterio: [] as { id: string; name: string; phone?: string }[],
-    temPrimos: false,
-    primosMinisterio: [] as { id: string; name: string; phone?: string }[],
+    responsaveis: [],
+    irmaosMinisterio: [],
+    primosMinisterio: [],
     batizado: false,
     dataIngresso: '',
-    status: 'ATIVO',
   });
   const [formLoading, setFormLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -814,13 +817,9 @@ export default function MembersPage() {
     setMounted(true);
     
     // Debug da sessão
-    console.log('🔐 Status da sessão:', session);
     if (session?.user) {
-      console.log('👤 Usuário logado:', {
+      console.log('Session user:', {
         id: session.user.id,
-        email: session.user.email,
-        role: session.user.role,
-        ministryId: session.user.ministryId,
         masterMinistryId: session.user.masterMinistryId
       });
     }
@@ -878,8 +877,10 @@ export default function MembersPage() {
         const m = data.member;
         setForm({
           name: m.name || '',
-          dataNascimento: m.dataNascimento ? new Date(m.dataNascimento).toLocaleDateString('pt-BR') : '',
-          idade: m.dataNascimento ? calculateAge(new Date(m.dataNascimento).toLocaleDateString('pt-BR')) : '',
+          status: m.status || 'ATIVO',
+          ministryId: m.ministryId || '',
+          dataNascimento: m.dataNascimento || '',
+          idade: m.idade || '',
           sexo: m.sexo || '',
           estadoCivil: m.estadoCivil || '',
           phone: m.phone || '',
@@ -891,26 +892,25 @@ export default function MembersPage() {
           bairro: m.bairro || '',
           municipio: m.municipio || '',
           estado: m.estado || '',
-          ministryId: m.ministry?.id || '',
-          responsaveis: m.responsaveis?.map((r: any) => ({ nome: r.nome, celular: r.celular, tipo: r.tipo })) || [],
-          temIrmaos: !!(m.irmaos && m.irmaos.length > 0),
-          irmaosMinisterio: m.irmaos || [],
-          temPrimos: !!(m.primos && m.primos.length > 0),
-          primosMinisterio: m.primos || [],
+          responsaveis: m.responsaveis || [],
+          irmaosMinisterio: m.irmaosMinisterio || [],
+          primosMinisterio: m.primosMinisterio || [],
           batizado: m.batizado || false,
-          dataIngresso: m.dataIngresso ? new Date(m.dataIngresso).toISOString().slice(0, 10) : '',
-          status: m.status || 'ATIVO',
+          dataIngresso: m.dataIngresso || '',
+          // Adicionar outros campos conforme necessário
         });
       } catch (e) {
         toast.error('Erro ao carregar dados completos do membro');
         setForm({
-          name: member.name,
+          name: member.name || '',
+          status: 'ATIVO',
+          ministryId: '',
           dataNascimento: '',
           idade: '',
           sexo: '',
           estadoCivil: '',
-          phone: member.phone || '',
-          email: member.email || '',
+          phone: '',
+          email: '',
           cep: '',
           rua: '',
           numero: '',
@@ -918,20 +918,20 @@ export default function MembersPage() {
           bairro: '',
           municipio: '',
           estado: '',
-          ministryId: member.ministry?.id || '',
-          responsaveis: member.responsaveis?.map(r => ({ nome: r.nome, celular: r.celular, tipo: r.tipo })) || [],
-          temIrmaos: false,
+          responsaveis: [],
           irmaosMinisterio: [],
-          temPrimos: false,
           primosMinisterio: [],
           batizado: false,
           dataIngresso: '',
-          status: 'ATIVO',
         });
       }
     } else {
       setForm({
         name: '',
+        ministryId: session?.user?.role === 'MASTER'
+          ? session?.user?.masterMinistryId || ''
+          : session?.user?.ministryId || '',
+        status: 'ATIVO',
         dataNascimento: '',
         idade: '',
         sexo: '',
@@ -945,17 +945,11 @@ export default function MembersPage() {
         bairro: '',
         municipio: '',
         estado: '',
-        ministryId: session?.user?.role === 'MASTER'
-          ? session?.user?.masterMinistryId || ''
-          : session?.user?.ministryId || '',
         responsaveis: [],
-        temIrmaos: false,
         irmaosMinisterio: [],
-        temPrimos: false,
         primosMinisterio: [],
         batizado: false,
         dataIngresso: '',
-        status: 'ATIVO',
       });
     }
     setOpenModal(true);
@@ -966,6 +960,8 @@ export default function MembersPage() {
     setEditMember(null);
     setForm({
       name: '',
+      status: 'ATIVO',
+      ministryId: '',
       dataNascimento: '',
       idade: '',
       sexo: '',
@@ -979,15 +975,11 @@ export default function MembersPage() {
       bairro: '',
       municipio: '',
       estado: '',
-      ministryId: '',
       responsaveis: [],
-      temIrmaos: false,
       irmaosMinisterio: [],
-      temPrimos: false,
       primosMinisterio: [],
       batizado: false,
       dataIngresso: '',
-      status: 'ATIVO',
     });
     setFormStep(1);
   };
@@ -1003,14 +995,11 @@ export default function MembersPage() {
   };
 
   const handleSubmit = async () => {
-    console.log('🚀 Iniciando handleSubmit');
-    console.log('📝 Form data:', form);
     
     setFormLoading(true);
     try {
       const method = editMember ? "PUT" : "POST";
       const url = editMember ? `/api/members/${editMember.id}` : "/api/members";
-      console.log('🌐 URL:', url, 'Method:', method);
       
       // Conversão de dataNascimento para ISO se necessário
       let dataNascimentoISO = form.dataNascimento;
@@ -1020,7 +1009,6 @@ export default function MembersPage() {
           dataNascimentoISO = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
         }
       }
-      console.log('📅 Data de nascimento convertida:', dataNascimentoISO);
       
       // Conversão de dataIngresso para ISO se necessário
       let dataIngressoISO = form.dataIngresso;
@@ -1030,7 +1018,6 @@ export default function MembersPage() {
           dataIngressoISO = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
         }
       }
-      console.log('📅 Data de ingresso convertida:', dataIngressoISO);
       
       const payload = {
         ...form,
@@ -1044,26 +1031,18 @@ export default function MembersPage() {
       delete (payload as any).temIrmaos;
       delete (payload as any).temPrimos;
       delete (payload as any).idade;
-      
-      console.log('📦 Payload final:', payload);
 
-      console.log('🔄 Enviando requisição...');
       const res = await fetch(url, {
         method,
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
           "X-Debug-Info": "member-creation-request"
         },
-        body: JSON.stringify(payload),
-        cache: 'no-store'
+        body: JSON.stringify(payload)
       });
-      
-      console.log('📡 Resposta recebida - Status:', res.status);
-      console.log('📡 Headers da resposta:', Object.fromEntries(res.headers.entries()));
-      
+
       let responseData;
       const responseText = await res.text();
-      console.log('📄 Resposta texto:', responseText);
       
       if (!res.ok) {
         console.error('❌ Erro ao salvar membro', responseText);
@@ -1072,25 +1051,19 @@ export default function MembersPage() {
       
       try {
         responseData = JSON.parse(responseText);
-        console.log('✅ Resposta de sucesso:', responseData);
       } catch (e) {
-        console.log('⚠️ Resposta não é JSON válido, usando texto bruto');
         responseData = { message: responseText };
       }
       
       toast.success(editMember ? "Membro atualizado!" : "Membro criado!");
-      console.log('🎉 Toast exibido, fechando modal...');
       
       handleCloseModal();
-      console.log('🔄 Atualizando lista de membros...');
       fetchMembers();
-      console.log('✅ handleSubmit concluído com sucesso');
     } catch (err: any) {
       console.error('💥 Erro no handleSubmit', err);
       console.error('💥 Stack trace:', err.stack);
       toast.error(err.message);
     } finally {
-      console.log('🏁 Finalizando handleSubmit, setFormLoading(false)');
       setFormLoading(false);
     }
   };
@@ -1337,31 +1310,31 @@ export default function MembersPage() {
                   <MemberFormStep4 form={form} setForm={setForm} onCancel={handleCloseModal} />
                 )}
                 {formStep === 5 && (
-                  <MemberFormStep5
-                    onBack={data => { setForm(prev => ({ ...prev, ...data })); setFormStep(4); }}
-                    onNext={data => { setForm(prev => ({ ...prev, ...data })); setFormStep(6); }}
+                  <MemberFormStep5 form={form} setForm={setForm} onCancel={handleCloseModal} />
+                )}
+                {formStep === 6 && (
+                  <MemberFormStep6
+                    onBack={data => { setForm(prev => ({ ...prev, ...data })); setFormStep(5); }}
+                    onNext={data => { setForm(prev => ({ ...prev, ...data })); setFormStep(7); }}
                     initialData={form}
                     ministryId={form.ministryId}
                     editingMemberId={editMember?.id || undefined}
                     onCancel={handleCloseModal}
                   />
                 )}
-                {formStep === 6 && (
-                  <MemberFormStepMinisterial form={form} setForm={setForm} onBack={() => setFormStep(5)} onNext={() => setFormStep(7)} onCancel={handleCloseModal} />
-                )}
-                {formStep === 7 && !editMember && (
+                {formStep === 7 && (
                   <MemberFormResumo form={form} onBack={() => setFormStep(6)} onCreate={handleSubmit} onCancel={handleCloseModal} loading={formLoading} />
                 )}
                 {/* Botões de navegação apenas para steps que não têm botões próprios */}
-                {![5, 6, 7].includes(formStep) && (
+                {![6, 7].includes(formStep) && (
                   <div className="flex justify-between mt-4">
                     {formStep > 1 && (
                       <button onClick={() => setFormStep(formStep - 1)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded">Voltar</button>
                     )}
-                    {formStep === 4 && (
-                      <button onClick={() => setFormStep(5)} className="px-4 py-2 bg-blue-600 text-white rounded">Avançar</button>
+                    {formStep === 5 && (
+                      <button onClick={() => setFormStep(6)} className="px-4 py-2 bg-blue-600 text-white rounded">Avançar</button>
                     )}
-                    {formStep < 4 && (
+                    {[1, 2, 3, 4].includes(formStep) && (
                       <button onClick={() => setFormStep(formStep + 1)} className="px-4 py-2 bg-blue-600 text-white rounded">Avançar</button>
                     )}
                   </div>

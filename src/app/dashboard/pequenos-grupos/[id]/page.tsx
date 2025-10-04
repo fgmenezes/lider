@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useSession } from "next-auth/react";
 import { PlusCircle, Edit, Trash2, CheckCircle, XCircle, MoreVertical, Eye, Users, UserPlus, FileText } from "lucide-react";
 import PeopleTab from "@/components/forms/PeopleTab";
-import GroupObservationsSection from "./GroupObservationsSection";
+import SmallGroupObservationsSection from "./SmallGroupObservationsSection";
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import AttendanceModal from '@/components/forms/AttendanceModal';
 import VisitorModal from '@/components/forms/VisitorModal';
@@ -487,7 +487,7 @@ export default function SmallGroupDetailsPage() {
           </Tab.Panel>
           {/* Aba Observações do Grupo */}
           <Tab.Panel>
-            <GroupObservationsSection groupId={group.id} members={group.members || []} onRefresh={fetchGroup} />
+            <SmallGroupObservationsSection groupId={group.id} onRefresh={fetchGroup} />
           </Tab.Panel>
         </Tab.Panels>
       </Tab.Group>

@@ -2,20 +2,15 @@ import { withAuth } from "next-auth/middleware"
 import { NextRequestWithAuth } from "next-auth/middleware"
 import { NextResponse } from "next/server"
 
-// Exporta o middleware padrão do NextAuth com logs adicionais
+// Exporta o middleware padrão do NextAuth
 export default withAuth(
   function middleware(request: NextRequestWithAuth) {
-    console.log('🔐 Middleware executando para:', request.url);
-    console.log('🍪 Cookies presentes:', request.cookies);
-    console.log('👤 Token na requisição:', request.nextauth?.token);
-    
     // Continua com o middleware padrão do NextAuth
     return NextResponse.next();
   },
   {
     callbacks: {
       authorized: ({ token }) => {
-        console.log('🔑 Verificando autorização, token presente:', !!token);
         return !!token;
       },
     },

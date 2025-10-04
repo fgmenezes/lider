@@ -216,20 +216,47 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
   try {
     const userToDelete = await prisma.user.findUnique({
       where: { id: params.id },
-      select: { id: true, role: true, ministryId: true, masterMinistry: { select: { id: true } } }
+      select: { 
+        id: true, 
+        name: true,
+        email: true,
+        role: true, 
+        ministryId: true, 
+        masterMinistry: { select: { id: true } },
+        ministry: { select: { name: true } }
+      }
     });
     if (!userToDelete) {
       return NextResponse.json({ message: 'Usuário não encontrado' }, { status: 404 });
     }
+    
     // ADMIN pode excluir qualquer usuário
     if (session.user?.role === Role.ADMIN) {
       await prisma.user.delete({ where: { id: params.id } });
+      
+      // Registrar atividade de exclusão
+      await prisma.atividade.create({
+        data: {
+          tipo: 'USUARIO',
+          acao: 'EXCLUIR',
+          descricao: `Usuário excluído: ${userToDelete.name}`,
+          detalhes: `Email: ${userToDelete.email}, Role: ${userToDelete.role}, Ministério: ${userToDelete.ministry?.name || 'N/A'}`,
+          entidadeId: params.id,
+          usuarioId: session.user.id,
+          ministryId: userToDelete.ministryId || userToDelete.masterMinistry?.id,
+          ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
+          userAgent: req.headers.get('user-agent') || 'unknown',
+        }
+      });
+      
       return NextResponse.json({ message: 'Usuário excluído com sucesso' });
     }
+    
     // MASTER não pode excluir a si mesmo
     if (session.user?.role === Role.MASTER && session.user.id === params.id) {
       return NextResponse.json({ message: 'Você não pode excluir seu próprio usuário MASTER.' }, { status: 403 });
     }
+    
     // MASTER pode excluir qualquer LIDER ou MASTER do seu próprio ministério, exceto a si mesmo
     if (session.user?.role === Role.MASTER) {
       const masterMinistryId = session.user.masterMinistry?.id || session.user.masterMinistryId;
@@ -239,11 +266,28 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
         session.user.id !== params.id
       ) {
         await prisma.user.delete({ where: { id: params.id } });
+        
+        // Registrar atividade de exclusão
+        await prisma.atividade.create({
+          data: {
+            tipo: 'USUARIO',
+            acao: 'EXCLUIR',
+            descricao: `Usuário excluído: ${userToDelete.name}`,
+            detalhes: `Email: ${userToDelete.email}, Role: ${userToDelete.role}, Ministério: ${userToDelete.ministry?.name || 'N/A'}`,
+            entidadeId: params.id,
+            usuarioId: session.user.id,
+            ministryId: userToDelete.ministryId || userToDelete.masterMinistry?.id,
+            ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
+            userAgent: req.headers.get('user-agent') || 'unknown',
+          }
+        });
+        
         return NextResponse.json({ message: 'Usuário excluído com sucesso' });
       } else {
         return NextResponse.json({ message: 'Não autorizado' }, { status: 403 });
       }
     }
+    
     // Outros perfis não podem excluir
     return NextResponse.json({ message: 'Não autorizado' }, { status: 403 });
   } catch (error) {

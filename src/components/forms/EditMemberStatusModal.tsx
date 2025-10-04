@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { CheckCircle, XCircle, Clock, AlertTriangle, FileText, Calendar, Check, AlertCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useSession } from 'next-auth/react';
@@ -44,7 +44,7 @@ export default function EditMemberStatusModal({
   }, [isOpen, member]);
 
   // Verificar permissões do usuário
-  const hasPermission = () => {
+  const hasPermission = useCallback(() => {
     if (!session?.user) return false;
     
     // ADMIN sempre tem permissão
@@ -57,7 +57,7 @@ export default function EditMemberStatusModal({
     if (group?.leaders?.some(leader => leader.userId === session.user.id)) return true;
     
     return false;
-  };
+  }, [session?.user, group?.ministryId, group?.leaders]);
 
   // Validate status changes
   useEffect(() => {

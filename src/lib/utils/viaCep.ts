@@ -37,9 +37,7 @@ export async function fetchAddressByCep(cep: string) {
 /*
 fetchAddressByCep('01001000')
   .then(address => {
-    console.log('Endereço encontrado:', address);
   })
   .catch(error => {
-    console.error('Falha ao buscar endereço:', error.message);
   });
 */ 

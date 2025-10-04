@@ -50,7 +50,7 @@ export async function GET() {
       totalLeaders = await prisma.user.count({ where: { role: Role.LEADER } });
       totalMasters = await prisma.user.count({ where: { role: Role.MASTER } });
       totalEventsThisMonth = await prisma.event.count({
-        where: { date: { gte: startOfMonth, lte: endOfMonth } },
+        where: { startDate: { gte: startOfMonth, lte: endOfMonth } },
       });
       nextMeetings7Days = await prisma.smallGroupMeeting.count({
         where: { date: { gte: today, lte: sevenDaysFromNow } },
@@ -99,10 +99,23 @@ export async function GET() {
         },
       }).then(r => r._sum.amount || 0);
       saldoMes = totalReceitasMes - totalDespesasMes;
-      saldoAcumulado = await prisma.finance.aggregate({
+      
+      // Calcular saldo acumulado corretamente (ENTRADA - SAIDA)
+      const totalEntradasAcumuladasAdmin = await prisma.finance.aggregate({
         _sum: { amount: true },
-        where: {},
+        where: { 
+          type: 'ENTRADA'
+        },
       }).then(r => r._sum.amount || 0);
+      
+      const totalSaidasAcumuladasAdmin = await prisma.finance.aggregate({
+        _sum: { amount: true },
+        where: { 
+          type: 'SAIDA'
+        },
+      }).then(r => r._sum.amount || 0);
+      
+      saldoAcumulado = totalEntradasAcumuladasAdmin - totalSaidasAcumuladasAdmin;
     } else if (user.role === Role.MASTER) {
       const masterMinistryId = session.user.masterMinistryId;
       if (!masterMinistryId) {
@@ -115,7 +128,7 @@ export async function GET() {
       totalEventsThisMonth = await prisma.event.count({
         where: {
           ministryId: masterMinistryId,
-          date: { gte: startOfMonth, lte: endOfMonth },
+          startDate: { gte: startOfMonth, lte: endOfMonth },
         },
       });
       nextMeetings7Days = await prisma.smallGroupMeeting.count({
@@ -171,10 +184,25 @@ export async function GET() {
         },
       }).then(r => r._sum.amount || 0);
       saldoMes = totalReceitasMes - totalDespesasMes;
-      saldoAcumulado = await prisma.finance.aggregate({
+      
+      // Calcular saldo acumulado corretamente (ENTRADA - SAIDA)
+      const totalEntradasAcumuladasMaster = await prisma.finance.aggregate({
         _sum: { amount: true },
-        where: { ministryId: masterMinistryId },
+        where: { 
+          ministryId: masterMinistryId,
+          type: 'ENTRADA'
+        },
       }).then(r => r._sum.amount || 0);
+      
+      const totalSaidasAcumuladasMaster = await prisma.finance.aggregate({
+        _sum: { amount: true },
+        where: { 
+          ministryId: masterMinistryId,
+          type: 'SAIDA'
+        },
+      }).then(r => r._sum.amount || 0);
+      
+      saldoAcumulado = totalEntradasAcumuladasMaster - totalSaidasAcumuladasMaster;
     } else if (user.role === Role.LEADER) {
       if (!user.ministryId) {
          return NextResponse.json({ message: 'Usuário não associado a um ministério' }, { status: 400 });
@@ -186,7 +214,7 @@ export async function GET() {
       totalEventsThisMonth = await prisma.event.count({
         where: {
           ministryId: user.ministryId,
-          date: { gte: startOfMonth, lte: endOfMonth },
+          startDate: { gte: startOfMonth, lte: endOfMonth },
         },
       });
       nextMeetings7Days = await prisma.smallGroupMeeting.count({
@@ -242,10 +270,25 @@ export async function GET() {
         },
       }).then(r => r._sum.amount || 0);
       saldoMes = totalReceitasMes - totalDespesasMes;
-      saldoAcumulado = await prisma.finance.aggregate({
+      
+      // Calcular saldo acumulado corretamente (ENTRADA - SAIDA)
+      const totalEntradasAcumuladas = await prisma.finance.aggregate({
         _sum: { amount: true },
-        where: { ministryId: user.ministryId },
+        where: { 
+          ministryId: user.ministryId,
+          type: 'ENTRADA'
+        },
       }).then(r => r._sum.amount || 0);
+      
+      const totalSaidasAcumuladas = await prisma.finance.aggregate({
+        _sum: { amount: true },
+        where: { 
+          ministryId: user.ministryId,
+          type: 'SAIDA'
+        },
+      }).then(r => r._sum.amount || 0);
+      
+      saldoAcumulado = totalEntradasAcumuladas - totalSaidasAcumuladas;
     }
 
     return NextResponse.json({
@@ -268,4 +311,4 @@ export async function GET() {
     console.error('Erro ao buscar métricas do dashboard:', error);
     return NextResponse.json({ message: 'Erro interno do servidor' }, { status: 500 });
   }
-} 
+}

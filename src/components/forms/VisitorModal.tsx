@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { UserPlus, User, Phone, Mail, Loader2, X } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'react-hot-toast';
@@ -41,7 +41,7 @@ export default function VisitorModal({
   const [error, setError] = useState("");
 
   // Buscar membros do grupo e resetar formulário quando o modal abrir
-  const fetchMembers = async () => {
+  const fetchMembers = useCallback(async () => {
     if (!groupId) return;
     
     setLoadingMembers(true);
@@ -62,7 +62,7 @@ export default function VisitorModal({
     } finally {
       setLoadingMembers(false);
     }
-  };
+  }, [groupId]);
 
   useEffect(() => {
     if (isOpen && groupId) {
@@ -74,7 +74,7 @@ export default function VisitorModal({
       setError("");
       fetchMembers();
     }
-  }, [isOpen, groupId]);
+  }, [isOpen, groupId, fetchMembers]);
 
 
 

@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
+import Select from '@/components/forms/Select';
 // Nota: Os componentes SelectContent, SelectItem, SelectTrigger e SelectValue foram removidos da importação
 // pois não estão disponíveis no componente Select atual
 import { Badge } from '@/components/ui/badge';

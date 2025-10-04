@@ -7,6 +7,8 @@ export { Checkbox } from "./checkbox"
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent } from "./card"
 export { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogClose } from "./dialog"
 export { Textarea } from "./textarea"
+export { Label } from "./label"
+export { Tabs, TabsList, TabsTrigger, TabsContent } from "./tabs"
 export {
   Table,
   TableHeader,
@@ -21,6 +23,6 @@ export {
 // Tipos dos componentes
 export type { ButtonProps } from "./button"
 export type { InputProps } from "./input"
-export type { SelectProps } from "./select"
 export type { BadgeProps } from "./badge"
 export type { CheckboxProps } from "./checkbox"
+export type { LabelProps } from "./label"

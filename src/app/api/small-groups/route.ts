@@ -80,17 +80,39 @@ const allowedFields = [
 export async function POST(req: Request) {
   try {
     const data = await req.json();
-    console.log('[API SMALL-GROUPS] Payload recebido:', JSON.stringify(data, null, 2));
     // Filtra apenas os campos permitidos
     const filteredData = Object.fromEntries(
       Object.entries(data).filter(([key]) => allowedFields.includes(key))
     );
-    console.log('[SmallGroup] Payload filtrado:', JSON.stringify(filteredData, null, 2));
     if (!filteredData.name || !filteredData.ministryId) {
       return new Response(JSON.stringify({ error: 'Nome e ministryId são obrigatórios.' }), { status: 400 });
     }
     // Cria o grupo
     const group = await prisma.smallGroup.create({ data: filteredData as any });
+
+    // Registrar atividade de criação
+    const session = await getServerSession(authOptions);
+    if (session?.user) {
+      await prisma.atividade.create({
+        data: {
+          tipo: 'PEQUENO_GRUPO',
+          acao: 'CRIAR',
+          descricao: `Pequeno grupo criado: ${group.name}`,
+          detalhes: JSON.stringify({
+            groupId: group.id,
+            groupName: group.name,
+            frequency: group.frequency,
+            dayOfWeek: group.dayOfWeek,
+            ministryId: group.ministryId
+          }),
+          entidadeId: group.id,
+          usuarioId: session.user.id,
+          ministryId: group.ministryId,
+          ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
+          userAgent: req.headers.get('user-agent') || 'unknown'
+        }
+      });
+    }
 
     // Lógica para criar reuniões futuras
     const meetingsToCreate: Array<{ 

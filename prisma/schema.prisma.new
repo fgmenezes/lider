@@ -1,0 +1,16 @@
+// Modelo para o sistema de auditoria/atividades
+model Atividade {
+  id          String    @id @default(cuid())
+  tipo        String    // MEMBRO, GRUPO, REUNIAO, FINANCEIRO, EVENTO, SISTEMA
+  acao        String    // CRIACAO, ATUALIZACAO, EXCLUSAO, LOGIN, LOGOUT
+  descricao   String
+  detalhes    String?   @db.Text
+  entidadeId  String?   // ID da entidade relacionada (membro, grupo, etc)
+  usuario     User?     @relation(fields: [usuarioId], references: [id])
+  usuarioId   String?
+  ministry    Ministry? @relation(fields: [ministryId], references: [id])
+  ministryId  String?
+  createdAt   DateTime  @default(now())
+  ip          String?
+  userAgent   String?   @db.Text
+}

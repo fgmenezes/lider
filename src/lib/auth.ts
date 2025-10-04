@@ -17,11 +17,7 @@ export const authOptions: AuthOptions = {
       },
       async authorize(credentials) {
         try {
-          console.log('Authorize function called on server.');
-          console.log('Credentials received:', credentials);
-
           if (!credentials?.email || !credentials?.password) {
-            console.log('Email or password not provided.');
             throw new Error('Email e senha são obrigatórios');
           }
 
@@ -36,22 +32,16 @@ export const authOptions: AuthOptions = {
             },
           });
 
-          console.log('User found:', user ? user.email : 'none');
-
           // If no user is found, return null
           if (!user) {
-            console.log('User not found.');
             throw new Error('Usuário não encontrado');
           }
 
           // Compare the provided password with the hashed password in the database
           const passwordMatch = await compare(credentials.password, user.password);
 
-          console.log('Password comparison result:', passwordMatch);
-
           // If the passwords match, return the user object
           if (passwordMatch) {
-            console.log('Password match. Returning user.');
             // Descobrir o nome do ministério
             let ministryName = null;
             if ((user as any).masterMinistry) {
@@ -70,17 +60,15 @@ export const authOptions: AuthOptions = {
               ministryName,
             };
           } else {
-            console.log('Password does NOT match.');
             throw new Error('Senha incorreta');
           }
         } catch (error) {
-          console.error('Error in authorize:', error);
           throw error;
         }
       }
     })
   ],
-  debug: process.env.NODE_ENV === 'development',
+  debug: false, // Desabilitar debug para evitar exposição de credenciais na URL
   secret: process.env.NEXTAUTH_SECRET,
   session: {
     strategy: "jwt",
@@ -89,6 +77,17 @@ export const authOptions: AuthOptions = {
   pages: {
     signIn: '/login',
     error: '/login', // Adiciona página de erro customizada
+  },
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production'
+      }
+    }
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -114,4 +113,4 @@ export const authOptions: AuthOptions = {
       return session;
     }
   }
-}; 
+};

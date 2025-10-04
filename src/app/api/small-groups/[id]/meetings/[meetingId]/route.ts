@@ -135,32 +135,57 @@ export async function GET(
 
     // Calcular status automático da reunião
     const now = new Date();
-    const meetingDate = new Date(meeting.date + 'T' + (meeting.startTime || '00:00:00'));
     let automaticStatus = meeting.status;
 
     // Se a reunião não foi cancelada manualmente, calcular status automático
     if (meeting.status !== 'CANCELADA') {
-      const hasAttendances = meeting.attendances.length > 0;
-      
-      // Criar data de término baseada no horário de término ou 2 horas após o início
-      let meetingEndTime;
-      if (meeting.endTime) {
-        meetingEndTime = new Date(meeting.date + 'T' + meeting.endTime);
-      } else {
-        // Se não há horário de término, assumir 2 horas após o início
-        meetingEndTime = new Date(meetingDate.getTime() + 2 * 60 * 60 * 1000);
-      }
-      
-      // Lógica de status baseada na data/hora atual
-      if (now < meetingDate) {
-        // Reunião ainda não começou
-        automaticStatus = 'AGENDADA';
-      } else if (now >= meetingDate && now <= meetingEndTime) {
-        // Reunião está no horário de acontecer
-        automaticStatus = hasAttendances ? 'EM_ANDAMENTO' : 'AGENDADA';
-      } else {
-        // Reunião já passou do horário - SEMPRE finalizar
-        automaticStatus = 'FINALIZADA';
+      try {
+        // Extrair apenas a data (sem horário) do campo date
+        let meetingDate;
+        if (meeting.date instanceof Date) {
+          // Se já é um objeto Date, usar apenas a parte da data
+          meetingDate = new Date(meeting.date.getFullYear(), meeting.date.getMonth(), meeting.date.getDate());
+        } else {
+          // Se é string, converter
+          meetingDate = new Date(meeting.date);
+          meetingDate = new Date(meetingDate.getFullYear(), meetingDate.getMonth(), meetingDate.getDate());
+        }
+
+        // Adicionar horário de início se disponível
+        if (meeting.startTime) {
+          const [hours, minutes] = meeting.startTime.split(':');
+          meetingDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        } else {
+          // Se não tem horário, assumir 00:00
+          meetingDate.setHours(0, 0, 0, 0);
+        }
+
+        // Calcular horário de término
+        let meetingEndTime = new Date(meetingDate);
+        if (meeting.endTime) {
+          const [hours, minutes] = meeting.endTime.split(':');
+          meetingEndTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        } else {
+          // Se não tem horário de fim, assumir 2 horas após o início
+          meetingEndTime.setHours(meetingEndTime.getHours() + 2);
+        }
+        
+        const hasAttendances = meeting.attendances.length > 0;
+        
+        // Lógica de status baseada na data/hora atual
+        if (now < meetingDate) {
+          // Reunião ainda não começou
+          automaticStatus = 'AGENDADA';
+        } else if (now >= meetingDate && now <= meetingEndTime) {
+          // Reunião está no horário de acontecer
+          automaticStatus = hasAttendances ? 'EM_ANDAMENTO' : 'AGENDADA';
+        } else {
+          // Reunião já passou do horário - SEMPRE finalizar
+          automaticStatus = 'FINALIZADA';
+        }
+      } catch (error) {
+        console.error(`Erro ao processar data da reunião ${meetingId}:`, error);
+        // Manter status atual se houver erro
       }
     }
 

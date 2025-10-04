@@ -15,13 +15,11 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!userId || !ministryId) {
       return NextResponse.json({ message: 'Dados obrigatórios não informados' }, { status: 400 });
     }
-    console.log('Buscando ministério:', ministryId);
     // Busca o ministério e igreja
     const ministry = await prisma.ministry.findUnique({
       where: { id: ministryId },
       include: { church: true }
     });
-    console.log('Resultado da busca:', ministry);
     if (!ministry) {
       return NextResponse.json({ message: 'Ministério não encontrado' }, { status: 404 });
     }

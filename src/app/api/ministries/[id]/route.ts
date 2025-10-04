@@ -16,31 +16,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     });
     if (!ministry) return NextResponse.json({ message: 'Ministério não encontrado' }, { status: 404 });
     
-    return NextResponse.json({
-      ministry: {
-        id: ministry.id,
-        name: ministry.name,
-        church: ministry.church,
-        churchName: ministry.churchName,
-        churchPhone: ministry.churchPhone,
-        churchEmail: ministry.churchEmail,
-        pastorName: ministry.pastorName,
-        pastorPhone: ministry.pastorPhone,
-        pastorEmail: ministry.pastorEmail,
-        cep: ministry.cep,
-        rua: ministry.rua,
-        numero: ministry.numero,
-        complemento: ministry.complemento,
-        bairro: ministry.bairro,
-        municipio: ministry.municipio,
-        estado: ministry.estado,
-        masters: ministry.masters, // corrigido
-        members: ministry.members,
-        status: ministry.status,
-        createdAt: ministry.createdAt,
-        updatedAt: ministry.updatedAt,
-      }
-    });
+    // Retornando diretamente o objeto ministry para simplificar o acesso aos dados
+    return NextResponse.json(ministry);
   } catch (error) {
     return NextResponse.json({ message: 'Erro ao buscar ministério' }, { status: 500 });
   }
@@ -83,7 +60,37 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     return NextResponse.json({ message: 'Não autorizado' }, { status: 403 });
   }
   try {
+    // Buscar dados do ministério antes de excluir
+    const ministry = await prisma.ministry.findUnique({
+      where: { id: params.id },
+      select: {
+        id: true,
+        name: true,
+        church: { select: { name: true } }
+      }
+    });
+
+    if (!ministry) {
+      return NextResponse.json({ message: 'Ministério não encontrado' }, { status: 404 });
+    }
+
     await prisma.ministry.delete({ where: { id: params.id } });
+
+    // Registrar atividade de exclusão
+    await prisma.atividade.create({
+      data: {
+        tipo: 'MINISTERIO',
+        acao: 'EXCLUIR',
+        descricao: `Ministério excluído: ${ministry.name}`,
+        detalhes: `Igreja: ${ministry.church?.name || 'N/A'}`,
+        entidadeId: params.id,
+        usuarioId: session.user.id,
+        ministryId: null, // Ministério foi excluído
+        ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
+        userAgent: req.headers.get('user-agent') || 'unknown',
+      }
+    });
+
     return NextResponse.json({ message: 'Ministério excluído com sucesso' });
   } catch (error) {
     return NextResponse.json({ message: 'Erro ao excluir ministério' }, { status: 500 });

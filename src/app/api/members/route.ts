@@ -34,20 +34,20 @@ const createMemberSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    console.log('🔐 POST /api/members - Iniciando criação de membro');
-    console.log('📍 Headers recebidos:', JSON.stringify(Object.fromEntries(request.headers), null, 2));
+    // Verificar autenticação
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    }
     
     // Obter o corpo da requisição
     const body = await request.json();
-    console.log('📦 Dados recebidos:', JSON.stringify(body, null, 2));
     
     // Usar o ministryId do corpo da requisição se disponível
     let ministryId = body.ministryId;
-    console.log('🏢 MinistryId dos dados:', ministryId);
     
     // Se não tiver ministryId nos dados, buscar o primeiro ministério
     if (!ministryId) {
-      console.log('⚠️ ministryId não encontrado nos dados, buscando primeiro ministério');
       
       const firstMinistry = await prisma.ministry.findFirst({
         select: { id: true },
@@ -55,9 +55,7 @@ export async function POST(request: Request) {
       
       if (firstMinistry) {
         ministryId = firstMinistry.id;
-        console.log('🔧 Usando primeiro ministério:', ministryId);
       } else {
-        console.log('❌ Erro: Nenhum ministério encontrado no banco de dados');
         return NextResponse.json({ error: 'Configuração do sistema incompleta' }, { status: 500 });
       }
     }
@@ -65,12 +63,10 @@ export async function POST(request: Request) {
     // Validar os dados recebidos
     const validation = createMemberSchema.safeParse(body);
     if (!validation.success) {
-      console.log('❌ Erro de validação:', validation.error.errors);
       return NextResponse.json({ errors: validation.error.errors }, { status: 400 });
     }
     
     const validatedData = validation.data;
-    console.log('✅ Dados validados com sucesso');
 
     // Verifica se já existe um membro com o mesmo e-mail no mesmo ministério (apenas se email foi fornecido)
     if (validatedData.email && validatedData.email.trim()) {
@@ -99,10 +95,6 @@ export async function POST(request: Request) {
 
     // Cria novo membro vinculado ao ministério - VERSÃO SIMPLIFICADA
     try {
-      console.log('🔧 Tentando criar membro com os seguintes dados:');
-      console.log('Nome:', validatedData.name);
-      console.log('Email:', validatedData.email);
-      console.log('MinistryId:', ministryId);
       
       // Verificar se o ministério existe
       const ministryExists = await prisma.ministry.findUnique({
@@ -110,7 +102,6 @@ export async function POST(request: Request) {
       });
       
       if (!ministryExists) {
-        console.error('❌ Ministério não encontrado:', ministryId);
         return NextResponse.json({ error: 'Ministério não encontrado' }, { status: 404 });
       }
       
@@ -147,12 +138,9 @@ export async function POST(request: Request) {
           ministryId: ministryId
         },
       });
-      
-      console.log('✅ Membro criado com sucesso:', newMember.id);
-      
+
       // Processar responsáveis se fornecidos
       if (validatedData.responsaveis && validatedData.responsaveis.length > 0) {
-        console.log('👨‍👩‍👧‍👦 Criando responsáveis...');
         for (const responsavel of validatedData.responsaveis) {
           await prisma.responsavel.create({
             data: {
@@ -163,12 +151,10 @@ export async function POST(request: Request) {
             }
           });
         }
-        console.log(`✅ ${validatedData.responsaveis.length} responsáveis criados`);
       }
       
       // Processar vínculos de irmãos se fornecidos
       if (validatedData.irmaosIds && validatedData.irmaosIds.length > 0) {
-        console.log('👫 Criando vínculos de irmãos...');
         for (const irmaoId of validatedData.irmaosIds) {
           await prisma.memberIrmao.create({
             data: {
@@ -177,12 +163,10 @@ export async function POST(request: Request) {
             }
           });
         }
-        console.log(`✅ ${validatedData.irmaosIds.length} vínculos de irmãos criados`);
       }
       
       // Processar vínculos de primos se fornecidos
       if (validatedData.primosIds && validatedData.primosIds.length > 0) {
-        console.log('👬 Criando vínculos de primos...');
         for (const primoId of validatedData.primosIds) {
           await prisma.memberPrimo.create({
             data: {
@@ -191,9 +175,29 @@ export async function POST(request: Request) {
             }
           });
         }
-        console.log(`✅ ${validatedData.primosIds.length} vínculos de primos criados`);
       }
       
+      // Registrar atividade de criação
+      await prisma.atividade.create({
+        data: {
+          tipo: 'MEMBRO',
+          acao: 'CRIAR',
+          descricao: `Membro criado: ${newMember.name}`,
+          detalhes: JSON.stringify({
+            memberId: newMember.id,
+            memberName: newMember.name,
+            memberEmail: newMember.email,
+            memberPhone: newMember.phone,
+            status: newMember.status
+          }),
+          entidadeId: newMember.id,
+          usuarioId: session.user.id,
+          ministryId: ministryId,
+          ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+          userAgent: request.headers.get('user-agent') || 'unknown'
+        }
+      });
+
       // Buscar o membro criado com todas as relações para retornar
       const memberWithRelations = await prisma.member.findUnique({
         where: { id: newMember.id },

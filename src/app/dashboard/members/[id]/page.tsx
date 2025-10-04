@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { Select } from '@/components/ui/select';
+import Select from '@/components/forms/Select';
 import { Card } from '@/components/ui/card';
 import { HiOutlineUser } from 'react-icons/hi';
 import { FiEdit2, FiTrash2 } from 'react-icons/fi';
@@ -44,12 +44,9 @@ export default function MemberDetailsPage() {
   useEffect(() => {
     if (!id) return;
     setLoading(true);
-    console.log('🔍 Buscando membro com ID:', id);
     fetch(`/api/members/${id}`)
       .then(res => res.json())
       .then(data => {
-        console.log('📥 Dados recebidos da API:', data);
-        console.log('👤 Dados do membro:', data.member);
         setMember(data.member);
         setLoading(false);
       })

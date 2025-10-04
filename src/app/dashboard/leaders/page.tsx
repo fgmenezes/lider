@@ -7,7 +7,7 @@ import { useSession } from 'next-auth/react';
 import { Tab } from '@headlessui/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
+import Select from '@/components/forms/Select';
 import { Badge } from '@/components/ui/badge';
 import LeaderCreateModal from "@/components/forms/LeaderCreateModal";
 import { HiOutlineDotsVertical } from 'react-icons/hi';
@@ -275,8 +275,8 @@ export default function LeadersPage() {
       {/* Paginação */}
       <div className="flex justify-between items-center mt-4">
         <div className="flex items-center gap-2">
-          <span className="text-[var(--color-text-primary)]">Itens por página:</span>
           <Select
+            label="Itens por página"
             value={perPage.toString()}
             onChange={(e) => {
               setPerPage(Number(e.target.value));
@@ -288,8 +288,7 @@ export default function LeadersPage() {
               { value: "50", label: "50" },
               { value: "100", label: "100" }
             ]}
-          >
-          </Select>
+          />
         </div>
         <span className="text-[var(--color-text-primary)]">Total: {(pagination.total !== undefined ? pagination.total : leaders.length)} líderes</span>
         <div className="flex items-center gap-2">
@@ -472,19 +471,16 @@ function LeaderEditTabs({ leader, open, onClose, onSave, ministries, session }: 
             onChange={e => setForm((f: any) => ({ ...f, dataNascimento: e.target.value }))}
           />
         </label>
-        <label className="block text-[var(--color-text-primary)]">
-          Sexo
-          <Select
-            value={form.sexo || ''}
-            onChange={e => setForm((f: any) => ({ ...f, sexo: e.target.value }))}
-            options={[
-              { value: "", label: "Selecione" },
-              { value: "MASCULINO", label: "Masculino" },
-              { value: "FEMININO", label: "Feminino" }
-            ]}
-          >
-          </Select>
-        </label>
+        <Select
+          label="Sexo"
+          value={form.sexo || ''}
+          onChange={e => setForm((f: any) => ({ ...f, sexo: e.target.value }))}
+          options={[
+            { value: "", label: "Selecione" },
+            { value: "MASCULINO", label: "Masculino" },
+            { value: "FEMININO", label: "Feminino" }
+          ]}
+        />
         <label className="block text-[var(--color-text-primary)]">
           Estado Civil
           <Input
@@ -568,19 +564,16 @@ function LeaderEditTabs({ leader, open, onClose, onSave, ministries, session }: 
     ) },
     { name: 'Permissões', content: (
       <div className="space-y-4">
-        <label className="block text-[var(--color-text-primary)]">
-          Tipo de Líder
-          <Select
-            value={form.role || ''}
-            onChange={e => setForm((f: any) => ({ ...f, role: e.target.value }))}
-            options={[
-              { value: "", label: "Selecione" },
-              { value: "LEADER", label: "Líder" },
-              { value: "MASTER", label: "Líder Master" }
-            ]}
-          >
-          </Select>
-        </label>
+        <Select
+          label="Tipo de Líder"
+          value={form.role || ''}
+          onChange={e => setForm((f: any) => ({ ...f, role: e.target.value }))}
+          options={[
+            { value: "", label: "Selecione" },
+            { value: "LEADER", label: "Líder" },
+            { value: "MASTER", label: "Líder Master" }
+          ]}
+        />
       </div>
     ) },
     { name: 'Login', content: (

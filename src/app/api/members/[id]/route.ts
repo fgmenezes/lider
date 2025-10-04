@@ -128,6 +128,26 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       }
     });
 
+    // Registrar atividade de atualização
+    await prisma.atividade.create({
+      data: {
+        tipo: 'MEMBRO',
+        acao: 'ATUALIZAR',
+        descricao: `Membro atualizado: ${member.name}`,
+        detalhes: JSON.stringify({
+          memberId: member.id,
+          memberName: member.name,
+          updatedFields: Object.keys(updateData),
+          changes: updateData
+        }),
+        entidadeId: member.id,
+        usuarioId: session.user.id,
+        ministryId: member.ministryId,
+        ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
+        userAgent: req.headers.get('user-agent') || 'unknown'
+      }
+    });
+
     if (validatedData.responsaveis) {
       await prisma.responsavel.deleteMany({ where: { memberId: params.id } });
       if (validatedData.responsaveis.length > 0) {
@@ -184,7 +204,14 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     });
     if (!user) return NextResponse.json({ message: 'Usuário não encontrado' }, { status: 404 });
 
-    const existingMember = await prisma.member.findUnique({ where: { id: params.id }, select: { ministryId: true } });
+    const existingMember = await prisma.member.findUnique({ 
+      where: { id: params.id }, 
+      select: { 
+        ministryId: true, 
+        name: true, 
+        email: true 
+      } 
+    });
     if (!existingMember) return NextResponse.json({ message: 'Membro não encontrado' }, { status: 404 });
 
     if ((user.role === 'MASTER' && existingMember.ministryId !== user.masterMinistryId) ||
@@ -205,6 +232,21 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     await prisma.memberPrimo.deleteMany({ where: { primoId: params.id } });
     
     await prisma.member.delete({ where: { id: params.id } });
+
+    // Registrar atividade de exclusão
+    await prisma.atividade.create({
+      data: {
+        tipo: 'MEMBRO',
+        acao: 'EXCLUIR',
+        descricao: `Membro excluído: ${existingMember.name}`,
+        detalhes: `Email: ${existingMember.email || 'N/A'}`,
+        entidadeId: params.id,
+        usuarioId: session.user.id,
+        ministryId: existingMember.ministryId,
+        ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
+        userAgent: req.headers.get('user-agent') || 'unknown',
+      }
+    });
 
     return NextResponse.json({ message: 'Membro excluído com sucesso' });
   } catch (error) {

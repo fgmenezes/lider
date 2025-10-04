@@ -40,15 +40,18 @@ model Ministry {
   members        Member[]
   smallGroups    SmallGroup[]
   finances       Finance[]
-  events         Event[]
+  // Relação com eventos atualizada para o novo modelo
+  events         Event[]           @relation("MinistryEvents")
   features       MinistryFeature[]
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
   assistantChats AssistantChat[]
   status         String            @default("ATIVO")
   meetingNotes   SmallGroupMeetingNote[]
+  smallGroupObservacoes SmallGroupObservacao[]
   visitors       SmallGroupVisitor[]
   materialApoio  MaterialApoio[]
+  atividades     Atividade[]
 }
 
 model User {
@@ -79,11 +82,27 @@ model User {
   estadoCivil    String?
   dataNascimento DateTime?
   churchId       String?
+  // Campos para avatar
+  avatarUrl      String?
+  avatarKey      String?
+  avatarMimeType String?
+  avatarSize     Int?
   observacoesCriadas MemberObservacao[] @relation("UserObservacoes")
+  smallGroupObservacoesCriadas SmallGroupObservacao[] @relation("UserSmallGroupObservacoes")
   finances       Finance[]
   smallGroupLeaderships SmallGroupLeader[]
   smallGroupNotes SmallGroupMeetingNote[]
   materialApoio  MaterialApoio[]
+  atividades     Atividade[]
+  
+  // Relacionamentos com eventos
+  eventLeaderships    EventLeader[]
+  eventParticipations EventParticipant[]
+  eventMaterials      EventMaterial[]
+  eventFinances       EventFinance[]
+  eventRegistrations  EventRegistration[]
+  eventFeedback       EventFeedback[]
+  
   @@unique([id, masterMinistryId])
 }
 
@@ -226,8 +245,10 @@ model SmallGroup {
   attendanceWindowBefore Int @default(60) // Minutos antes do início da reunião
   attendanceWindowAfter  Int @default(1440) // Minutos após o término da reunião (24h)
   meetingNotes   SmallGroupMeetingNote[]
+  observacoes    SmallGroupObservacao[]
   marcarBiblia   MarcarBiblia[]
   materialApoio  MaterialApoio[]
+  eventGroups    EventSmallGroup[]
 }
 
 model SmallGroupLeader {
@@ -363,16 +384,7 @@ model Finance {
   updatedAt     DateTime    @updatedAt
 }
 
-model Event {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  date        DateTime
-  ministry    Ministry @relation(fields: [ministryId], references: [id])
-  ministryId  String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
+// Modelo Event removido - substituído pelo novo modelo de eventos mais completo
 
 model Responsavel {
   id        String   @id @default(cuid())
@@ -393,6 +405,21 @@ model MemberObservacao {
   categoria  String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+model SmallGroupObservacao {
+  id           String     @id @default(uuid())
+  titulo       String
+  texto        String
+  categoria    String?
+  smallGroup   SmallGroup @relation(fields: [smallGroupId], references: [id], onDelete: Cascade)
+  smallGroupId String
+  ministry     Ministry   @relation(fields: [ministryId], references: [id])
+  ministryId   String
+  autor        User       @relation("UserSmallGroupObservacoes", fields: [autorId], references: [id])
+  autorId      String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }
 
 model MarcarBiblia {
@@ -453,4 +480,225 @@ enum MessageContext {
 enum FinanceType {
   ENTRADA
   SAIDA
+}
+
+// Modelos do Módulo de Eventos
+model Event {
+  id                    String      @id @default(cuid())
+  title                 String
+  description           String?
+  type                  EventType
+  status                EventStatus @default(PLANNED)
+  ministryId            String
+  startDate             DateTime
+  endDate               DateTime?
+  maxParticipants       Int?
+  registrationDeadline  DateTime?
+  
+  // Endereço
+  cep                   String?
+  street                String?
+  number                String?
+  complement            String?
+  neighborhood          String?
+  city                  String?
+  state                 String?
+  
+  // Dados específicos por tipo (JSON)
+  specificData          Json?
+  
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  // Relacionamentos
+  ministry              Ministry           @relation("MinistryEvents", fields: [ministryId], references: [id], onDelete: Cascade)
+  leaders               EventLeader[]
+  participants          EventParticipant[]
+  smallGroups           EventSmallGroup[]
+  materials             EventMaterial[]
+  finances              EventFinance[]
+  registrations         EventRegistration[]
+  feedback              EventFeedback[]
+
+  @@map("events")
+}
+
+model EventLeader {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String
+  role      String   @default("LEADER")
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@map("event_leaders")
+}
+
+model EventParticipant {
+  id           String                @id @default(cuid())
+  eventId      String
+  userId       String?
+  externalName String?
+  externalEmail String?
+  status       ParticipationStatus   @default(CONFIRMED)
+  attended     Boolean               @default(false)
+  notes        String?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("event_participants")
+}
+
+model EventSmallGroup {
+  id           String   @id @default(cuid())
+  eventId      String
+  smallGroupId String
+  createdAt    DateTime @default(now())
+
+  event      Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  smallGroup SmallGroup @relation(fields: [smallGroupId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, smallGroupId])
+  @@map("event_small_groups")
+}
+
+model EventMaterial {
+  id          String   @id @default(cuid())
+  eventId     String
+  name        String
+  description String?
+  fileUrl     String?
+  fileKey     String?
+  mimeType    String?
+  fileSize    Int?
+  uploadedBy  String
+  createdAt   DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [uploadedBy], references: [id])
+
+  @@map("event_materials")
+}
+
+model EventFinance {
+  id          String           @id @default(cuid())
+  eventId     String
+  type        EventFinanceType
+  description String
+  amount      Decimal          @db.Decimal(10, 2)
+  date        DateTime
+  createdBy   String
+  createdAt   DateTime         @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [createdBy], references: [id])
+
+  @@map("event_finances")
+}
+
+model EventRegistration {
+  id             String             @id @default(cuid())
+  eventId        String
+  userId         String?
+  externalName   String?
+  externalEmail  String?
+  externalPhone  String?
+  status         RegistrationStatus @default(PENDING)
+  registrationData Json?
+  paymentStatus  PaymentStatus?     @default(PENDING)
+  paymentAmount  Decimal?           @db.Decimal(10, 2)
+  notes          String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("event_registrations")
+}
+
+model EventFeedback {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String?
+  rating    Int?     // 1-5
+  comment   String?
+  anonymous Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("event_feedback")
+}
+
+// Enums para o módulo de eventos
+enum EventType {
+  CELL
+  LEADER_MEETING
+  WORSHIP
+  WORKSHOP
+  CANTEEN
+  CAMP
+  MISSION
+  PLANNING
+  TRAINING
+  REGISTRATION
+}
+
+enum EventStatus {
+  PLANNED
+  REGISTRATIONS_OPEN
+  REGISTRATIONS_CLOSED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ParticipationStatus {
+  CONFIRMED
+  PENDING
+  CANCELLED
+}
+
+enum EventFinanceType {
+  INCOME
+  EXPENSE
+}
+
+enum RegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+  CANCELLED
+}
+
+// Modelo para o sistema de auditoria/atividades
+model Atividade {
+  id          String    @id @default(cuid())
+  tipo        String    // MEMBRO, GRUPO, REUNIAO, FINANCEIRO, EVENTO, SISTEMA
+  acao        String    // CRIACAO, ATUALIZACAO, EXCLUSAO, LOGIN, LOGOUT
+  descricao   String
+  detalhes    String?   @db.Text
+  entidadeId  String?   // ID da entidade relacionada (membro, grupo, etc)
+  usuario     User?     @relation(fields: [usuarioId], references: [id])
+  usuarioId   String?
+  ministry    Ministry? @relation(fields: [ministryId], references: [id])
+  ministryId  String?
+  createdAt   DateTime  @default(now())
+  ip          String?
+  userAgent   String?   @db.Text
 }

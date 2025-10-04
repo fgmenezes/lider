@@ -7,7 +7,7 @@ import { useSession } from 'next-auth/react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 // Corrigindo a importação do Select
-import { Select } from '@/components/ui/select';
+import Select from '@/components/forms/Select';
 
 export default function LeaderDetailsPage() {
   const params = useParams();

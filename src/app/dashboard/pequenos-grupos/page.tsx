@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import Select from '@/components/forms/Select';
 // Nota: Os componentes SelectContent, SelectItem, SelectTrigger e SelectValue foram removidos da importação
 // pois não estão disponíveis no componente Select atual
 import { Checkbox } from "@/components/ui/checkbox";
@@ -288,7 +288,6 @@ function SmallGroupWizard({ open, onClose, onCreated }: { open: boolean; onClose
         estado,
         ministryId,
       };
-      console.log('[HANDLE CREATE] dataUnica:', dataUnica, 'dataInicio:', dataInicio, 'payload:', payload);
       const res = await fetch("/api/small-groups", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -352,7 +351,6 @@ function SmallGroupWizard({ open, onClose, onCreated }: { open: boolean; onClose
                   value={dataInicio}
                   onChange={e => {
                     const masked = maskDateBR(e.target.value);
-                    console.log('[DATA INICIO INPUT] Digitado:', e.target.value, '| Mascarado:', masked);
                     setDataInicio(masked);
                     setErroDataInicio("");
                   }}
@@ -369,7 +367,6 @@ function SmallGroupWizard({ open, onClose, onCreated }: { open: boolean; onClose
                   value={dataUnica}
                   onChange={e => {
                     const masked = maskDateBR(e.target.value);
-                    console.log('[DATA UNICA INPUT] Digitado:', e.target.value, '| Mascarado:', masked);
                     setDataUnica(masked);
                     setErroDataUnica("");
                   }}
@@ -1092,6 +1089,7 @@ export default function SmallGroupsPage() {
                 disabled={pagination.page === pagination.totalPages || pagination.totalPages === 0}
               >{'>>'}</Button>
               <Select
+                label=""
                 className="ml-2"
                 value={pagination.perPage.toString()}
                 onChange={e => fetchGroups(1, Number(e.target.value))}

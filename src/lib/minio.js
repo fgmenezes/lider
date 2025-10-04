@@ -14,7 +14,6 @@ const minioClient = new Client({
   secretKey: process.env.MINIO_SECRET_KEY,
 });
 
-console.log('MinIO configurado:', { endPoint: endpoint, port, useSSL });
 
 /**
  * Upload de um arquivo para o bucket
@@ -22,7 +21,6 @@ console.log('MinIO configurado:', { endPoint: endpoint, port, useSSL });
 export async function uploadFile(fileName, fileBuffer, contentType = "application/octet-stream") {
   try {
     await minioClient.putObject(process.env.MINIO_BUCKET, fileName, fileBuffer, { contentType });
-    console.log(`Arquivo "${fileName}" enviado com sucesso!`);
   } catch (error) {
     console.error("Erro ao enviar arquivo:", error);
     throw error;
@@ -47,7 +45,6 @@ export async function uploadMaterialApoio(fileName, fileBuffer, contentType, min
     
     // Fazer upload
     await minioClient.putObject('sistemalider', filePath, fileBuffer, fileBuffer.length, { 'Content-Type': contentType });
-    console.log(`Upload de material de apoio realizado com sucesso: ${filePath}`);
     
     return filePath;
   } catch (error) {
@@ -106,7 +103,6 @@ export async function getPresignedUrl(fileName, expires = 60) {
 export async function createFolder(folderName) {
   if (!folderName.endsWith("/")) folderName += "/";
   await minioClient.putObject(process.env.MINIO_BUCKET, folderName, "");
-  console.log(`Pasta "${folderName}" criada com sucesso!`);
 }
 
 /**
@@ -119,10 +115,8 @@ export async function removeObject(objectName) {
     if (objects.length > 0) {
       await minioClient.removeObjects(process.env.MINIO_BUCKET, objects);
     }
-    console.log(`Pasta "${objectName}" removida com sucesso!`);
   } else {
     await minioClient.removeObject(process.env.MINIO_BUCKET, objectName);
-    console.log(`Arquivo "${objectName}" removido com sucesso!`);
   }
 }
 
@@ -134,7 +128,6 @@ export async function createBucketIfNotExists(bucketName) {
     const exists = await minioClient.bucketExists(bucketName);
     if (!exists) {
       await minioClient.makeBucket(bucketName, 'us-east-1');
-      console.log(`Bucket "${bucketName}" criado com sucesso!`);
       
       // Definir política de bucket privado
       const policy = {
@@ -149,12 +142,9 @@ export async function createBucketIfNotExists(bucketName) {
       
       try {
         await minioClient.setBucketPolicy(bucketName, JSON.stringify(policy));
-        console.log(`Política privada aplicada ao bucket "${bucketName}"`);
       } catch (policyError) {
-        console.warn(`Aviso: Não foi possível aplicar política ao bucket "${bucketName}":`, policyError.message);
       }
     } else {
-      console.log(`Bucket "${bucketName}" já existe.`);
     }
   } catch (error) {
     console.error(`Erro ao criar bucket "${bucketName}":`, error);
@@ -179,14 +169,11 @@ export async function removeBucket(bucketName) {
       
       if (objectsList.length > 0) {
         await minioClient.removeObjects(bucketName, objectsList);
-        console.log(`${objectsList.length} objetos removidos do bucket "${bucketName}"`);
       }
       
       // Remover o bucket
       await minioClient.removeBucket(bucketName);
-      console.log(`Bucket "${bucketName}" removido com sucesso!`);
     } else {
-      console.log(`Bucket "${bucketName}" não existe.`);
     }
   } catch (error) {
     console.error(`Erro ao remover bucket "${bucketName}":`, error);
@@ -199,7 +186,6 @@ export async function removeBucket(bucketName) {
  */
 export async function initializeBuckets() {
   try {
-    console.log('Inicializando buckets do sistema...');
     
     // Criar bucket sistemalider
     await createBucketIfNotExists('sistemalider');
@@ -208,7 +194,6 @@ export async function initializeBuckets() {
     try {
       const exists = await minioClient.bucketExists('materialapoio');
       if (exists) {
-        console.log('Bucket materialapoio existe. Verificando se está vazio...');
         const objectsList = [];
         const objectsStream = minioClient.listObjects('materialapoio', '', true);
         
@@ -219,16 +204,12 @@ export async function initializeBuckets() {
         
         if (objectsList.length === 0) {
           await minioClient.removeBucket('materialapoio');
-          console.log('Bucket materialapoio removido (estava vazio)');
         } else {
-          console.log(`Bucket materialapoio contém ${objectsList.length} arquivos. Mantendo para compatibilidade.`);
         }
       }
     } catch (bucketError) {
-      console.warn('Aviso ao processar bucket materialapoio:', bucketError.message);
     }
     
-    console.log('Inicialização de buckets concluída!');
   } catch (error) {
     console.error('Erro na inicialização de buckets:', error);
     throw error;

@@ -94,44 +94,72 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Inicializar buckets do sistema
-    await initializeBuckets();
-    
     const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
     const meetingId = params.id;
     const formData = await req.formData();
+    
     const nome = formData.get('nome') as string;
     const descricao = formData.get('descricao') as string;
     const arquivo = formData.get('arquivo') as File;
 
-    if (!nome || !arquivo) {
+    // Validações de entrada
+    if (!nome || nome.trim() === '') {
       return NextResponse.json(
-        { error: 'Nome e arquivo são obrigatórios' },
+        { error: 'Nome do material é obrigatório' },
         { status: 400 }
       );
     }
 
-    // Validar tipo de arquivo (apenas PDF)
-    if (arquivo.type !== 'application/pdf') {
+    if (!arquivo) {
       return NextResponse.json(
-        { error: 'Apenas arquivos PDF são permitidos' },
+        { error: 'Arquivo é obrigatório' },
         { status: 400 }
       );
     }
 
-    // Validar tamanho (máximo 10MB para compatibilidade com o modal)
-    if (arquivo.size > 10 * 1024 * 1024) {
+    // Validar tipo e tamanho do arquivo
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/plain',
+      'image/jpeg',
+      'image/png',
+      'image/gif'
+    ];
+
+    if (!allowedTypes.includes(arquivo.type)) {
       return NextResponse.json(
-        { error: 'Arquivo muito grande. Máximo 10MB permitido' },
+        { error: 'Tipo de arquivo não permitido. Formatos aceitos: PDF, DOC, DOCX, PPT, PPTX, TXT, JPG, PNG, GIF' },
         { status: 400 }
       );
     }
 
-    // Verificar se a reunião existe e obter dados do pequeno grupo
+    // Validar tamanho do arquivo (máximo 50MB)
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    if (arquivo.size > maxSize) {
+      return NextResponse.json(
+        { error: 'Arquivo muito grande. Tamanho máximo: 50MB' },
+        { status: 400 }
+      );
+    }
+
+    // Validar nome do arquivo
+    const fileName = arquivo.name;
+    if (!fileName || fileName.trim() === '') {
+      return NextResponse.json(
+        { error: 'Nome do arquivo é inválido' },
+        { status: 400 }
+      );
+    }
+
+    // Verificar se a reunião existe
     const meeting = await prisma.smallGroupMeeting.findUnique({
       where: { id: meetingId },
       include: {
@@ -167,25 +195,25 @@ export async function POST(
     // Gerar nome único para o arquivo
     const timestamp = Date.now();
     const sanitizedName = nome.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const fileName = `${timestamp}_${sanitizedName}.pdf`;
+    const fileExtension = fileName.split('.').pop() || 'pdf';
+    const uniqueFileName = `${timestamp}_${sanitizedName}.${fileExtension}`;
 
     try {
       // Converter arquivo para buffer
       const arrayBuffer = await arquivo.arrayBuffer();
       const fileBuffer = Buffer.from(arrayBuffer);
 
-      console.log('Fazendo upload do arquivo:', {
-        nome,
-        tamanho: arquivo.size,
-        tipo: arquivo.type,
-        ministerioId: meeting.smallGroup.ministryId,
-        smallGroupId: meeting.smallGroupId,
-        meetingId
-      });
+      // Validar se o buffer não está vazio
+      if (fileBuffer.length === 0) {
+        return NextResponse.json(
+          { error: 'Arquivo está vazio ou corrompido' },
+          { status: 400 }
+        );
+      }
 
       // Fazer upload para MinIO com nova estrutura organizada
       const filePath = await uploadMaterialApoio(
-        fileName,
+        uniqueFileName,
         fileBuffer,
         arquivo.type,
         meeting.smallGroup.ministryId,
@@ -193,24 +221,60 @@ export async function POST(
         meetingId
       );
       
+      // Validar se o upload foi bem-sucedido
+      if (!filePath || filePath.trim() === '') {
+        throw new Error('Falha no upload: caminho do arquivo não foi retornado');
+      }
+      
       // Gerar URL permanente para download
-      const arquivoUrl = `https://${process.env.MINIO_ENDPOINT}/sistemalider/${filePath}`;
-      console.log('Upload MinIO bem-sucedido:', arquivoUrl);
+      const minioEndpoint = process.env.MINIO_ENDPOINT;
+      if (!minioEndpoint) {
+        throw new Error('Configuração do MinIO não encontrada');
+      }
+      
+      const arquivoUrl = `https://${minioEndpoint}/sistemalider/${filePath}`;
 
-      // Salvar metadados no banco
-      const material = await prisma.materialApoio.create({
-        data: {
-          nome,
-          descricao: descricao || null, // Campo opcional
-          arquivoUrl,
-          usuarioId: session.user.id,
-          ministerioId: meeting.smallGroup.ministryId,
-          smallGroupId: meeting.smallGroupId,
-          meetingId
+      // Validar URL gerada
+      try {
+        new URL(arquivoUrl);
+      } catch (urlError) {
+        throw new Error('URL gerada é inválida');
+      }
+
+      // Salvar metadados no banco usando transação
+      const material = await prisma.$transaction(async (tx) => {
+        // Verificar se já existe um material com o mesmo nome na mesma reunião
+        const existingMaterial = await tx.materialApoio.findFirst({
+          where: {
+            nome,
+            meetingId,
+            usuarioId: session.user.id
+          }
+        });
+
+        if (existingMaterial) {
+          throw new Error('Já existe um material com este nome nesta reunião');
         }
+
+        // Criar o material
+        const newMaterial = await tx.materialApoio.create({
+          data: {
+            nome: nome.trim(),
+            descricao: descricao?.trim() || null,
+            arquivoUrl,
+            usuarioId: session.user.id,
+            ministerioId: meeting.smallGroup.ministryId,
+            smallGroupId: meeting.smallGroupId,
+            meetingId
+          }
+        });
+
+        return newMaterial;
       });
 
-      console.log('Material de apoio criado:', material.id);
+      console.log(`✅ Material de apoio criado com sucesso: ${material.id} - ${material.nome}`);
+      console.log(`📁 Arquivo salvo em: ${filePath}`);
+      console.log(`🔗 URL: ${arquivoUrl}`);
 
       return NextResponse.json({
         materialId: material.id,
@@ -218,16 +282,24 @@ export async function POST(
         message: 'Material de apoio enviado com sucesso'
       });
 
-    } catch (dbError) {
-      console.error('Erro no banco de dados:', dbError);
+    } catch (uploadError) {
+      console.error('❌ Erro durante upload/salvamento:', uploadError);
+      
+      // Se houve erro após criar o registro no banco, tentar limpar
+      // (isso seria melhor com uma transação completa incluindo MinIO)
+      
       return NextResponse.json(
-        { error: 'Erro ao salvar no banco de dados' },
+        { 
+          error: uploadError instanceof Error 
+            ? uploadError.message 
+            : 'Erro durante o upload do arquivo'
+        },
         { status: 500 }
       );
     }
 
   } catch (error) {
-    console.error('Erro ao processar upload:', error);
+    console.error('❌ Erro ao processar upload:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

@@ -7,7 +7,7 @@ import { HiOutlineDotsVertical } from 'react-icons/hi';
 import * as React from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Select } from '@/components/ui/select';
+import Select from '@/components/forms/Select';
 
 interface Ministry {
   id: string;
@@ -68,6 +68,7 @@ const CustomSelect = ({ value, onValueChange, children, className }) => {
 
   return (
     <Select
+      label=""
       value={value}
       onChange={(e) => onValueChange(e.target.value)}
       options={options}
